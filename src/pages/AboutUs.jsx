@@ -1,4 +1,8 @@
+import { useNavigate } from "react-router-dom";
+
 const AboutUs = () => {
+  const navigate = useNavigate();
+  
   return (
     <div className="page">
       <section className="section about-hero">
@@ -83,14 +87,19 @@ const AboutUs = () => {
 
       <section className="section section-bg-2">
         <div className="container">
-          <h2 className="section-title">Join Our Mission</h2>
+          <h2 className="section-title">Get Started</h2>
           <div className="cta-section">
             <p className="body-text">
               Be part of our journey to transform healthcare accessibility.
               Whether you're a healthcare provider or someone seeking quality
               care, we welcome you to the Better Health family.
             </p>
-            <button className="cta-btn">Get Started Today</button>
+            <button 
+              className="cta-btn"
+              onClick={() => navigate("/services")}
+            >
+              Explore Our Services
+            </button>
           </div>
         </div>
       </section>

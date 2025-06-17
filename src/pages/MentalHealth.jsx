@@ -119,8 +119,8 @@ const MentalHealth = () => {
               </div>
               <div className="pricing-features">
                 <p>
-                  One personalized 60 to 90-minute counselling session with a
-                  licensed therapist. Ideal for focused support, guidance, and
+                  One personalized counselling session with a
+                  professional therapist. Ideal for focused support, guidance, and
                   mental clarity.
                 </p>
               </div>
@@ -129,20 +129,19 @@ const MentalHealth = () => {
             <div className="pricing-card recommended">
               <div className="best-value">Best Value</div>
               <div className="pricing-header">
-                <h3 className="pricing-title">3 Sessions Pack</h3>
+                <h3 className="pricing-title">4 Sessions Pack</h3>
                 <div className="pricing-amount">
-                  <span className="original-price">₹3,750</span>
-                  <span className="final-price">₹3,000</span>
+                  <span className="original-price">₹5,000</span>
+                  <span className="final-price">₹4,000</span>
                 </div>
               </div>
               <div className="pricing-features">
                 <p>
-                  Three 60 to 90-minute sessions with a licensed therapist.
-                  Perfect for ongoing support, deeper progress, and structured
-                  mental wellness.
+                  Four personalized counselling sessions with a professional therapist.
+                  Perfect for long-term support and deeper progress.
                 </p>
               </div>
-              <button className="cta-btn">Choose 3 Sessions Pack</button>
+              <button className="cta-btn">Choose 4 Sessions Pack</button>
             </div>
           </div>
         </div>

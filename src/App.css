@@ -393,7 +393,7 @@ ul.styled-list li::before {
   gap: 0.5rem;
   color: #444;
   cursor: pointer;
-}
+} 
 
 .forgot-password {
   color: #ec5228;
@@ -514,42 +514,39 @@ ul.styled-list li::before {
   z-index: 10;
 }
 
-.footer-section {
-  align-self: flex-start;
-}
-
-.footer-section:first-child {
-  align-self: center;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.footer-logo {
-  max-width: 240px;
-  height: auto;
-  margin-bottom: 1rem;
-}
-
+/* Create a 4-column grid with equal spacing */
 .footer-content {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 2rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2.5rem;
+  justify-content: space-between;
 }
 
+/* Style each footer section */
 .footer-section {
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
 }
 
+/* Special styling for the first section with logo */
+.footer-section:first-child {
+  align-self: flex-start;
+  display: flex;
+  margin-right: 4rem;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* Section headings */
 .footer-section h4 {
   color: #000080;
   font-size: 1.1rem;
   font-weight: 600;
-  margin-bottom: 0.3rem;
+  margin-bottom: 1rem;
 }
 
+/* Make sure all lists have consistent styling */
 .footer-section ul {
   list-style: none;
   padding: 0;
@@ -557,7 +554,7 @@ ul.styled-list li::before {
 }
 
 .footer-section ul li {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.8rem;
 }
 
 .footer-section a {
@@ -660,11 +657,11 @@ button.navbar-mobile-toggle:hover {
   color: #ffffff !important;
   padding: 0.6rem 1rem;
   border: none;
-  border-radius: 6px;
+  border-radius: 50px;
   font-weight: 500;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -680,11 +677,11 @@ button.navbar-mobile-toggle:hover {
   color: #ffffff !important;
   padding: 0.6rem 1rem;
   border: none;
-  border-radius: 6px;
+  border-radius: 50px;
   font-weight: 500;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -721,9 +718,9 @@ button.navbar-mobile-toggle:hover {
 
 .social-btn-instagram:hover,
 .social-btn-linkedin:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  color: #ffffff;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+  filter: brightness(105%);
 }
 
 .contact-info {
@@ -1549,7 +1546,7 @@ button.navbar-mobile-toggle:hover {
   }
 
   .footer-content {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .about-content {
@@ -1735,8 +1732,13 @@ button.navbar-mobile-toggle:hover {
     text-align: center;
   }
 
-  .footer-section {
-    padding: 1rem 0;
+  .footer-section:first-child {
+    align-items: center;
+  }
+  
+  .footer-logo-description {
+    max-width: 100%;
+    text-align: center;
   }
 
   .values-grid {
@@ -1745,27 +1747,6 @@ button.navbar-mobile-toggle:hover {
 
   .process-card,
   .feature-card {
-    padding: 1.5rem;
-  }
-
-  .contact-info {
-    padding: 1.5rem;
-  }
-
-  /* Button and form adjustments */
-  .cta-btn {
-    width: 100%;
-    padding: 0.8rem 1.5rem;
-    font-size: 1rem;
-  }
-
-  .form-group input {
-    padding: 0.8rem;
-  }
-
-  /* Card adjustments */
-  .pricing-card,
-  .service-card {
     padding: 1.5rem;
     min-height: auto;
   }
@@ -2093,14 +2074,13 @@ button.navbar-mobile-toggle:hover {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1.25rem;
-  border-radius: 8px;
+  border-radius: 50px;
   text-decoration: none;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
   font-size: 1rem;
   width: 100%;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  color: #ffffff !important;
 }
 
 .social-button.linkedin {
@@ -2120,9 +2100,9 @@ button.navbar-mobile-toggle:hover {
 }
 
 .social-button:hover {
-  opacity: 0.95;
-  transform: translateY(-1px);
-  color: #ffffff !important;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  filter: brightness(105%);
 }
 
 .social-icon {
@@ -2301,4 +2281,70 @@ button.navbar-mobile-toggle:hover {
   .faq-item p {
     font-size: 1rem;
   }
+}
+
+/* Create completely new social media button styles */
+.footer-social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 20px;
+  width: 100%;
+  margin: 5px 0;
+  border: none;
+  border-radius: 12px; /* Fully rounded corners */
+  font-size: 16px;
+  font-weight: 500;
+  color: white !important;
+  text-decoration: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.footer-social-btn.instagram {
+  background: linear-gradient(
+    45deg,
+    #f09433 0%,
+    #e6683c 25%,
+    #dc2743 50%,
+    #cc2366 75%,
+    #bc1888 100%
+  );
+}
+
+.footer-social-btn.linkedin {
+  background-color: #0077b5;
+}
+
+.footer-social-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.footer-social-btn:active {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.footer-social-icon {
+  width: 20px;
+  height: 20px;
+  filter: brightness(0) invert(1);
+}
+
+.footer-logo {
+  max-width: 240px;
+  height: auto;
+  margin-bottom: 1rem;
+}
+
+.footer-logo-description {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #444;
+  margin-bottom: 1rem;
+  max-width: 250px;
 }

@@ -1,0 +1,152 @@
+/* Terms and Conditions Page */
+
+.terms-page {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #1c1e21;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+  background-color: #f0f2f5;
+  min-height: 100vh;
+}
+
+.terms-header {
+  background-color: white;
+  padding: 20px 0;
+  text-align: center;
+  border-bottom: 1px solid #dadde1;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.terms-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+  color: #1877f2;
+}
+
+.terms-container {
+  display: flex;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Layout for desktop: side-by-side navigation and content */
+@media (min-width: 992px) {
+  .terms-sidebar {
+    width: 25%;
+    max-width: 300px;
+    padding-right: 30px;
+  }
+  
+  .terms-content {
+    width: 75%;
+    border-left: 1px solid #dadde1;
+    padding-left: 30px;
+  }
+}
+
+/* Layout for mobile: stacked navigation and content */
+@media (max-width: 991px) {
+  .terms-container {
+    flex-direction: column;
+  }
+  
+  .terms-sidebar {
+    width: 100%;
+    margin-bottom: 20px;
+  }
+  
+  .terms-content {
+    width: 100%;
+  }
+}
+
+/* Navigation styling */
+.terms-nav ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  position: sticky;
+  top: 20px;
+}
+
+.terms-nav li {
+  padding: 8px 0;
+}
+
+.terms-nav a {
+  text-decoration: none;
+  color: #1877f2;
+  font-size: 14px;
+  display: block;
+  padding: 6px 0;
+}
+
+.terms-nav a:hover {
+  text-decoration: underline;
+}
+
+/* Section styling */
+.terms-section {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #dadde1;
+}
+
+.terms-section h2 {
+  font-size: 20px;
+  color: #1c1e21;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+.terms-section p {
+  font-size: 15px;
+  margin-bottom: 16px;
+  color: #4b4f56;
+}
+
+/* Subsection styling */
+.terms-subsection {
+  margin-bottom: 16px;
+  padding-left: 10px;
+}
+
+.terms-subsection h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #1c1e21;
+}
+
+/* Lists styling */
+.terms-section ul {
+  margin-left: 20px;
+  margin-bottom: 16px;
+}
+
+.terms-section li {
+  margin-bottom: 6px;
+  font-size: 15px;
+  color: #4b4f56;
+}
+
+.terms-section strong {
+  font-weight: 600;
+}
+
+/* Contact info styling */
+.terms-contact-info {
+  background-color: #f5f6f7;
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.terms-contact-info p {
+  margin-bottom: 8px;
+} 

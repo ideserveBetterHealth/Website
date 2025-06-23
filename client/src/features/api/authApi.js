@@ -37,13 +37,18 @@ export const authApi = createApi({
       query: () => ({
         url: "logout",
         method: "GET",
+        credentials: "include", // Explicitly include credentials to ensure cookies are sent
       }),
       async onQueryStarted(_, { queryFulfilled, dispatch }) {
         try {
-          await queryFulfilled;
+          const result = await queryFulfilled;
+          // Make sure to dispatch logout action after the API call completes
           dispatch(userLoggedOut());
+
+          // For better debugging
+          console.log("Logout successful:", result);
         } catch (error) {
-          console.log(error);
+          console.error("Logout error:", error);
         }
       },
       invalidatesTags: ["logout"],

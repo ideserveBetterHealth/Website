@@ -29,6 +29,12 @@ function Navbar() {
   const logoutHandler = async () => {
     try {
       await logoutUser().unwrap();
+      // This is a fallback solution if the server isn't clearing cookies properly
+      document.cookie.split(";").forEach(function (c) {
+        document.cookie =
+          c.trim().split("=")[0] +
+          "=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;";
+      });
     } catch (error) {
       toast.error("Logout failed. Please try again.");
       console.error("Logout error:", error);

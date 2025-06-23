@@ -25,6 +25,8 @@ const CreateCoupon = () => {
 
   const API_BASE = `${import.meta.env.VITE_BACKEND_URL}/api/v1/payments`;
 
+  axios.defaults.withCredentials = true;
+
   const validateForm = () => {
     const newErrors = {};
 

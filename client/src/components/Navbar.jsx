@@ -27,7 +27,12 @@ function Navbar() {
   const [logoutUser, { data, isSuccess }] = useLogoutUserMutation();
 
   const logoutHandler = async () => {
-    await logoutUser();
+    try {
+      await logoutUser().unwrap();
+    } catch (error) {
+      toast.error("Logout failed. Please try again.");
+      console.error("Logout error:", error);
+    }
   };
 
   useEffect(() => {

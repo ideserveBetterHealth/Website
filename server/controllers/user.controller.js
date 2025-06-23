@@ -88,21 +88,26 @@ export const login = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
-    return res.status(200).cookie("token", "", { maxAge: 0 }).json({
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "Strict",
+      path: "/",
+    });
+
+    return res.status(200).json({
       message: "Logged out successfully.",
       success: true,
     });
   } catch (error) {
-    console.log(
-      "Error logging from user.controller.js logout function\n",
-      error
-    );
+    console.log("Error logging out:\n", error);
     res.status(500).json({
       success: false,
       message: "Failed to logout",
     });
   }
 };
+
 export const getUserProfile = async (req, res) => {
   try {
     const userId = req.id;

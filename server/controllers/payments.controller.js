@@ -175,11 +175,11 @@ export const getDefaultPaymentLinks = async (req, res) => {
       mentalHealthCounselling: {
         single:
           "https://payments.cashfree.com/forms/single-mental-health-counselling-session",
-        bundle: "https://yahoo.com",
+        bundle: "https://payments.cashfree.com/forms/03mhcs",
       },
       cosmetologistConsultancy: {
-        single: "https://payments.cashfree.com/forms/testpage",
-        bundle: "https://olx.com",
+        single: "https://ideservebetterhealth.in",
+        bundle: "https://ideservebetterhealth.in",
       },
     };
 

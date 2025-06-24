@@ -25,6 +25,8 @@ const VerificationPending = () => {
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth.user);
 
+  axios.defaults.withCredentials = true;
+
   const API_BASE = `${import.meta.env.VITE_BACKEND_URL}/api/v1/register`;
 
   // Check if user is admin
@@ -395,7 +397,10 @@ const VerificationPending = () => {
                 // If salarySlip is an array
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {employee.salarySlip.map((slip, index) => (
-                    <div key={index} className="border border-gray-200 rounded-lg p-4">
+                    <div
+                      key={index}
+                      className="border border-gray-200 rounded-lg p-4"
+                    >
                       <p className="text-sm font-medium text-gray-600 mb-2">
                         Salary Slip {index + 1}
                       </p>

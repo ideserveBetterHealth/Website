@@ -324,7 +324,7 @@ export const createCoupon = async (req, res) => {
 
   if (role !== "admin") {
     return res.status(403).json({
-      message: "Access denied: Only administrators can create meetings.",
+      message: "Access denied: Only administrators can create coupons.",
     });
   }
 

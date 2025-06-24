@@ -18,6 +18,8 @@ const VerifiedDoctors = () => {
   const user = useSelector((state) => state.auth.user);
   const limit = 10;
 
+  axios.defaults.withCredentials = true;
+
   const API_BASE = `${import.meta.env.VITE_BACKEND_URL}/api/v1/register`;
 
   useEffect(() => {

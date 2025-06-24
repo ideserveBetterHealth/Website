@@ -1,7 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import rootReducer from "./rootReducer";
 import { authApi } from "@/features/api/authApi";
-import { detailsApi } from "@/features/api/DetailsApi";
+import { detailsApi } from "@/features/api/detailsApi";
 import { meetingApi } from "@/features/api/meetingsApi";
 
 export const appStore = configureStore({

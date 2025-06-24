@@ -11,6 +11,8 @@ import { useSelector } from "react-redux";
 import { Loader } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+axios.defaults.withCredentials = true;
+
 const initialEmployment = {
   organization: "",
   jobTitle: "",

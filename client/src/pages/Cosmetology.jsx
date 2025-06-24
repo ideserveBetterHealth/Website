@@ -123,12 +123,12 @@ const Cosmetology = () => {
               <div className="pricing-header">
                 <h3 className="pricing-title">Single Consultation</h3>
                 <div className="pricing-amount">
-                  <span className="final-price">₹1,500</span>
+                  <span className="final-price">₹250</span>
                 </div>
               </div>
               <div className="pricing-features">
                 <p>
-                  One comprehensive 60-minute consultation with skin analysis,
+                  One comprehensive 30-minute consultation with skin analysis,
                   personalized routine planning, and product recommendations.
                 </p>
               </div>
@@ -146,8 +146,8 @@ const Cosmetology = () => {
               <div className="pricing-header">
                 <h3 className="pricing-title">Complete Skin Journey</h3>
                 <div className="pricing-amount">
-                  <span className="original-price">₹4,500</span>
-                  <span className="final-price">₹3,600</span>
+                  <span className="original-price">₹750</span>
+                  <span className="final-price">₹500</span>
                 </div>
               </div>
               <div className="pricing-features">

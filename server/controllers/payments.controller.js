@@ -178,8 +178,8 @@ export const getDefaultPaymentLinks = async (req, res) => {
         bundle: "https://payments.cashfree.com/forms/03mhcs",
       },
       cosmetologistConsultancy: {
-        single: "https://ideservebetterhealth.in",
-        bundle: "https://ideservebetterhealth.in",
+        single: "https://payments.cashfree.com/forms/cc01",
+        bundle: "https://payments.cashfree.com/forms/cc03",
       },
     };
 

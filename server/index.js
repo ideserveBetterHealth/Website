@@ -9,13 +9,14 @@ import { mediaRouter } from "./routes/media.route.js";
 import { meetingRouter } from "./routes/meetings.route.js";
 import { paymentRouter } from "./routes/payment.routes.js";
 
-dotenv.config({});
+dotenv.config();
 
 const app = express();
 
-const PORT = process.env.PORT || 3000;
+// Connect to DB only once (on cold start)
+connectDB();
 
-//default middlewares
+// Middleware
 app.use(express.json());
 app.use(cookieParser());
 app.use(
@@ -25,6 +26,7 @@ app.use(
   })
 );
 
+// JSON error handling
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError) {
     return res.status(400).json({
@@ -35,18 +37,12 @@ app.use((err, req, res, next) => {
   next();
 });
 
-//apis
+// Routes
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/register", employeeRouter);
 app.use("/api/v1/media", mediaRouter);
 app.use("/api/v1/meeting", meetingRouter);
 app.use("/api/v1/payments", paymentRouter);
 
-try {
-  await connectDB();
-  app.listen(PORT, () => {
-    console.log(`SERVER LISTENING ON PORT ${PORT} `);
-  });
-} catch (error) {
-  console.log("ERROR IN CONNECTING DB \n", error);
-}
+// Export app for Vercel (this is key)
+export default app;

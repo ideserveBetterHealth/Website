@@ -19,7 +19,7 @@ export const generateToken = (res, user, message) => {
       maxAge: 24 * 60 * 60 * 1000,
     })
     .json({
-      success: "true",
+      success: true,
       message: `Welcome Back ${user.name}`,
       user: userWithoutPassword,
     });

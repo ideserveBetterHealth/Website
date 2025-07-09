@@ -36,7 +36,7 @@ export const authApi = createApi({
     logoutUser: builder.mutation({
       query: () => ({
         url: "logout",
-        method: "GET",
+        method: "POST",
         credentials: "include", // Explicitly include credentials to ensure cookies are sent
       }),
       async onQueryStarted(_, { queryFulfilled, dispatch }) {

@@ -30,7 +30,7 @@ export const meetingApi = createApi({
     joinMeeting: builder.mutation({
       query: (meetingId) => ({
         url: `/meetingJoinedAt/${meetingId}`,
-        method: "GET",
+        method: "POST",
       }),
       invalidatesTags: ["Meetings"],
     }),

@@ -15,7 +15,7 @@ router.post("/create-meeting", isAuthenticated, createMeeting);
 
 router.get("/get-meetings", isAuthenticated, getMeetings);
 
-router.get("/meetingJoinedAt/:meetingId", isAuthenticated, meetingJoinedAt);
+router.post("/meetingJoinedAt/:meetingId", isAuthenticated, meetingJoinedAt);
 
 router.get("/deleteMeeting/:meetingId", isAuthenticated, deleteMeeting);
 

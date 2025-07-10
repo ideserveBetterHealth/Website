@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { userLoggedIn, userLoggedOut } from "../authSlice";
+import { meetingApi } from "./meetingsApi";
 
 const USER_API = `${import.meta.env.VITE_BACKEND_URL}/api/v1/user/`;
 
@@ -28,6 +29,7 @@ export const authApi = createApi({
         try {
           const result = await queryFulfilled;
           dispatch(userLoggedIn({ user: result.data.user }));
+          dispatch(meetingApi.util.invalidateTags(["Meetings"]));
         } catch (error) {
           console.log(error);
         }
@@ -37,14 +39,14 @@ export const authApi = createApi({
       query: () => ({
         url: "logout",
         method: "POST",
-        credentials: "include", // Explicitly include credentials to ensure cookies are sent
+        credentials: "include",
       }),
       async onQueryStarted(_, { queryFulfilled, dispatch }) {
         try {
           const result = await queryFulfilled;
           // Make sure to dispatch logout action after the API call completes
           dispatch(userLoggedOut());
-
+          dispatch(meetingApi.util.invalidateTags(["Meetings"]));
           // For better debugging
           console.log("Logout successful:", result);
         } catch (error) {

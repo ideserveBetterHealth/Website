@@ -13,8 +13,11 @@ import {
   User,
   CheckCircle,
 } from "lucide-react";
+import { useGetMeetingsQuery, useCreateMeetingMutation } from "@/features/api/meetingsApi";
 
 const CreateMeeting = () => {
+  useGetMeetingsQuery(); // Keep the query active for cache invalidation
+  const [createMeeting, { isLoading: createMeetingLoading }] = useCreateMeetingMutation();
   const [formData, setFormData] = useState({
     clientEmail: "",
     clientName: "",
@@ -22,12 +25,11 @@ const CreateMeeting = () => {
     doctorName: "",
     meetingDate: "",
     meetingTime: "",
-    meetingPeriod: "AM", // New state for AM/PM
+    meetingPeriod: "AM",
     meetingLink: "",
     formLink: "",
   });
 
-  const [loading, setLoading] = useState(false);
   const [emailVerification, setEmailVerification] = useState({
     client: { loading: false, verified: false },
     doctor: { loading: false, verified: false },
@@ -212,7 +214,7 @@ const CreateMeeting = () => {
     try {
       new URL(string);
       return true;
-    } catch (_) {
+    } catch {
       return false;
     }
   };
@@ -297,8 +299,6 @@ const CreateMeeting = () => {
       return;
     }
 
-    setLoading(true);
-
     try {
       // Combine time and period before submitting
       const fullTime = `${formData.meetingTime} ${formData.meetingPeriod}`;
@@ -313,42 +313,35 @@ const CreateMeeting = () => {
         formLink: formData.formLink,
       };
 
-      const response = await axios.post(
-        `${API_BASE}/create-meeting`,
-        submitData
-      );
+      await createMeeting(submitData).unwrap();
 
-      if (response.status === 201) {
-        toast.success("Meeting created successfully!");
+      toast.success("Meeting created successfully!");
 
-        // Reset form
-        setFormData({
-          clientEmail: "",
-          clientName: "",
-          doctorEmail: "",
-          doctorName: "",
-          meetingDate: "",
-          meetingTime: "",
-          meetingPeriod: "AM",
-          meetingLink: "",
-          formLink: "",
-        });
-        setEmailVerification({
-          client: { loading: false, verified: false },
-          doctor: { loading: false, verified: false },
-        });
-        setErrors({});
-      }
+      // Reset form
+      setFormData({
+        clientEmail: "",
+        clientName: "",
+        doctorEmail: "",
+        doctorName: "",
+        meetingDate: "",
+        meetingTime: "",
+        meetingPeriod: "AM",
+        meetingLink: "",
+        formLink: "",
+      });
+      setEmailVerification({
+        client: { loading: false, verified: false },
+        doctor: { loading: false, verified: false },
+      });
+      setErrors({});
     } catch (error) {
       console.error("Error creating meeting:", error);
 
-      if (error.response?.data?.message) {
-        toast.error(error.response.data.message);
+      if (error?.data?.message) {
+        toast.error(error.data.message);
       } else {
         toast.error("Failed to create meeting. Please try again.");
       }
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -784,10 +777,10 @@ const CreateMeeting = () => {
             <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={createMeetingLoading}
                 className="flex-1 py-4 bg-blue-600 text-white font-bold text-lg rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors transform hover:scale-105 active:scale-95"
               >
-                {loading ? (
+                {createMeetingLoading ? (
                   <div className="flex items-center justify-center">
                     <svg
                       className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
@@ -819,7 +812,7 @@ const CreateMeeting = () => {
               <button
                 type="button"
                 onClick={clearForm}
-                disabled={loading}
+                disabled={createMeetingLoading}
                 className="flex-1 py-4 bg-gray-500 text-white font-bold text-lg rounded-lg hover:bg-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
                 Clear Form

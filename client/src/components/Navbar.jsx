@@ -183,8 +183,7 @@ function Navbar() {
             className="flex gap-1 items-center"
             onClick={() => navigate("/")}
           >
-            <img src="/vite.svg" className="w-[20%]" />
-            <p className="font-bold">BetterHealth</p>
+            <p className="font-bold text-blue-900">BetterHealth</p>
           </div>
         </div>
         <MobileNavbar role={role} />

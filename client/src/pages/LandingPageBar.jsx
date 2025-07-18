@@ -1,7 +1,18 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import "./LandingPageBar.css";
 import { useEffect, useState } from "react";
 import ScrollToTop from "@/components/ScrollToTop";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Menu } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 export function LandingPageNavbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -12,25 +23,23 @@ export function LandingPageNavbar() {
     setIsMenuOpen(false);
   }, [location]);
 
+  function navigateHandler(path) {
+    setIsMenuOpen(false);
+    window.location.href = path;
+  }
+
   return (
     <nav className="navbar">
       <div className="container">
         <Link to="/" className="navbar-brand">
           Better Health
         </Link>
-        <button
-          className={`navbar-mobile-toggle ${isMenuOpen ? "active" : ""}`}
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          aria-label="Toggle navigation menu"
-        >
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
-        <div className={`navbar-links ${isMenuOpen ? "active" : ""}`}>
+
+        {/* Desktop Navigation */}
+        <div className="navbar-links desktop-only">
           <Link to="/" className="nav-link">
             Home
-          </Link>{" "}
+          </Link>
           <Link to="/services" className="nav-link">
             Services
           </Link>
@@ -38,6 +47,68 @@ export function LandingPageNavbar() {
             Login
           </Link>
           <Link className="cta-btn">Request a Call Back</Link>
+        </div>
+
+        {/* Mobile Navigation using shadcn UI */}
+        <div className="mobile-only">
+          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+            <SheetTrigger asChild>
+              <Button
+                size="icon"
+                variant="outline"
+                className="rounded border-none shadow-none hover:text-bold"
+              >
+                <Menu className="text-black dark:text-white" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="flex flex-col z-[1001]">
+              <SheetHeader className="flex flex-row items-center justify-between mt-5">
+                <SheetTitle>Better Health</SheetTitle>
+                <SheetDescription></SheetDescription>
+              </SheetHeader>
+              <Separator />
+              <nav className="flex flex-col space-y-4">
+                <span>
+                  <Button
+                    onClick={() => navigateHandler("/")}
+                    variant="outline"
+                    className="w-full border-none shadow-none"
+                  >
+                    Home
+                  </Button>
+                </span>
+                <Separator />
+                <span>
+                  <Button
+                    onClick={() => navigateHandler("/services")}
+                    variant="outline"
+                    className="w-full border-none shadow-none"
+                  >
+                    Services
+                  </Button>
+                </span>
+                <Separator />
+                <span>
+                  <Button
+                    onClick={() => navigateHandler("/login")}
+                    variant="outline"
+                    className="w-full border-none shadow-none"
+                  >
+                    Login
+                  </Button>
+                </span>
+                <Separator />
+                <span>
+                  <Button
+                    onClick={() => navigateHandler("#")}
+                    className="w-full bg-[#ec5228] hover:bg-[#d44920] text-white border-none shadow-none"
+                  >
+                    Request a Call Back
+                  </Button>
+                </span>
+              </nav>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </nav>

@@ -68,6 +68,36 @@ main {
   gap: 2rem;
 }
 
+/* Desktop and Mobile visibility classes */
+.desktop-only {
+  display: flex;
+}
+
+.mobile-only {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none;
+  }
+
+  .mobile-only {
+    display: block;
+  }
+}
+
+[data-radix-popper-content-wrapper] {
+  z-index: 1001 !important;
+}
+
+[role="dialog"] {
+  z-index: 1001 !important;
+}
+
+.sheet-overlay {
+  z-index: 1001 !important;
+}
 .nav-link {
   color: #000080;
   text-decoration: none;

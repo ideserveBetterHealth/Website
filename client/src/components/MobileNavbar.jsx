@@ -1,9 +1,7 @@
 import {
   Sheet,
-  SheetClose,
   SheetContent,
   SheetDescription,
-  SheetFooter,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -37,7 +35,7 @@ function MobileNavbar({ role }) {
       navigate("/login");
       setOpen(false);
     }
-  }, [isSuccess]);
+  }, [isSuccess, data, navigate]);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -65,7 +63,7 @@ function MobileNavbar({ role }) {
         <nav className="flex flex-col space-y-4">
           <span>
             <Button
-              onClick={() => navigateHandler("/")}
+              onClick={() => navigateHandler("/dashboard")}
               variant="outline"
               className="w-full border-none shadow-none"
             >
@@ -74,7 +72,7 @@ function MobileNavbar({ role }) {
           </span>
           <Separator />
 
-          {(role === "doctor" || role === "admin") && (
+          {role === "doctor" && (
             <>
               <span>
                 <Button
@@ -86,11 +84,6 @@ function MobileNavbar({ role }) {
                 </Button>
               </span>
               <Separator />
-            </>
-          )}
-
-          {role === "doctor" && (
-            <>
               <span>
                 <Button
                   onClick={() => navigateHandler("/details")}
@@ -112,7 +105,17 @@ function MobileNavbar({ role }) {
                   variant="outline"
                   className="w-full border-none shadow-none"
                 >
-                  Register
+                  Create Accounts
+                </Button>
+              </span>
+              <Separator />
+              <span>
+                <Button
+                  onClick={() => navigateHandler("/admin/create-meeting")}
+                  variant="outline"
+                  className="w-full border-none shadow-none"
+                >
+                  Schedule Meetings
                 </Button>
               </span>
               <Separator />
@@ -122,7 +125,37 @@ function MobileNavbar({ role }) {
                   variant="outline"
                   className="w-full border-none shadow-none"
                 >
-                  Verify Documents
+                  Pending Verifications
+                </Button>
+              </span>
+              <Separator />
+              <span>
+                <Button
+                  onClick={() => navigateHandler("/admin/verified-doctors")}
+                  variant="outline"
+                  className="w-full border-none shadow-none"
+                >
+                  Verified Doctors
+                </Button>
+              </span>
+              <Separator />
+              <span>
+                <Button
+                  onClick={() => navigateHandler("/admin/create-coupons")}
+                  variant="outline"
+                  className="w-full border-none shadow-none"
+                >
+                  Create Coupons
+                </Button>
+              </span>
+              <Separator />
+              <span>
+                <Button
+                  onClick={() => navigateHandler("/admin/all-coupons")}
+                  variant="outline"
+                  className="w-full border-none shadow-none"
+                >
+                  Manage Coupons
                 </Button>
               </span>
               <Separator />

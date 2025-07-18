@@ -181,7 +181,7 @@ function Navbar() {
         <div className="flex gap-1 items-center">
           <div
             className="flex gap-1 items-center"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/dashboard")}
           >
             <p className="font-bold text-blue-900">BetterHealth</p>
           </div>

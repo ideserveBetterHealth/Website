@@ -9,7 +9,9 @@ const FinancialAid = () => {
       <section className="section hero-section financial-hero">
         <div className="container">
           <div className="hero-content">
-            <h1 className="section-title">Apply for Financial Aid at Better Health</h1>
+            <h1 className="section-title">
+              Apply for Financial Aid at Better Health
+            </h1>
             <p className="section-subtitle">
               We believe quality healthcare should be accessible to everyone.
               Our comprehensive financial assistance programs are designed to
@@ -51,7 +53,10 @@ const FinancialAid = () => {
               <div className="process-content">
                 <h3>Gather Information</h3>
                 <p>
-                  Understand your eligibility by reviewing the program criteria. Collect necessary documents like ID proof, income details, academic records, and any supporting materials required for the application.
+                  Understand your eligibility by reviewing the program criteria.
+                  Collect necessary documents like ID proof, income details,
+                  academic records, and any supporting materials required for
+                  the application.
                 </p>
               </div>
             </div>
@@ -60,7 +65,10 @@ const FinancialAid = () => {
               <div className="process-icon">2</div>
               <div className="process-content">
                 <h3>Submit Application</h3>
-                <p>Complete the online application form with accurate details. Upload the required documents and double-check all entries before submitting to avoid delays in processing.
+                <p>
+                  Complete the online application form with accurate details.
+                  Upload the required documents and double-check all entries
+                  before submitting to avoid delays in processing.
                   <br />
                   <br />
                 </p>
@@ -71,7 +79,12 @@ const FinancialAid = () => {
               <div className="process-icon">3</div>
               <div className="process-content">
                 <h3>Get Approved</h3>
-                <p>Our team will review your application and documents within 24 hours. Once approved, you will receive a confirmation call with further steps and instructions. Stay connected for any update.</p>
+                <p>
+                  Our team will review your application and documents within 24
+                  hours. Once approved, you will receive a confirmation call
+                  with further steps and instructions. Stay connected for any
+                  update.
+                </p>
               </div>
             </div>
           </div>
@@ -85,7 +98,14 @@ const FinancialAid = () => {
             <h2 className="section-title">Ready to Get Started?</h2>
             <p>Take the first step towards affordable healthcare</p>
             <div className="cta-buttons">
-              <button className="primary-btn">Apply Now</button>
+              <a
+                href="https://forms.gle/f8XbQD8QyHr12sw26"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="primary-btn"
+              >
+                Apply Now
+              </a>
             </div>
             <p className="help-text">
               Need help with your application?{" "}

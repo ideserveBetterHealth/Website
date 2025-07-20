@@ -46,7 +46,14 @@ export function LandingPageNavbar() {
           <Link to="/login" className="nav-link">
             Login
           </Link>
-          <Link className="cta-btn">Request a Call Back</Link>
+          <a
+            href="https://calendar.app.google/qujMmj8A5HsCNCJT8"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cta-btn"
+          >
+            Request a Call Back
+          </a>
         </div>
 
         {/* Mobile Navigation using shadcn UI */}
@@ -72,39 +79,41 @@ export function LandingPageNavbar() {
                   <Button
                     onClick={() => navigateHandler("/")}
                     variant="outline"
-                    className="w-full border-none shadow-none"
+                    className="w-full bg-[#fffae3] hover:bg-[#f0f4ff] text-[#000080] font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md border-2 border-[#000080]"
                   >
                     Home
                   </Button>
                 </span>
-                <Separator />
                 <span>
                   <Button
                     onClick={() => navigateHandler("/services")}
                     variant="outline"
-                    className="w-full border-none shadow-none"
+                    className="w-full bg-[#fffae3] hover:bg-[#f0f4ff] text-[#000080] font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md border-2 border-[#000080]"
                   >
                     Services
                   </Button>
                 </span>
-                <Separator />
                 <span>
                   <Button
                     onClick={() => navigateHandler("/login")}
                     variant="outline"
-                    className="w-full border-none shadow-none"
+                    className="w-full bg-[#fffae3] hover:bg-[#f0f4ff] text-[#000080] font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md border-2 border-[#000080]"
                   >
                     Login
                   </Button>
                 </span>
-                <Separator />
                 <span>
-                  <Button
-                    onClick={() => navigateHandler("#")}
-                    className="w-full bg-[#ec5228] hover:bg-[#d44920] text-white border-none shadow-none"
+                  <a
+                    href="https://calendar.app.google/qujMmj8A5HsCNCJT8"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full"
+                    onClick={() => setIsMenuOpen(false)}
                   >
-                    Request a Call Back
-                  </Button>
+                    <Button className="w-full bg-[#ec5228] hover:bg-[#d44920] text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-none">
+                      Request a Call Back
+                    </Button>
+                  </a>
                 </span>
               </nav>
             </SheetContent>

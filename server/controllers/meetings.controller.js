@@ -239,15 +239,19 @@ export const meetingJoinedAt = async (req, res) => {
       return res.status(404).json({ message: "Meeting not found." });
     }
 
-    // Check if the meeting time has arrived
-    const now = new Date();
-    const meetingDate = new Date(meeting.meetingDate);
+    // Get current time in IST (UTC+5:30)
+    const now = moment().utcOffset("+05:30");
 
-    // Convert meetingTime (e.g. "10:00 AM") to hours and minutes
+    // Extract just the date part from meetingDate and convert to IST
+    const meetingDateOnly = moment(meeting.meetingDate)
+      .utcOffset("+05:30")
+      .startOf("day");
+
+    // Parse the meetingTime string
     const [timePart, ampm] = meeting.meetingTime.split(" ");
     const [hours, minutes] = timePart.split(":").map(Number);
 
-    // Adjust hours for PM
+    // Convert to 24-hour format
     const adjustedHours =
       ampm.toLowerCase() === "pm" && hours !== 12
         ? hours + 12
@@ -255,23 +259,40 @@ export const meetingJoinedAt = async (req, res) => {
         ? 0
         : hours;
 
-    // Create a new Date object with the meeting date and time
-    const meetingDateTime = new Date(meetingDate);
-    meetingDateTime.setHours(adjustedHours, minutes, 0, 0);
+    // Combine date and time to create the full meeting datetime in IST
+    const meetingDateTime = meetingDateOnly
+      .clone()
+      .hour(adjustedHours)
+      .minute(minutes)
+      .second(0)
+      .millisecond(0);
 
     // Allow joining 5 minutes before the scheduled time
-    const joinWindow = new Date(meetingDateTime);
-    joinWindow.setMinutes(joinWindow.getMinutes() - 5);
+    const joinWindow = meetingDateTime.clone().subtract(5, "minutes");
+
+    // Debug logging for timezone issues
+    console.log("Meeting Join Debug:", {
+      meetingId,
+      userEmail,
+      role,
+      currentTimeIST: now.format("YYYY-MM-DD HH:mm:ss"),
+      meetingDateFromDB: meeting.meetingDate,
+      meetingTimeFromDB: meeting.meetingTime,
+      calculatedMeetingDateTime: meetingDateTime.format("YYYY-MM-DD HH:mm:ss"),
+      joinWindowIST: joinWindow.format("YYYY-MM-DD HH:mm:ss"),
+      canJoinNow: now.isAfter(joinWindow),
+      minutesUntilJoin: joinWindow.diff(now, "minutes"),
+    });
 
     // Check if current time is before the join window
-    if (now < joinWindow) {
-      const timeUntilMeeting = joinWindow - now;
-      const minutesUntilMeeting = Math.ceil(timeUntilMeeting / (1000 * 60));
+    if (now.isBefore(joinWindow)) {
+      const minutesUntilMeeting = joinWindow.diff(now, "minutes");
 
       return res.status(403).json({
         message: `Meeting has not started yet. You can join ${minutesUntilMeeting} minutes before the scheduled time.`,
-        scheduledTime: meetingDateTime,
-        joinWindow: joinWindow,
+        scheduledTime: meetingDateTime.format("YYYY-MM-DD HH:mm:ss") + " IST",
+        joinWindow: joinWindow.format("YYYY-MM-DD HH:mm:ss") + " IST",
+        currentTime: now.format("YYYY-MM-DD HH:mm:ss") + " IST",
       });
     }
 
@@ -301,13 +322,13 @@ export const meetingJoinedAt = async (req, res) => {
       });
     }
 
-    // Record join time
-    const joinedAt = new Date();
+    // Record join time in IST but store as UTC
+    const joinedAt = moment().utc().toISOString();
 
     if (role === "user") {
-      meeting.userJoinedAt = joinedAt.toISOString();
+      meeting.userJoinedAt = joinedAt;
     } else if (role === "doctor") {
-      meeting.docJoinedAt = joinedAt.toISOString();
+      meeting.docJoinedAt = joinedAt;
     }
 
     await meeting.save();

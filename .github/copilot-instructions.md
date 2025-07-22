@@ -1,3 +1,0 @@
-<!-- Use this file to provide workspace-specific custom instructions to Copilot. For more details, visit https://code.visualstudio.com/docs/copilot/copilot-customization#_use-a-githubcopilotinstructionsmd-file -->
-
-This project is a modern, elegant, and responsive React + Vite website for Better Health. Use #fffae3 and white as alternating section backgrounds, #000080 for headings, and #ec5228 for CTA buttons and design elements. The navbar is white with the specified layout. Pages include Home, Our Services, Mental Health Counselling, Cosmetologist Appointment, About Us, Login, Dashboard, Privacy Policy, Terms and Conditions, and Financial Aid. Follow best practices for accessibility and responsiveness.

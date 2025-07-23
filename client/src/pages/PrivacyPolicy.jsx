@@ -1,5 +1,4 @@
 import React from "react";
-import "../styles/TermsPrivacy.css";
 
 const PrivacyPolicy = () => {
   const scrollToSection = (id) => {
@@ -34,19 +33,20 @@ const PrivacyPolicy = () => {
   ];
 
   return (
-    <div className="terms-page">
-      <div className="terms-container">
-        <div className="terms-sidebar">
-          <div className="terms-nav">
-            <ul>
+    <div className="font-sans text-gray-600 leading-relaxed my-8 p-0 bg-[#fffae3] min-h-screen">
+      <div className="flex w-full max-w-7xl mx-auto px-5 flex-col lg:flex-row">
+        <div className="w-full lg:w-1/4 lg:max-w-xs lg:pr-8 mb-5 lg:mb-0">
+          <div className="nav">
+            <ul className="list-none p-0 m-0 lg:sticky lg:top-5">
               {sections.map((section, index) => (
-                <li key={section.id}>
+                <li key={section.id} className="py-2">
                   <a
                     href={`#${section.id}`}
-                    onClick={e => {
+                    onClick={(e) => {
                       e.preventDefault();
                       scrollToSection(section.id);
                     }}
+                    className="no-underline text-[#000080] text-base block py-1.5 font-semibold transition-colors duration-200 hover:underline hover:text-[#000080]"
                   >
                     {index + 1}. {section.title}
                   </a>
@@ -55,11 +55,12 @@ const PrivacyPolicy = () => {
             </ul>
           </div>
         </div>
-        <div className="terms-content">
-          <div className="terms-header">
-            <h1>Privacy Policy</h1>
+        <div className="w-full lg:w-3/4">
+          <div className="bg-white rounded-lg shadow-md p-8 mb-8">
+            <h1 className="text-[#000080] text-4xl font-bold mb-8 text-center">
+              Privacy Policy
+            </h1>
           </div>
-          {/* Table of Contents Card (hidden, since sidebar is used) */}
           {/* Content Sections */}
           <div className="max-w-4xl mx-auto space-y-8">
             {/* Each section is styled consistently with a white background, rounded corners, and shadow */}
@@ -67,7 +68,7 @@ const PrivacyPolicy = () => {
               <section
                 key={section.id}
                 id={section.id}
-                className="bg-white rounded-lg shadow-lg p-8 terms-section"
+                className="bg-white rounded-lg shadow-lg p-8"
               >
                 <h2 className="text-2xl font-bold text-[#000080] mb-6">
                   {section.title}
@@ -78,18 +79,19 @@ const PrivacyPolicy = () => {
                     <>
                       <p>
                         At ElevateBiz Group, operating under the name Better
-                        Health, we deeply value your privacy and are committed to
-                        protecting your personal data. This Privacy Policy
+                        Health, we deeply value your privacy and are committed
+                        to protecting your personal data. This Privacy Policy
                         explains how we collect, use, store, share, and protect
-                        the personal information of users accessing our platform,
-                        which includes our website
+                        the personal information of users accessing our
+                        platform, which includes our website
                         https://ideservebetterhealth.in, social media pages,
                         consultation services, and other associated online tools
-                        and features (referred to collectively as the "Platform").
+                        and features (referred to collectively as the
+                        "Platform").
                       </p>
                       <p>
-                        Better Health provides online wellness services, including
-                        but not limited to:
+                        Better Health provides online wellness services,
+                        including but not limited to:
                       </p>
                       <ul className="list-disc pl-6 space-y-2">
                         <li>Mental health counselling</li>
@@ -98,7 +100,9 @@ const PrivacyPolicy = () => {
                           Future integrations such as Ayurveda and Homeopathy
                         </li>
                       </ul>
-                      <p>This Privacy Policy outlines our practices regarding:</p>
+                      <p>
+                        This Privacy Policy outlines our practices regarding:
+                      </p>
                       <ul className="list-disc pl-6 space-y-2">
                         <li>What personal data we collect</li>
                         <li>Why and how we use it</li>
@@ -131,7 +135,8 @@ const PrivacyPolicy = () => {
                           </h3>
                           <p>
                             Any information that can be used to identify a user
-                            directly or indirectly, including but not limited to:
+                            directly or indirectly, including but not limited
+                            to:
                           </p>
                           <ul className="list-disc pl-6 space-y-2 mt-2">
                             <li>Full name</li>
@@ -159,8 +164,8 @@ const PrivacyPolicy = () => {
                       </p>
                       <ul className="list-disc pl-6 space-y-2">
                         <li>
-                          Personal identification information (Name, email, phone
-                          number, etc.)
+                          Personal identification information (Name, email,
+                          phone number, etc.)
                         </li>
                         <li>
                           Demographic information (Age, gender, location, etc.)
@@ -171,7 +176,8 @@ const PrivacyPolicy = () => {
                       </ul>
                       <p>
                         We may also collect information about your usage of our
-                        services and your interactions with us, which may include:
+                        services and your interactions with us, which may
+                        include:
                       </p>
                       <ul className="list-disc pl-6 space-y-2">
                         <li>Session recordings and transcripts</li>
@@ -189,12 +195,13 @@ const PrivacyPolicy = () => {
                       <p>We use your information for the following purposes:</p>
                       <ul className="list-disc pl-6 space-y-2">
                         <li>
-                          To provide and manage our services, including processing
-                          your bookings and payments
+                          To provide and manage our services, including
+                          processing your bookings and payments
                         </li>
                         <li>
                           To communicate with you, including sending
-                          service-related notifications and promotional materials
+                          service-related notifications and promotional
+                          materials
                         </li>
                         <li>
                           To improve our services, including conducting research
@@ -247,10 +254,10 @@ const PrivacyPolicy = () => {
                   {section.id === "data-retention" && (
                     <>
                       <p>
-                        We retain your personal data only for as long as necessary
-                        to fulfill the purposes for which it was collected, or as
-                        required by law. Criteria used to determine retention
-                        periods include:
+                        We retain your personal data only for as long as
+                        necessary to fulfill the purposes for which it was
+                        collected, or as required by law. Criteria used to
+                        determine retention periods include:
                       </p>
                       <ul className="list-disc pl-6 space-y-2">
                         <li>
@@ -267,8 +274,8 @@ const PrivacyPolicy = () => {
                   {section.id === "data-sharing" && (
                     <>
                       <p>
-                        We may share your personal data with third parties in the
-                        following situations:
+                        We may share your personal data with third parties in
+                        the following situations:
                       </p>
                       <ul className="list-disc pl-6 space-y-2">
                         <li>
@@ -284,8 +291,8 @@ const PrivacyPolicy = () => {
                           otherwise required by law
                         </li>
                         <li>
-                          In connection with a merger, acquisition, or sale of all
-                          or a portion of our assets
+                          In connection with a merger, acquisition, or sale of
+                          all or a portion of our assets
                         </li>
                       </ul>
                     </>
@@ -308,8 +315,8 @@ const PrivacyPolicy = () => {
                         </li>
                         <li>The right to data portability</li>
                         <li>
-                          The right to withdraw consent at any time, where we rely
-                          on your consent to process your personal data
+                          The right to withdraw consent at any time, where we
+                          rely on your consent to process your personal data
                         </li>
                       </ul>
                       <p>
@@ -322,9 +329,9 @@ const PrivacyPolicy = () => {
                   {section.id === "childrens-privacy" && (
                     <>
                       <p>
-                        Our services are not directed to children under the age of
-                        13, and we do not knowingly collect personal data from
-                        children under 13. If we become aware that we have
+                        Our services are not directed to children under the age
+                        of 13, and we do not knowingly collect personal data
+                        from children under 13. If we become aware that we have
                         collected personal data from a child under 13, we will
                         take steps to delete such data.
                       </p>
@@ -334,13 +341,13 @@ const PrivacyPolicy = () => {
                   {section.id === "third-party" && (
                     <>
                       <p>
-                        Our Platform may contain links to third-party websites or
-                        services that are not owned or controlled by us. This
-                        Privacy Policy does not apply to such third-party websites
-                        or services, and we are not responsible for their content
-                        or privacy practices. We encourage you to review the
-                        privacy policies of any third-party websites or services
-                        that you visit.
+                        Our Platform may contain links to third-party websites
+                        or services that are not owned or controlled by us. This
+                        Privacy Policy does not apply to such third-party
+                        websites or services, and we are not responsible for
+                        their content or privacy practices. We encourage you to
+                        review the privacy policies of any third-party websites
+                        or services that you visit.
                       </p>
                     </>
                   )}
@@ -349,11 +356,12 @@ const PrivacyPolicy = () => {
                     <>
                       <p>
                         We use cookies and similar tracking technologies to
-                        enhance your experience on our Platform, analyze traffic,
-                        and personalize content and ads. You can control the use
-                        of cookies at the individual browser level, but if you
-                        choose to disable cookies, it may limit your ability to
-                        use certain features or functions of our Platform.
+                        enhance your experience on our Platform, analyze
+                        traffic, and personalize content and ads. You can
+                        control the use of cookies at the individual browser
+                        level, but if you choose to disable cookies, it may
+                        limit your ability to use certain features or functions
+                        of our Platform.
                       </p>
                     </>
                   )}
@@ -361,13 +369,13 @@ const PrivacyPolicy = () => {
                   {section.id === "data-transfers" && (
                     <>
                       <p>
-                        Your personal data may be transferred to and processed in
-                        countries outside of your own, including countries that
-                        may not provide the same level of data protection as your
-                        home country. In such cases, we will ensure that
+                        Your personal data may be transferred to and processed
+                        in countries outside of your own, including countries
+                        that may not provide the same level of data protection
+                        as your home country. In such cases, we will ensure that
                         appropriate safeguards are in place to protect your
-                        personal data, in accordance with this Privacy Policy and
-                        applicable laws.
+                        personal data, in accordance with this Privacy Policy
+                        and applicable laws.
                       </p>
                     </>
                   )}
@@ -376,13 +384,14 @@ const PrivacyPolicy = () => {
                     <>
                       <p>
                         We may update this Privacy Policy from time to time to
-                        reflect changes in our practices or for other operational,
-                        legal, or regulatory reasons. We will notify you of any
-                        material changes by posting the new Privacy Policy on our
-                        Platform and updating the "effective date" at the top of
-                        this Policy. Your continued use of our services or access
-                        to the Platform after such changes constitutes your
-                        acceptance of the new Privacy Policy.
+                        reflect changes in our practices or for other
+                        operational, legal, or regulatory reasons. We will
+                        notify you of any material changes by posting the new
+                        Privacy Policy on our Platform and updating the
+                        "effective date" at the top of this Policy. Your
+                        continued use of our services or access to the Platform
+                        after such changes constitutes your acceptance of the
+                        new Privacy Policy.
                       </p>
                     </>
                   )}
@@ -407,27 +416,64 @@ const PrivacyPolicy = () => {
         </div>
       </div>
       {/* Floating navigation buttons */}
-      <div className="floating-nav-buttons">
+      <div className="fixed bottom-8 right-8 flex flex-col space-y-3 z-50">
         <button
-          className="floating-btn"
+          className="bg-[#ec5228] text-white w-12 h-12 rounded-full shadow-lg hover:bg-opacity-80 transition-all duration-200 flex items-center justify-center"
           title="Go to Top"
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         >
           {/* Up arrow SVG */}
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 4L12 20" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
-            <path d="M6 10L12 4L18 10" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M12 4L12 20"
+              stroke="#fff"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+            <path
+              d="M6 10L12 4L18 10"
+              stroke="#fff"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
           </svg>
         </button>
         <button
-          className="floating-btn"
+          className="bg-[#ec5228] text-white w-12 h-12 rounded-full shadow-lg hover:bg-opacity-80 transition-all duration-200 flex items-center justify-center"
           title="Go to Bottom"
-          onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}
+          onClick={() =>
+            window.scrollTo({
+              top: document.body.scrollHeight,
+              behavior: "smooth",
+            })
+          }
         >
           {/* Down arrow SVG */}
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 20L12 4" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
-            <path d="M18 14L12 20L6 14" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M12 20L12 4"
+              stroke="#fff"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+            <path
+              d="M18 14L12 20L6 14"
+              stroke="#fff"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
           </svg>
         </button>
       </div>

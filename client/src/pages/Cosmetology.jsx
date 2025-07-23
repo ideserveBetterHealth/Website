@@ -49,28 +49,31 @@ const Cosmetology = () => {
   };
 
   return (
-    <div className="page">
+    <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="section section-bg-1 hero-section">
-        <div className="container">
+      <section
+        className="py-16 px-6 sm:py-20 sm:px-6 lg:px-8 relative overflow-hidden animate-fade-in-up"
+        style={{ backgroundColor: "#fffae3" }}
+      >
+        <div className="max-w-7xl mx-auto relative z-10">
           <div className="flex flex-col lg:flex-row lg:items-center lg:gap-12">
             {/* Content on left for desktop */}
-            <div className="hero-content text-center lg:text-left lg:w-1/2 order-2 lg:order-1">
-              <h1 className="section-title">
+            <div className="text-center lg:text-left lg:w-1/2 order-2 lg:order-1 animate-fade-in-left animation-delay-200 px-4 sm:px-0">
+              <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-[#000080] mb-6 lg:mb-8 hover:text-[#ec5228] transition-colors duration-300">
                 Professional Cosmetology Services
               </h1>
-              <p className="section-subtitle">
+              <p className="text-lg lg:text-xl text-gray-700 leading-relaxed animate-fade-in-up animation-delay-400">
                 Experience personalized skincare consultations with our expert
                 cosmetologists. Get professional guidance for achieving your
                 best skin health.
               </p>
             </div>
             {/* Image on right for desktop */}
-            <div className="hero-image mb-8 lg:mb-0 lg:w-1/2 order-1 lg:order-2">
+            <div className="mb-8 lg:mb-0 lg:w-1/2 order-1 lg:order-2 animate-fade-in-right animation-delay-600 px-4 sm:px-0">
               <img
                 src="https://skinstudio.ee/wp-content/uploads/2024/01/konsultatsioon-1.jpg"
                 alt="Cosmetology Consultation"
-                className="rounded-lg shadow-xl w-full max-w-2xl mx-auto lg:max-w-none"
+                className="rounded-lg shadow-xl w-full max-w-2xl mx-auto lg:max-w-none hover:shadow-2xl hover:scale-105 transition-all duration-500"
               />
             </div>
           </div>
@@ -78,33 +81,47 @@ const Cosmetology = () => {
       </section>
 
       {/* How to Register Section */}
-      <section className="section section-bg-2">
-        <div className="container">
-          <h2 className="section-title text-center">How to Get Started</h2>
-          <p className="section-subtitle text-center mb-12">
+      <section className="py-16 px-6 sm:py-20 sm:px-6 lg:px-8 bg-white relative overflow-hidden animate-fade-in-up animation-delay-800">
+        <div className="max-w-7xl mx-auto relative z-10">
+          <h2 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-[#000080] mb-6 lg:mb-8 text-center animate-fade-in-up animation-delay-1000">
+            How to Get Started
+          </h2>
+          <p className="text-lg lg:text-xl text-gray-700 text-center mb-12 animate-fade-in-up animation-delay-1200 px-4 sm:px-0 max-w-3xl mx-auto">
             Begin your journey to healthier, more radiant skin in three simple
             steps
           </p>
-          <div className="registration-steps">
-            <div className="step-card">
-              <div className="step-number">1</div>
-              <h3 className="heading-3">Choose Your Service</h3>
-              <p className="body-text">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+            <div className="bg-white p-6 lg:p-8 rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 animate-fade-in-up animation-delay-1400 max-w-xs mx-auto md:max-w-none">
+              <div className="w-12 h-12 bg-[#ec5228] rounded-full flex items-center justify-center mb-4 mx-auto text-white text-xl font-bold transition-transform duration-300 hover:scale-110 hover:rotate-12">
+                1
+              </div>
+              <h3 className="text-xl lg:text-2xl font-bold text-[#000080] text-center mb-4 hover:text-[#ec5228] transition-colors duration-300">
+                Choose Your Service
+              </h3>
+              <p className="text-gray-700 text-center leading-relaxed">
                 Select between a single consultation or our comprehensive
                 skincare package
               </p>
             </div>
-            <div className="step-card">
-              <div className="step-number">2</div>
-              <h3 className="heading-3">Book Appointment</h3>
-              <p className="body-text">
+            <div className="bg-white p-6 lg:p-8 rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 animate-fade-in-up animation-delay-1600 max-w-xs mx-auto md:max-w-none">
+              <div className="w-12 h-12 bg-[#ec5228] rounded-full flex items-center justify-center mb-4 mx-auto text-white text-xl font-bold transition-transform duration-300 hover:scale-110 hover:rotate-12">
+                2
+              </div>
+              <h3 className="text-xl lg:text-2xl font-bold text-[#000080] text-center mb-4 hover:text-[#ec5228] transition-colors duration-300">
+                Book Appointment
+              </h3>
+              <p className="text-gray-700 text-center leading-relaxed">
                 Schedule a convenient time for your consultation with our expert
               </p>
             </div>
-            <div className="step-card">
-              <div className="step-number">3</div>
-              <h3 className="heading-3">Complete Assessment</h3>
-              <p className="body-text">
+            <div className="bg-white p-6 lg:p-8 rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 animate-fade-in-up animation-delay-1800 max-w-xs mx-auto md:max-w-none">
+              <div className="w-12 h-12 bg-[#ec5228] rounded-full flex items-center justify-center mb-4 mx-auto text-white text-xl font-bold transition-transform duration-300 hover:scale-110 hover:rotate-12">
+                3
+              </div>
+              <h3 className="text-xl lg:text-2xl font-bold text-[#000080] text-center mb-4 hover:text-[#ec5228] transition-colors duration-300">
+                Complete Assessment
+              </h3>
+              <p className="text-gray-700 text-center leading-relaxed">
                 Fill out our skin assessment form to help us understand your
                 needs better
               </p>
@@ -114,28 +131,37 @@ const Cosmetology = () => {
       </section>
 
       {/* Pricing Section */}
-      <section className="section section-bg-1">
-        <div className="container">
-          <h2 className="section-title text-center">Our Packages</h2>
-          <p className="section-subtitle text-center mb-12">
+      <section
+        className="py-16 px-6 sm:py-20 sm:px-6 lg:px-8 relative overflow-hidden animate-fade-in-up animation-delay-2000"
+        style={{ backgroundColor: "#fffae3" }}
+      >
+        <div className="max-w-7xl mx-auto relative z-10">
+          <h2 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-[#000080] mb-6 lg:mb-8 text-center animate-fade-in-up animation-delay-2200">
+            Our Packages
+          </h2>
+          <p className="text-lg lg:text-xl text-gray-700 text-center mb-12 animate-fade-in-up animation-delay-2400 px-4 sm:px-0 max-w-3xl mx-auto">
             Choose the consultation package that suits your skincare needs
           </p>
-          <div className="pricing-cards">
-            <div className="pricing-card">
-              <div className="pricing-header">
-                <h3 className="pricing-title">Single Consultation</h3>
-                <div className="pricing-amount">
-                  <span className="final-price">₹250</span>
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 justify-center items-center lg:items-stretch max-w-4xl mx-auto">
+            <div className="bg-white rounded-xl p-6 lg:p-8 shadow-lg border border-gray-100 hover:shadow-2xl transition-all duration-500 transform hover:scale-105 animate-fade-in-left animation-delay-2600 w-full max-w-md min-h-[480px] flex flex-col">
+              <div className="mb-6">
+                <h3 className="text-2xl lg:text-3xl font-bold text-[#000080] text-center mb-4 hover:text-[#ec5228] transition-colors duration-300">
+                  Single Consultation
+                </h3>
+                <div className="text-center">
+                  <span className="text-4xl lg:text-5xl font-bold text-[#000080] transition-transform duration-300 hover:scale-110">
+                    ₹250
+                  </span>
                 </div>
               </div>
-              <div className="pricing-features">
-                <p>
+              <div className="mb-8 flex-1 flex items-center">
+                <p className="text-gray-700 text-center leading-relaxed">
                   One comprehensive 30-minute consultation with skin analysis,
                   personalized routine planning, and product recommendations.
                 </p>
               </div>
               <Link
-                className="cta-btn"
+                className="block w-full bg-[#ec5228] text-white text-center py-3 px-6 rounded-lg font-semibold hover:bg-[#d14a22] hover:scale-110 hover:-translate-y-1 transition-all duration-300 shadow-lg"
                 to={"/make-payment/cosmetologist-consultancy/single"}
               >
                 <button className="w-full text-center">
@@ -143,23 +169,31 @@ const Cosmetology = () => {
                 </button>
               </Link>
             </div>
-            <div className="pricing-card recommended">
-              <div className="best-value">Best Value</div>
-              <div className="pricing-header">
-                <h3 className="pricing-title">Complete Skin Journey</h3>
-                <div className="pricing-amount">
-                  <span className="original-price">₹750</span>
-                  <span className="final-price">₹500</span>
+            <div className="bg-white rounded-xl p-6 lg:p-8 shadow-lg border-2 border-[#ec5228] hover:shadow-2xl transition-all duration-500 transform hover:scale-105 animate-fade-in-right animation-delay-2800 w-full max-w-md relative min-h-[480px] flex flex-col">
+              <div className="absolute -top-3 -right-3 bg-[#ec5228] text-white px-4 py-2 rounded-full text-sm font-semibold animate-pulse">
+                Best Value
+              </div>
+              <div className="mb-6">
+                <h3 className="text-2xl lg:text-3xl font-bold text-[#000080] text-center mb-4 hover:text-[#ec5228] transition-colors duration-300">
+                  Complete Skin Journey
+                </h3>
+                <div className="text-center">
+                  <span className="text-lg text-gray-500 line-through block">
+                    ₹750
+                  </span>
+                  <span className="text-4xl lg:text-5xl font-bold text-[#000080] transition-transform duration-300 hover:scale-110">
+                    ₹500
+                  </span>
                 </div>
               </div>
-              <div className="pricing-features">
-                <p>
+              <div className="mb-8 flex-1 flex items-center">
+                <p className="text-gray-700 text-center leading-relaxed">
                   Initial consultation plus two follow-up sessions to track
                   progress and adjust your skincare routine for optimal results.
                 </p>
               </div>
               <Link
-                className="cta-btn"
+                className="block w-full bg-[#ec5228] text-white text-center py-3 px-6 rounded-lg font-semibold hover:bg-[#d14a22] hover:scale-110 hover:-translate-y-1 transition-all duration-300 shadow-lg"
                 to={"/make-payment/cosmetologist-consultancy/bundle"}
               >
                 <button className="w-full text-center">
@@ -172,18 +206,22 @@ const Cosmetology = () => {
       </section>
 
       {/* FAQ Section */}
-      <section className="section section-bg-2">
-        <div className="container">
-          <h2 className="section-title text-center">
+      <section className="py-16 px-6 sm:py-20 sm:px-6 lg:px-8 bg-white relative overflow-hidden animate-fade-in-up animation-delay-3000">
+        <div className="max-w-7xl mx-auto relative z-10">
+          <h2 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-[#000080] mb-12 text-center animate-fade-in-up animation-delay-3200">
             Frequently Asked Questions
           </h2>
-          <div className="faq-carousel">
-            <button className="faq-nav-btn prev" onClick={prevFaq}>
+          <div className="flex items-center justify-center gap-2 sm:gap-4 max-w-5xl mx-auto animate-fade-in-up animation-delay-3400 px-2 sm:px-0">
+            <button
+              className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-[#ec5228] text-white rounded-full flex items-center justify-center hover:scale-110 hover:shadow-lg transition-all duration-300"
+              onClick={prevFaq}
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
+                className="w-5 h-5 sm:w-6 sm:h-6 transition-transform duration-300 hover:-translate-x-1"
               >
                 <path
                   strokeLinecap="round"
@@ -193,16 +231,28 @@ const Cosmetology = () => {
                 />
               </svg>
             </button>
-            <div className={`faq-item ${isBlinking ? "blink" : ""}`}>
-              <h3>{faqs[currentFaqIndex].question}</h3>
-              <p>{faqs[currentFaqIndex].answer}</p>
+            <div
+              className={`flex-1 bg-white p-4 sm:p-6 lg:p-8 rounded-xl shadow-lg border border-gray-100 min-h-[200px] sm:min-h-[220px] flex flex-col justify-center ${
+                isBlinking ? "opacity-50" : "opacity-100"
+              } hover:shadow-xl transition-all duration-300`}
+            >
+              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#000080] mb-3 sm:mb-4 text-center hover:text-[#ec5228] transition-colors duration-300">
+                {faqs[currentFaqIndex].question}
+              </h3>
+              <p className="text-sm sm:text-base text-gray-700 text-center leading-relaxed">
+                {faqs[currentFaqIndex].answer}
+              </p>
             </div>
-            <button className="faq-nav-btn next" onClick={nextFaq}>
+            <button
+              className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-[#ec5228] text-white rounded-full flex items-center justify-center hover:scale-110 hover:shadow-lg transition-all duration-300"
+              onClick={nextFaq}
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
+                className="w-5 h-5 sm:w-6 sm:h-6 transition-transform duration-300 hover:translate-x-1"
               >
                 <path
                   strokeLinecap="round"
@@ -212,17 +262,17 @@ const Cosmetology = () => {
                 />
               </svg>
             </button>
-            <div className="faq-dots">
-              {faqs.map((_, index) => (
-                <button
-                  key={index}
-                  className={`faq-dot ${
-                    index === currentFaqIndex ? "active" : ""
-                  }`}
-                  onClick={() => changeFaq(index)}
-                ></button>
-              ))}
-            </div>
+          </div>
+          <div className="flex justify-center gap-2 mt-6">
+            {faqs.map((_, index) => (
+              <button
+                key={index}
+                className={`w-3 h-3 rounded-full transition-all duration-300 hover:scale-125 ${
+                  index === currentFaqIndex ? "bg-[#ec5228]" : "bg-gray-300"
+                }`}
+                onClick={() => changeFaq(index)}
+              ></button>
+            ))}
           </div>
         </div>
       </section>

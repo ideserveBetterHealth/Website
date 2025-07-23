@@ -376,7 +376,7 @@ export const userAllMeetings = async (req, res) => {
 
     if (role == "admin") {
       meetings = await Meeting.find({
-        clientId: userId,
+        $or: [{ clientId: userId }, { doctorId: userId }],
       }).sort({
         meetingDate: -1,
         meetingTime: -1,

@@ -96,7 +96,7 @@ const Signup = () => {
               className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#ec5228]"
             >
               <option value="user">User</option>
-              <option value="doctor">Doctor</option>
+              <option value="doctor">Psychologist</option>
               <option value="admin">Admin</option>
             </select>
           </div>

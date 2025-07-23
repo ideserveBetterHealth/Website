@@ -53,20 +53,26 @@ const Cosmetology = () => {
       {/* Hero Section */}
       <section className="section section-bg-1 hero-section">
         <div className="container">
-          <div className="hero-image mb-8">
-            <img
-              src="https://skinstudio.ee/wp-content/uploads/2024/01/konsultatsioon-1.jpg"
-              alt="Cosmetology Consultation"
-              className="rounded-lg shadow-xl w-full max-w-2xl mx-auto"
-            />
-          </div>
-          <div className="hero-content text-center">
-            <h1 className="section-title">Professional Cosmetology Services</h1>
-            <p className="section-subtitle">
-              Experience personalized skincare consultations with our expert
-              cosmetologists. Get professional guidance for achieving your best
-              skin health.
-            </p>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:gap-12">
+            {/* Content on left for desktop */}
+            <div className="hero-content text-center lg:text-left lg:w-1/2 order-2 lg:order-1">
+              <h1 className="section-title">
+                Professional Cosmetology Services
+              </h1>
+              <p className="section-subtitle">
+                Experience personalized skincare consultations with our expert
+                cosmetologists. Get professional guidance for achieving your
+                best skin health.
+              </p>
+            </div>
+            {/* Image on right for desktop */}
+            <div className="hero-image mb-8 lg:mb-0 lg:w-1/2 order-1 lg:order-2">
+              <img
+                src="https://skinstudio.ee/wp-content/uploads/2024/01/konsultatsioon-1.jpg"
+                alt="Cosmetology Consultation"
+                className="rounded-lg shadow-xl w-full max-w-2xl mx-auto lg:max-w-none"
+              />
+            </div>
           </div>
         </div>
       </section>

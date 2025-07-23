@@ -52,19 +52,23 @@ const MentalHealth = () => {
       {/* Hero Section */}
       <section className="section section-bg-1 hero-section">
         <div className="container">
-          <div className="hero-image mb-8">
-            <img
-              src="/mental-health-consultation.png"
-              alt="Mental Health Consultation"
-              className="rounded-lg shadow-xl w-full max-w-2xl mx-auto"
-            />
-          </div>
-          <div className="hero-content text-center">
-            <h1 className="section-title">Mental Health Counselling</h1>
-            <p className="section-subtitle">
-              Your journey to better mental well-being starts here. Connect
-              with our professional therapists who understand and care.
-            </p>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:gap-12">
+            {/* Image on left for desktop */}
+            <div className="hero-image mb-8 lg:mb-0 lg:w-1/2">
+              <img
+                src="/mental-health-consultation.png"
+                alt="Mental Health Consultation"
+                className="rounded-lg shadow-xl w-full max-w-2xl mx-auto lg:max-w-none"
+              />
+            </div>
+            {/* Content on right for desktop */}
+            <div className="hero-content text-center lg:text-left lg:w-1/2">
+              <h1 className="section-title">Mental Health Counselling</h1>
+              <p className="section-subtitle">
+                Your journey to better mental well-being starts here. Connect
+                with our professional therapists who understand and care.
+              </p>
+            </div>
           </div>
         </div>
       </section>{" "}

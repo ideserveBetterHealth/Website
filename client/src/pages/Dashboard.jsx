@@ -349,7 +349,7 @@ const Dashboard = () => {
                   <div className="flex items-center gap-2">
                     <User className="w-4 h-4 text-blue-400" />
                     <span>
-                      <span className="font-semibold">Doctor:</span>{" "}
+                      <span className="font-semibold">Psychologist:</span>{" "}
                       {nextMeeting.doctorName} ({nextMeeting.doctorId})
                     </span>
                   </div>
@@ -375,7 +375,7 @@ const Dashboard = () => {
                     <div className="flex items-center gap-2">
                       <User className="w-4 h-4 text-blue-400" />
                       <span>
-                        <span className="font-semibold">Doctor:</span>{" "}
+                        <span className="font-semibold">Psychologist:</span>{" "}
                         {nextMeeting.doctorName} ({nextMeeting.doctorId})
                       </span>
                     </div>
@@ -448,9 +448,9 @@ const Dashboard = () => {
                     {isAdmin ? (
                       <>
                         <th className="px-6 py-3 border">Client Email</th>
-                        <th className="px-6 py-3 border">Doctor Email</th>
+                        <th className="px-6 py-3 border">Psychologist Email</th>
                         <th className="px-6 py-3 border">User Joined</th>
-                        <th className="px-6 py-3 border">Doctor Joined</th>
+                        <th className="px-6 py-3 border">Psychologist Joined</th>
                       </>
                     ) : (
                       <th className="px-6 py-3 border">
@@ -568,14 +568,14 @@ const Dashboard = () => {
                             Client: {meeting.clientName} ({meeting.clientId})
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            Doctor: {meeting.doctorName} ({meeting.doctorId})
+                            Psychologist: {meeting.doctorName} ({meeting.doctorId})
                           </div>
                           <div className="text-xs text-gray-500 mt-1">
                             User joined:{" "}
                             {formatIndianTime(meeting.userJoinedAt)}
                           </div>
                           <div className="text-xs text-gray-500">
-                            Doctor joined:{" "}
+                            Psychologist joined:{" "}
                             {formatIndianTime(meeting.docJoinedAt)}
                           </div>
                         </>
@@ -585,7 +585,7 @@ const Dashboard = () => {
                         </div>
                       ) : (
                         <div className="text-sm text-muted-foreground">
-                          Doctor: {meeting.doctorName} ({meeting.doctorId})
+                          Psychologist: {meeting.doctorName} ({meeting.doctorId})
                         </div>
                       )}
                     </div>

@@ -25,21 +25,36 @@ export function LandingPageNavbar() {
 
   function navigateHandler(path) {
     setIsMenuOpen(false);
-    window.location.href = path;
+    if (path === "/") {
+      handleBrandClick({ preventDefault: () => {} });
+    } else {
+      window.location.href = path;
+    }
+  }
+
+  function handleBrandClick(e) {
+    e.preventDefault();
+    if (location.pathname === "/") {
+      // If already on home page, scroll to top
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      // If on different page, navigate to home and then scroll to top
+      window.location.href = "/";
+    }
   }
 
   return (
     <nav className="navbar">
       <div className="container">
-        <Link to="/" className="navbar-brand">
+        <a href="/" onClick={handleBrandClick} className="navbar-brand">
           Better Health
-        </Link>
+        </a>
 
         {/* Desktop Navigation */}
         <div className="navbar-links desktop-only">
-          <Link to="/" className="nav-link">
+          <a href="/" onClick={handleBrandClick} className="nav-link">
             Home
-          </Link>
+          </a>
           <Link to="/services" className="nav-link">
             Services
           </Link>
@@ -68,18 +83,20 @@ export function LandingPageNavbar() {
                 <Menu className="text-black dark:text-white" />
               </Button>
             </SheetTrigger>
-            <SheetContent className="flex flex-col z-[1001]">
+            <SheetContent className="flex flex-col z-[1001] bg-[#fffae3]">
               <SheetHeader className="flex flex-row items-center justify-between mt-5">
-                <SheetTitle>Better Health</SheetTitle>
+                <SheetTitle className="text-[#000080]">
+                  Better Health
+                </SheetTitle>
                 <SheetDescription></SheetDescription>
               </SheetHeader>
-              <Separator />
+              <Separator className="bg-[#000080]/20" />
               <nav className="flex flex-col space-y-4">
                 <span>
                   <Button
                     onClick={() => navigateHandler("/")}
                     variant="outline"
-                    className="w-full bg-[#fffae3] hover:bg-[#f0f4ff] text-[#000080] font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md border-2 border-[#000080]"
+                    className="w-full bg-white hover:bg-gray-50 text-[#000080] font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg border border-[#000080]/30"
                   >
                     Home
                   </Button>
@@ -88,7 +105,7 @@ export function LandingPageNavbar() {
                   <Button
                     onClick={() => navigateHandler("/services")}
                     variant="outline"
-                    className="w-full bg-[#fffae3] hover:bg-[#f0f4ff] text-[#000080] font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md border-2 border-[#000080]"
+                    className="w-full bg-white hover:bg-gray-50 text-[#000080] font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg border border-[#000080]/30"
                   >
                     Services
                   </Button>
@@ -97,7 +114,7 @@ export function LandingPageNavbar() {
                   <Button
                     onClick={() => navigateHandler("/login")}
                     variant="outline"
-                    className="w-full bg-[#fffae3] hover:bg-[#f0f4ff] text-[#000080] font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md border-2 border-[#000080]"
+                    className="w-full bg-white hover:bg-gray-50 text-[#000080] font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg border border-[#000080]/30"
                   >
                     Login
                   </Button>

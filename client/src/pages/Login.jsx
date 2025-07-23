@@ -57,6 +57,20 @@ export function Login() {
     await loginUser(loginInput);
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !loginIsLoading) {
+      e.preventDefault();
+
+      // If cursor is in email field and password is empty, move to password field
+      if (e.target.name === "email" && !loginInput.password) {
+        document.getElementById("password").focus();
+      } else {
+        // Otherwise, trigger login
+        handleAuth();
+      }
+    }
+  };
+
   useEffect(() => {
     if (loginIsSuccess && loginData) {
       toast.success(loginData?.message || "Login Success");
@@ -78,16 +92,16 @@ export function Login() {
           </p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4" onKeyDown={handleKeyDown}>
           <div className="space-y-1">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">Better Health ID</Label>
             <Input
               id="email"
               type="email"
               name="email"
               required
               value={loginInput.email}
-              placeholder="Deepika@xyz.com"
+              placeholder="name@ideservebetterhealth.in"
               onChange={changeInputHandler}
             />
           </div>
@@ -115,9 +129,6 @@ export function Login() {
               />
               Remember me
             </label>
-            <a href="#" className="text-[#ec5228] hover:underline">
-              Forgot password?
-            </a>
           </div>
 
           <Button

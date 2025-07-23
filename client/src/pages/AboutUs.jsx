@@ -2,18 +2,19 @@ import { useNavigate } from "react-router-dom";
 
 const AboutUs = () => {
   const navigate = useNavigate();
-  
+
   return (
     <div className="page">
-      <section className="section about-hero">
+      <section
+        className="section about-hero"
+        style={{ backgroundColor: "#fffae3" }}
+      >
         <div className="container">
           <div className="hero-content">
             <h1 className="section-title">About Better Health</h1>
             <p className="hero-text">
-              Better Health is a pioneering healthcare platform dedicated to
-              making quality healthcare accessible to everyone. Founded in 2023,
-              we've been at the forefront of combining technology with
-              healthcare to create seamless, patient-centered experiences.
+              We’re young, dedicated minds on a mission to make health services affordable and accessible because 
+Everyone Deserves Better Health.
             </p>
           </div>
         </div>
@@ -94,10 +95,7 @@ const AboutUs = () => {
               Whether you're a healthcare provider or someone seeking quality
               care, we welcome you to the Better Health family.
             </p>
-            <button 
-              className="cta-btn"
-              onClick={() => navigate("/services")}
-            >
+            <button className="cta-btn" onClick={() => navigate("/services")}>
               Explore Our Services
             </button>
           </div>

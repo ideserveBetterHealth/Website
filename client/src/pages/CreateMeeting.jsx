@@ -122,13 +122,13 @@ const CreateMeeting = () => {
       newErrors.clientEmail = "Please verify the client email first";
     }
 
-    // Validate doctor email
+    // Validate doctor/Psychologist email
     if (!formData.doctorEmail.trim()) {
-      newErrors.doctorEmail = "Doctor email is required";
+      newErrors.doctorEmail = "Psychologist email is required";
     } else if (!isValidEmail(formData.doctorEmail)) {
       newErrors.doctorEmail = "Please enter a valid email address";
     } else if (!emailVerification.doctor.verified) {
-      newErrors.doctorEmail = "Please verify the doctor email first";
+      newErrors.doctorEmail = "Please verify the Psychologist email first";
     }
 
     // Check if emails are different
@@ -137,7 +137,7 @@ const CreateMeeting = () => {
       formData.doctorEmail &&
       formData.clientEmail.toLowerCase() === formData.doctorEmail.toLowerCase()
     ) {
-      newErrors.doctorEmail = "Doctor and client emails must be different";
+      newErrors.doctorEmail = "Psychologist and client emails must be different";
     }
 
     if (!formData.meetingDate) {
@@ -402,7 +402,7 @@ const CreateMeeting = () => {
             </h1>
             <div className="w-20 h-1 bg-blue-500 mx-auto rounded mb-4"></div>
             <p className="text-gray-600">
-              Create a new meeting between client and doctor
+              Create a new meeting between client and Psychologist
             </p>
           </div>
         </div>
@@ -504,15 +504,15 @@ const CreateMeeting = () => {
                   </div>
                 </div>
 
-                {/* Doctor Section */}
+                {/* Doctor/Psychologist Section */}
                 <div className="space-y-4">
-                  {/* Doctor Email */}
+                  {/* Doctor/Psychologist Email */}
                   <div>
                     <label
                       htmlFor="doctorEmail"
                       className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                      Doctor ID *
+                      Psychologist ID *
                     </label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -523,7 +523,7 @@ const CreateMeeting = () => {
                         value={formData.doctorEmail}
                         onChange={handleInputChange}
                         onBlur={() => handleEmailBlur("doctor")}
-                        placeholder="doctor@example.com"
+                        placeholder="Psychologist@ideservebetterhealth.in"
                         className={`w-full pl-10 pr-12 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
                           errors.doctorEmail
                             ? "border-red-300 focus:border-red-500"
@@ -567,13 +567,13 @@ const CreateMeeting = () => {
                     )}
                   </div>
 
-                  {/* Doctor Name */}
+                  {/* Doctor/Psychologist Name */}
                   <div>
                     <label
                       htmlFor="doctorName"
                       className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                      Doctor Name
+                      Psychologist Name
                     </label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -766,7 +766,7 @@ const CreateMeeting = () => {
                     </p>
                   )}
                   <p className="mt-1 text-xs text-gray-500">
-                    Link to the report form that doctor will fill after the
+                    Link to the report form that Psychologist will fill after the
                     meeting
                   </p>
                 </div>
@@ -827,7 +827,7 @@ const CreateMeeting = () => {
             📋 Meeting Creation Guidelines
           </h3>
           <ul className="text-blue-700 space-y-2 text-sm">
-            <li>• Enter valid email addresses for both client and doctor</li>
+            <li>• Enter valid email addresses for both client and Psychologist</li>
             <li>
               • Email verification will automatically fetch and display names
             </li>

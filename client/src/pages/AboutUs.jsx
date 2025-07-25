@@ -40,7 +40,7 @@ const AboutUs = () => {
                     accessible and affordable. We understand that life can be
                     overwhelming, and finding the right support shouldn't be
                     another challenge. That's why we offer affordable, online
-                    mental health consultations with professional psychologists
+                    mental health consultations with professional BH Associates
                     who truly care.
                   </p>
                 </div>

@@ -143,19 +143,19 @@ const Cosmetology = () => {
             Choose the consultation package that suits your skincare needs
           </p>
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 justify-center items-center lg:items-stretch max-w-4xl mx-auto">
-            <div className="bg-white rounded-xl p-6 lg:p-8 shadow-lg border border-gray-100 hover:shadow-2xl transition-all duration-500 transform hover:scale-105 animate-fade-in-left animation-delay-2600 w-full max-w-md min-h-[480px] flex flex-col">
-              <div className="mb-6">
-                <h3 className="text-2xl lg:text-3xl font-bold text-[#000080] text-center mb-4 hover:text-[#ec5228] transition-colors duration-300">
+            <div className="bg-white rounded-xl p-6 sm:p-6 lg:p-8 shadow-lg border border-gray-100 hover:shadow-2xl transition-all duration-500 transform hover:scale-105 animate-fade-in-left animation-delay-2600 w-full max-w-md min-h-[350px] sm:min-h-[400px] lg:min-h-[480px] flex flex-col justify-center">
+              <div className="mb-6 sm:mb-6">
+                <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#000080] text-center mb-4 sm:mb-4 hover:text-[#ec5228] transition-colors duration-300">
                   Single Consultation
                 </h3>
                 <div className="text-center">
-                  <span className="text-4xl lg:text-5xl font-bold text-[#000080] transition-transform duration-300 hover:scale-110">
+                  <span className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#000080] transition-transform duration-300 hover:scale-110">
                     ₹250
                   </span>
                 </div>
               </div>
-              <div className="mb-8 flex-1 flex items-center">
-                <p className="text-gray-700 text-center leading-relaxed">
+              <div className="mb-6 sm:mb-8 flex-1 flex items-center">
+                <p className="text-gray-700 text-center leading-relaxed text-sm sm:text-base">
                   One comprehensive 30-minute consultation with skin analysis,
                   personalized routine planning, and product recommendations.
                 </p>
@@ -169,25 +169,25 @@ const Cosmetology = () => {
                 </button>
               </Link>
             </div>
-            <div className="bg-white rounded-xl p-6 lg:p-8 shadow-lg border-2 border-[#ec5228] hover:shadow-2xl transition-all duration-500 transform hover:scale-105 animate-fade-in-right animation-delay-2800 w-full max-w-md relative min-h-[480px] flex flex-col">
-              <div className="absolute -top-3 -right-3 bg-[#ec5228] text-white px-4 py-2 rounded-full text-sm font-semibold animate-pulse">
+            <div className="bg-white rounded-xl p-6 sm:p-6 lg:p-8 shadow-lg border-2 border-[#ec5228] hover:shadow-2xl transition-all duration-500 transform hover:scale-105 animate-fade-in-right animation-delay-2800 w-full max-w-md relative min-h-[350px] sm:min-h-[400px] lg:min-h-[480px] flex flex-col justify-center">
+              <div className="absolute -top-3 -right-3 bg-[#ec5228] text-white px-3 sm:px-4 py-1 sm:py-2 rounded-full text-xs sm:text-sm font-semibold animate-pulse">
                 Best Value
               </div>
-              <div className="mb-6">
-                <h3 className="text-2xl lg:text-3xl font-bold text-[#000080] text-center mb-4 hover:text-[#ec5228] transition-colors duration-300">
+              <div className="mb-6 sm:mb-6">
+                <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#000080] text-center mb-4 sm:mb-4 hover:text-[#ec5228] transition-colors duration-300">
                   Complete Skin Journey
                 </h3>
                 <div className="text-center">
-                  <span className="text-lg text-gray-500 line-through block">
+                  <span className="text-sm sm:text-lg text-gray-500 line-through block">
                     ₹750
                   </span>
-                  <span className="text-4xl lg:text-5xl font-bold text-[#000080] transition-transform duration-300 hover:scale-110">
+                  <span className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#000080] transition-transform duration-300 hover:scale-110">
                     ₹500
                   </span>
                 </div>
               </div>
-              <div className="mb-8 flex-1 flex items-center">
-                <p className="text-gray-700 text-center leading-relaxed">
+              <div className="mb-6 sm:mb-8 flex-1 flex items-center">
+                <p className="text-gray-700 text-center leading-relaxed text-sm sm:text-base">
                   Initial consultation plus two follow-up sessions to track
                   progress and adjust your skincare routine for optimal results.
                 </p>

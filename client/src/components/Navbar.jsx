@@ -1,4 +1,19 @@
-import { Loader2 } from "lucide-react";
+import {
+  Loader2,
+  LayoutDashboard,
+  History,
+  FileText,
+  UserPlus,
+  Calendar,
+  Shield,
+  CheckCircle,
+  Users,
+  Tag,
+  Plus,
+  Settings,
+  LogOut,
+  ChevronRight,
+} from "lucide-react";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -66,7 +81,7 @@ function Navbar() {
         <Link to={"/dashboard"}>
           <div className="flex items-center">
             <h1 className="hidden md:block font-bold text-3xl ml-1 text-orange-600 hover:text-orange-700 transition-all duration-500">
-              Better Health
+              Better Health Dashboard
             </h1>
           </div>
         </Link>
@@ -75,90 +90,163 @@ function Navbar() {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Avatar>
-                  <AvatarImage src="/user-icon.png" alt="User" />
-                  <AvatarFallback>CN</AvatarFallback>
-                </Avatar>
+                <div className="relative cursor-pointer group">
+                  <Avatar className="w-10 h-10 ring-2 ring-orange-100 hover:ring-orange-200 transition-all duration-300 group-hover:scale-105">
+                    <AvatarImage src="/settings-icon.svg" alt="User" />
+                    <AvatarFallback className="bg-gradient-to-r from-orange-400 to-orange-600 text-white font-semibold">
+                      {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56 z-50">
-                <DropdownMenuLabel>Your Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                  <Link to="/dashboard">
-                    <DropdownMenuItem>
-                      <span>Dashboard</span>
-                    </DropdownMenuItem>
-                  </Link>
+              <DropdownMenuContent className="w-64 z-50 bg-white/95 backdrop-blur-md shadow-2xl border border-gray-100 rounded-2xl p-2 mt-2">
+                <div className="px-3 py-3 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-sm">
+                        {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900 text-sm">
+                        {user?.name || "User"}
+                      </p>
+                      <p className="text-gray-500 text-xs truncate max-w-[150px]">
+                        {user?.email || "user@example.com"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-                  {role === "doctor" && (
-                    <Link to="/meetinghistory">
-                      <DropdownMenuItem>
-                        <span>Meeting History</span>
+                <div className="py-2">
+                  <DropdownMenuGroup>
+                    <Link to="/dashboard">
+                      <DropdownMenuItem className="mx-1 my-1 rounded-xl px-3 py-3 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-100 transition-all duration-200 group">
+                        <LayoutDashboard className="w-4 h-4 mr-3 text-orange-600 group-hover:text-orange-700" />
+                        <span className="font-medium text-gray-700 group-hover:text-gray-900">
+                          Dashboard
+                        </span>
                       </DropdownMenuItem>
                     </Link>
-                  )}
-                  {role === "doctor" && (
-                    <Link to="/details">
-                      <DropdownMenuItem>
-                        <span>Submit Documents</span>
-                      </DropdownMenuItem>
-                    </Link>
-                  )}
 
-                  {role === "admin" && (
-                    <>
-                      <Link to="/admin/register">
-                        <DropdownMenuItem>
-                          <span>Create Accounts</span>
-                        </DropdownMenuItem>
-                      </Link>
-                      <Link to="/admin/create-meeting">
-                        <DropdownMenuItem>
-                          <span>Schedule Meetings</span>
-                        </DropdownMenuItem>
-                      </Link>
+                    {role === "doctor" && (
+                      <>
+                        <Link to="/meetinghistory">
+                          <DropdownMenuItem className="mx-1 my-1 rounded-xl px-3 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 transition-all duration-200 group">
+                            <History className="w-4 h-4 mr-3 text-blue-600 group-hover:text-blue-700" />
+                            <span className="font-medium text-gray-700 group-hover:text-gray-900">
+                              Meeting History
+                            </span>
+                          </DropdownMenuItem>
+                        </Link>
+                        <Link to="/details">
+                          <DropdownMenuItem className="mx-1 my-1 rounded-xl px-3 py-3 hover:bg-gradient-to-r hover:from-green-50 hover:to-green-100 transition-all duration-200 group">
+                            <FileText className="w-4 h-4 mr-3 text-green-600 group-hover:text-green-700" />
+                            <span className="font-medium text-gray-700 group-hover:text-gray-900">
+                              Submit Documents
+                            </span>
+                          </DropdownMenuItem>
+                        </Link>
+                      </>
+                    )}
 
-                      <DropdownMenuSub>
-                        <DropdownMenuSubTrigger>
-                          <span>Verification</span>
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuSubContent className="bg-white shadow-lg rounded-md p-1 border border-gray-200 ml-1">
-                          <Link to="/admin/verify-documents">
-                            <DropdownMenuItem>
-                              <span>Pending Verifications</span>
-                            </DropdownMenuItem>
-                          </Link>
-                          <Link to="/admin/verified-doctors">
-                            <DropdownMenuItem>
-                              <span>Verified Doctors</span>
-                            </DropdownMenuItem>
-                          </Link>
-                        </DropdownMenuSubContent>
-                      </DropdownMenuSub>
-                      <DropdownMenuSub>
-                        <DropdownMenuSubTrigger>
-                          <span>Coupons</span>
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuSubContent className="bg-white shadow-lg rounded-md p-1 border border-gray-200 ml-1">
-                          <Link to="/admin/create-coupons">
-                            <DropdownMenuItem>
-                              <span>Create Coupons</span>
-                            </DropdownMenuItem>
-                          </Link>
-                          <Link to="/admin/all-coupons">
-                            <DropdownMenuItem>
-                              <span>Manage Coupons</span>
-                            </DropdownMenuItem>
-                          </Link>
-                        </DropdownMenuSubContent>
-                      </DropdownMenuSub>
-                    </>
-                  )}
+                    {role === "admin" && (
+                      <>
+                        <div className="mx-3 my-2">
+                          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                            Admin Tools
+                          </div>
+                        </div>
 
-                  <DropdownMenuItem onClick={logoutHandler}>
-                    <span>Logout</span>
+                        <Link to="/admin/register">
+                          <DropdownMenuItem className="mx-1 my-1 rounded-xl px-3 py-3 hover:bg-gradient-to-r hover:from-purple-50 hover:to-purple-100 transition-all duration-200 group">
+                            <UserPlus className="w-4 h-4 mr-3 text-purple-600 group-hover:text-purple-700" />
+                            <span className="font-medium text-gray-700 group-hover:text-gray-900">
+                              Create Accounts
+                            </span>
+                          </DropdownMenuItem>
+                        </Link>
+
+                        <Link to="/admin/create-meeting">
+                          <DropdownMenuItem className="mx-1 my-1 rounded-xl px-3 py-3 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-indigo-100 transition-all duration-200 group">
+                            <Calendar className="w-4 h-4 mr-3 text-indigo-600 group-hover:text-indigo-700" />
+                            <span className="font-medium text-gray-700 group-hover:text-gray-900">
+                              Schedule Meetings
+                            </span>
+                          </DropdownMenuItem>
+                        </Link>
+
+                        <DropdownMenuSub>
+                          <DropdownMenuSubTrigger className="mx-1 my-1 rounded-xl px-3 py-3 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-emerald-100 transition-all duration-200 group data-[state=open]:bg-emerald-50">
+                            <Shield className="w-4 h-4 mr-3 text-emerald-600 group-hover:text-emerald-700" />
+                            <span className="font-medium text-gray-700 group-hover:text-gray-900">
+                              Verification
+                            </span>
+                          </DropdownMenuSubTrigger>
+                          <DropdownMenuSubContent className="bg-white/95 backdrop-blur-md shadow-xl rounded-xl p-2 border border-gray-100 ml-2">
+                            <Link to="/admin/verify-documents">
+                              <DropdownMenuItem className="rounded-lg px-3 py-2 hover:bg-yellow-50 transition-all duration-200 group">
+                                <Settings className="w-4 h-4 mr-3 text-yellow-600 group-hover:text-yellow-700" />
+                                <span className="font-medium text-gray-700 group-hover:text-gray-900">
+                                  Pending Verifications
+                                </span>
+                              </DropdownMenuItem>
+                            </Link>
+                            <Link to="/admin/verified-doctors">
+                              <DropdownMenuItem className="rounded-lg px-3 py-2 hover:bg-green-50 transition-all duration-200 group">
+                                <CheckCircle className="w-4 h-4 mr-3 text-green-600 group-hover:text-green-700" />
+                                <span className="font-medium text-gray-700 group-hover:text-gray-900">
+                                  Verified BH Associates
+                                </span>
+                              </DropdownMenuItem>
+                            </Link>
+                          </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+
+                        <DropdownMenuSub>
+                          <DropdownMenuSubTrigger className="mx-1 my-1 rounded-xl px-3 py-3 hover:bg-gradient-to-r hover:from-pink-50 hover:to-pink-100 transition-all duration-200 group data-[state=open]:bg-pink-50">
+                            <Tag className="w-4 h-4 mr-3 text-pink-600 group-hover:text-pink-700" />
+                            <span className="font-medium text-gray-700 group-hover:text-gray-900">
+                              Coupons
+                            </span>
+                          </DropdownMenuSubTrigger>
+                          <DropdownMenuSubContent className="bg-white/95 backdrop-blur-md shadow-xl rounded-xl p-2 border border-gray-100 ml-2">
+                            <Link to="/admin/create-coupons">
+                              <DropdownMenuItem className="rounded-lg px-3 py-2 hover:bg-blue-50 transition-all duration-200 group">
+                                <Plus className="w-4 h-4 mr-3 text-blue-600 group-hover:text-blue-700" />
+                                <span className="font-medium text-gray-700 group-hover:text-gray-900">
+                                  Create Coupons
+                                </span>
+                              </DropdownMenuItem>
+                            </Link>
+                            <Link to="/admin/all-coupons">
+                              <DropdownMenuItem className="rounded-lg px-3 py-2 hover:bg-purple-50 transition-all duration-200 group">
+                                <Settings className="w-4 h-4 mr-3 text-purple-600 group-hover:text-purple-700" />
+                                <span className="font-medium text-gray-700 group-hover:text-gray-900">
+                                  Manage Coupons
+                                </span>
+                              </DropdownMenuItem>
+                            </Link>
+                          </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+                      </>
+                    )}
+                  </DropdownMenuGroup>
+
+                  <div className="mx-2 my-2">
+                    <div className="border-t border-gray-100"></div>
+                  </div>
+
+                  <DropdownMenuItem
+                    onClick={logoutHandler}
+                    className="mx-1 my-1 rounded-xl px-3 py-3 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 transition-all duration-200 group cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4 mr-3 text-red-600 group-hover:text-red-700" />
+                    <span className="font-medium text-gray-700 group-hover:text-red-700">
+                      Logout
+                    </span>
                   </DropdownMenuItem>
-                </DropdownMenuGroup>
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (

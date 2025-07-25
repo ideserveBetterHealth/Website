@@ -11,7 +11,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
+import { Menu, Home, User, Phone, Settings } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 export function LandingPageNavbar() {
@@ -49,7 +49,7 @@ export function LandingPageNavbar() {
         <a
           href="/"
           onClick={handleBrandClick}
-          className="text-[1.8rem] font-bold tracking-[-0.5px] text-[#000080] no-underline"
+          className="text-[1.8rem] font-bold tracking-[-0.5px] text-[#ec5228] no-underline"
         >
           Better Health
         </a>
@@ -79,7 +79,7 @@ export function LandingPageNavbar() {
             <span className="absolute bottom-[-4px] left-0 w-0 h-[2px] bg-[#ec5228] transition-all duration-300 group-hover:w-full"></span>
           </Link>
           <a
-            href="https://calendar.app.google/qujMmj8A5HsCNCJT8"
+            href="https://calendar.app.google/C1Vt32kQnuDFKTDS6"
             target="_blank"
             rel="noopener noreferrer"
             className="bg-[#ec5228] text-white border-none rounded-lg px-6 py-3 text-[1.1rem] font-semibold cursor-pointer transition-all duration-300 shadow-[0_2px_4px_rgba(236,82,40,0.2)] hover:bg-[#d14a22] hover:translate-y-[-3px] hover:scale-105 hover:shadow-[0_8px_20px_rgba(236,82,40,0.4)]"
@@ -113,8 +113,9 @@ export function LandingPageNavbar() {
                   <Button
                     onClick={() => navigateHandler("/")}
                     variant="outline"
-                    className="w-full bg-white hover:bg-gray-50 text-[#000080] font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg border border-[#000080]/30"
+                    className="w-full bg-white hover:bg-gray-50 text-[#000080] font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg border border-[#000080]/30 flex items-center gap-3"
                   >
+                    <Home className="w-4 h-4" />
                     Home
                   </Button>
                 </span>
@@ -122,8 +123,9 @@ export function LandingPageNavbar() {
                   <Button
                     onClick={() => navigateHandler("/services")}
                     variant="outline"
-                    className="w-full bg-white hover:bg-gray-50 text-[#000080] font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg border border-[#000080]/30"
+                    className="w-full bg-white hover:bg-gray-50 text-[#000080] font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg border border-[#000080]/30 flex items-center gap-3"
                   >
+                    <Settings className="w-4 h-4" />
                     Services
                   </Button>
                 </span>
@@ -131,20 +133,22 @@ export function LandingPageNavbar() {
                   <Button
                     onClick={() => navigateHandler("/login")}
                     variant="outline"
-                    className="w-full bg-white hover:bg-gray-50 text-[#000080] font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg border border-[#000080]/30"
+                    className="w-full bg-white hover:bg-gray-50 text-[#000080] font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg border border-[#000080]/30 flex items-center gap-3"
                   >
+                    <User className="w-4 h-4" />
                     Login
                   </Button>
                 </span>
                 <span>
                   <a
-                    href="https://calendar.app.google/qujMmj8A5HsCNCJT8"
+                    href="https://calendar.app.google/C1Vt32kQnuDFKTDS6"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block w-full"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    <Button className="w-full bg-[#ec5228] hover:bg-[#d44920] text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-none">
+                    <Button className="w-full bg-[#ec5228] hover:bg-[#d44920] text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-none flex items-center gap-3">
+                      <Phone className="w-4 h-4" />
                       Request a Call Back
                     </Button>
                   </a>
@@ -162,18 +166,18 @@ export function LandingPageFooter() {
   return (
     <footer className="mt-auto bg-[#fffae3] text-[#000080] w-full py-8 md:py-12 pb-3 md:pb-4 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] relative z-10">
       <div className="max-w-[1200px] mx-auto px-8 w-full">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-10 justify-between">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1.2fr] gap-6 md:gap-8 justify-between">
           {/* Logo and Description */}
-          <div className="flex flex-col gap-2 md:gap-3 items-center md:items-start lg:mr-16">
+          <div className="flex flex-col gap-2 md:gap-3 items-center md:items-start lg:pr-6">
             <img
               src="/Better Health EBG.png"
               alt="Better Health by ElevateBiz Group"
               className="max-w-[240px] h-auto mb-2 md:mb-4"
             />
-            <p className="text-sm leading-relaxed text-[#444] mb-2 md:mb-4 max-w-[250px] text-center md:text-left">
-              Empowering individuals with accessible mental health and wellness
-              services. Better Health is committed to making quality healthcare
-              solutions available for everyone.
+            <p className="text-sm leading-relaxed text-[#444] mb-2 md:mb-4 max-w-[250px] lg:max-w-[320px] text-center md:text-left">
+              Better Health empowers individuals by providing accessible and
+              affordable mental health and wellness services. We're committed to
+              making quality care available to everyone, without barriers.
             </p>
           </div>
 

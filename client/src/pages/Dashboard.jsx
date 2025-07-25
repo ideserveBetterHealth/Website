@@ -29,11 +29,14 @@ const Dashboard = () => {
   const [deleteMeeting] = useDeleteMeetingMutation();
   const [joinMeeting] = useJoinMeetingMutation();
   const role = useSelector((state) => state?.auth?.user?.role);
+  const user = useSelector((state) => state?.auth?.user);
+  // State variables for managing meeting data, services, and UI updates
   const [meetingData, setMeetingData] = useState([]);
   const [services, setServices] = useState(null);
   const [loadingServices, setLoadingServices] = useState(false);
   const [tick, setTick] = useState(0);
 
+  // Timer for real-time updates (every second)
   useEffect(() => {
     const interval = setInterval(() => {
       setTick((prev) => prev + 1);
@@ -42,22 +45,56 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // User role checks for conditional rendering
   const isDoctor = role === "doctor";
   const isAdmin = role === "admin";
   const now = new Date();
+
+  // Sort meetings by date for proper chronological display
   const sortedMeetings = [...meetingData].sort(
     (a, b) => new Date(a.meetingDate) - new Date(b.meetingDate)
   );
 
+  // Inspirational quotes for users
+  const inspirationalQuotes = [
+    "Your mental health is just as important as your physical health. Take care of yourself.",
+    "Every step towards better mental health is a step towards a brighter future.",
+    "Self-care isn't selfish; it's essential. You matter, and your well-being matters.",
+    "Progress, not perfection. Every small step counts on your journey to wellness.",
+    "You are stronger than you think, braver than you feel, and more loved than you know.",
+    "Mental health recovery is not a destination, but a journey of self-discovery.",
+    "Be patient with yourself. Healing takes time, and you're worth the effort.",
+    "Your story isn't over yet. There are beautiful chapters still to be written.",
+    "Taking care of your mental health is an act of courage and self-compassion.",
+    "You don't have to be perfect. You just have to be yourself, and that's enough.",
+  ];
+
+  // Get a consistent inspirational quote based on user email (prevents quote changes on re-renders)
+  const getUserQuote = () => {
+    if (!user?.email) return inspirationalQuotes[0];
+    const emailSum = user.email
+      .split("")
+      .reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    return inspirationalQuotes[emailSum % inspirationalQuotes.length];
+  };
+
+  // Extract user's first name for personalized greeting
+  const getUserFirstName = () => {
+    if (!user?.name) return "User";
+    return user.name.split(" ")[0];
+  };
+
+  // API endpoint for payment services
   const API_BASE = `${import.meta.env.VITE_BACKEND_URL}/api/v1/payments`;
 
-  // Fetch available services on component mount
+  // Fetch available services when component mounts (only for regular users)
   useEffect(() => {
     if (role === "user") {
       fetchAvailableServices();
     }
   }, [role]);
 
+  // Fetch services from backend for the booking dropdown
   const fetchAvailableServices = async () => {
     try {
       setLoadingServices(true);
@@ -73,6 +110,7 @@ const Dashboard = () => {
     }
   };
 
+  // Handle service booking by opening payment link in new tab
   const handleServiceClick = async (serviceKey, planType) => {
     try {
       // Convert service key to URL format
@@ -99,7 +137,7 @@ const Dashboard = () => {
     }
   };
 
-  // Helper function to get meeting datetime
+  // Helper function to combine meeting date and time into a single DateTime object
   const getMeetingDateTime = (meeting) => {
     const meetingDateTime = new Date(meeting.meetingDate);
     const [timePart, ampm] = meeting.meetingTime.split(" ");
@@ -116,7 +154,7 @@ const Dashboard = () => {
     return meetingDateTime;
   };
 
-  // Show meetings in "upcoming" for 1.5 hours after they start
+  // Filter meetings to show as "upcoming" (includes 1.5 hours grace period after start time)
   const upcomingMeetings = sortedMeetings.filter((meeting) => {
     const meetingDateTime = getMeetingDateTime(meeting);
     const oneAndHalfHourAfter = new Date(meetingDateTime);
@@ -125,7 +163,7 @@ const Dashboard = () => {
     return oneAndHalfHourAfter > now;
   });
 
-  // Move to "past" only after 1.5 hours from start time
+  // Filter meetings to show as "past" (only after 1.5 hours from start time)
   const pastMeetings = sortedMeetings.filter((meeting) => {
     const meetingDateTime = getMeetingDateTime(meeting);
     const oneAndHalfHourAfter = new Date(meetingDateTime);
@@ -133,8 +171,11 @@ const Dashboard = () => {
 
     return oneAndHalfHourAfter <= now;
   });
+
+  // Get the next upcoming meeting for the highlight card
   const nextMeeting = upcomingMeetings[0];
 
+  // Date formatting helper functions
   const formatDay = (dateStr) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString(undefined, { weekday: "long" });
@@ -145,7 +186,7 @@ const Dashboard = () => {
     return date.toLocaleDateString();
   };
 
-  // Update this function to properly calculate countdown using both date and time
+  // Real-time countdown calculation for next meeting
   function getCountdown(meeting) {
     const now = new Date();
     // Use getMeetingDateTime helper to get the proper date+time object
@@ -162,10 +203,12 @@ const Dashboard = () => {
     return `${days}d ${hours}h ${minutes}m ${seconds}s`;
   }
 
+  // State for countdown display with real-time updates
   const [countdown, setCountdown] = useState(
     nextMeeting ? getCountdown(nextMeeting) : ""
   );
 
+  // Update countdown every second for the next meeting
   useEffect(() => {
     if (!nextMeeting) return;
     const interval = setInterval(() => {
@@ -174,13 +217,14 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, [nextMeeting?.meetingDate]);
 
+  // Update meeting data when API data changes
   useEffect(() => {
     if (!isMeetingsDataLoading) {
       meetingsDataFromApi && setMeetingData(meetingsDataFromApi);
     }
   }, [meetingsDataFromApi, isMeetingsDataLoading]);
 
-  // Update this function to properly check the meeting time
+  // Check if user can join meeting (5 minutes before start, up to 1.5 hours after start)
   const canJoinMeeting = (meetingDate, meetingTime) => {
     const now = new Date();
 
@@ -205,6 +249,7 @@ const Dashboard = () => {
     return now >= fiveMinutesBefore && now <= oneAndHalfHourAfter;
   };
 
+  // Handle meeting deletion with confirmation
   const handleDeleteMeeting = async (meetingId) => {
     try {
       await deleteMeeting(meetingId).unwrap();
@@ -215,6 +260,7 @@ const Dashboard = () => {
     }
   };
 
+  // Handle joining meeting and record join time
   const handleJoinMeeting = async (meetingId, meetingLink) => {
     try {
       // Call the joinMeeting API to record the join time
@@ -229,7 +275,7 @@ const Dashboard = () => {
     }
   };
 
-  // Add this helper function to determine if a meeting is currently in progress
+  // Check if meeting is currently in progress (started but not over)
   const isMeetingInProgress = (meeting) => {
     const now = new Date();
     const meetingDateTime = getMeetingDateTime(meeting);
@@ -241,7 +287,7 @@ const Dashboard = () => {
     return now >= meetingDateTime && now <= meetingEndTime;
   };
 
-  // Add this function to format the meeting time display
+  // Format meeting time display with special handling for active meetings
   const formatMeetingTime = (meeting) => {
     if (isMeetingInProgress(meeting)) {
       return <span className="text-emerald-600 font-semibold">Join now!</span>;
@@ -249,7 +295,7 @@ const Dashboard = () => {
     return meeting.meetingTime;
   };
 
-  // Add this helper function to format timestamps to Indian time
+  // Convert UTC timestamps to Indian Standard Time for display
   const formatIndianTime = (utcTimestamp) => {
     if (!utcTimestamp) return "Not joined";
 
@@ -267,367 +313,550 @@ const Dashboard = () => {
     return new Intl.DateTimeFormat("en-IN", options).format(date);
   };
 
+  // Main dashboard render with responsive design and gradient background
   return (
-    <div className="space-y-6 mt-24">
-      <div className="flex items-center justify-between mb-4 pr-4 pl-4">
-        <h2 className="text-xl font-semibold text-gray-700">
-          Upcoming Commitments
-        </h2>
-        {role && role !== "user" ? (
-          <Link to={"/meetinghistory"}>
-            <Button variant="outline" className="text-sm font-medium">
-              Meeting History
-            </Button>
-          </Link>
-        ) : (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="text-sm font-medium"
-                disabled={loadingServices}
-              >
-                {loadingServices ? "Loading..." : "Book More Sessions"}
-                <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56">
-              <DropdownMenuLabel>Available Services</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {services &&
-                Object.entries(services).map(([serviceKey, serviceData]) => (
-                  <DropdownMenuGroup key={serviceKey}>
-                    <DropdownMenuLabel className="text-[11px] font-semibold text-blue-600 uppercase tracking-wide">
-                      {serviceData.displayName}
-                    </DropdownMenuLabel>
-                    {serviceData.plans.map((plan) => (
-                      <DropdownMenuItem
-                        key={`${serviceKey}-${plan}`}
-                        onClick={() => handleServiceClick(serviceKey, plan)}
-                        className="cursor-pointer hover:bg-blue-50 transition-colors pl-6"
-                      >
-                        <div className="flex flex-col">
-                          <span className="font-medium capitalize">
-                            {plan} Session
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {plan === "single"
-                              ? "One-time session"
-                              : "Multiple sessions package"}
-                          </span>
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
-                    <DropdownMenuSeparator />
-                  </DropdownMenuGroup>
-                ))}
-              {!services && !loadingServices && (
-                <DropdownMenuItem disabled>
-                  <span className="text-gray-500">No services available</span>
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-[#fffae3] via-white to-[#fffae3] px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto pt-20 pb-12 space-y-8">
+        {/* User Details Header Section - Moved from card to top */}
+        {user && (
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8 mt-6">
+            <div className="flex-1 space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="bg-gradient-to-r from-[#ec5228] to-[#d14a22] p-3 rounded-full shadow-lg">
+                  <User className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#000080] mb-1">
+                    Hello, {getUserFirstName()}! 👋
+                  </h1>
+                  <p className="text-gray-600 text-sm sm:text-base flex items-center gap-2">
+                    <span className="w-2 h-2 bg-[#ec5228] rounded-full"></span>
+                    {user.email}
+                  </p>
+                </div>
+              </div>
 
-      {nextMeeting && (
-        <div className="w-full bg-[#f9fbff] border border-blue-200 rounded-3xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.3)] p-6 md:p-10 animate-fade-in transition-all duration-300">
-          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6">
-            <div className="space-y-3">
-              <p className="text-sm uppercase tracking-wide text-blue-500 font-semibold">
-                Upcoming Meeting
-              </p>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 flex items-center gap-3">
-                <Calendar className="w-6 h-6 text-blue-600" />
-                {formatDay(nextMeeting.meetingDate)},{" "}
-                {formatDate(nextMeeting.meetingDate)} at{" "}
-                {nextMeeting.meetingTime}
-              </h2>
-              <div className="space-y-2 text-gray-700">
-                {!isDoctor && !isAdmin && (
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-blue-400" />
-                    <span>
-                      <span className="font-semibold">Psychologist:</span>{" "}
-                      {nextMeeting.doctorName} ({nextMeeting.doctorId})
-                    </span>
-                  </div>
-                )}
-                {isDoctor && (
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-blue-400" />
-                    <span>
-                      <span className="font-semibold">Client:</span>{" "}
-                      {nextMeeting.clientName} ({nextMeeting.clientId})
-                    </span>
-                  </div>
-                )}
-                {isAdmin && (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-blue-400" />
-                      <span>
-                        <span className="font-semibold">Client:</span>{" "}
-                        {nextMeeting.clientName} ({nextMeeting.clientId})
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-blue-400" />
-                      <span>
-                        <span className="font-semibold">Psychologist:</span>{" "}
-                        {nextMeeting.doctorName} ({nextMeeting.doctorId})
-                      </span>
-                    </div>
-                  </>
-                )}
+              <div className="bg-white/60 rounded-xl p-4 border-l-4 border-[#ec5228] shadow-sm">
+                <p className="text-gray-700 text-sm sm:text-base leading-relaxed italic font-medium">
+                  "{getUserQuote()}"
+                </p>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <span className="bg-gradient-to-r from-blue-100 to-blue-50 border border-blue-300 text-blue-700 font-medium px-4 py-2 rounded-full text-sm shadow-inner flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                Starts in: {countdown}
-              </span>
-
-              {canJoinMeeting(
-                nextMeeting.meetingDate,
-                nextMeeting.meetingTime
-              ) ? (
-                <Button
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg transition-all duration-300 flex items-center gap-2"
-                  onClick={() =>
-                    handleJoinMeeting(nextMeeting._id, nextMeeting.meetingLink)
-                  }
-                >
-                  <Video className="w-5 h-5" />
-                  Join Meeting
-                </Button>
-              ) : (
-                <Button
-                  disabled
-                  className="bg-gradient-to-r from-gray-200 to-gray-100 text-gray-500 font-semibold px-6 py-3 rounded-xl shadow-inner transition-all duration-300"
-                  title="You can join 5 minutes before the meeting starts"
-                >
-                  <Video className="w-5 h-5" />
-                  Join Meeting
-                </Button>
-              )}
-              {isDoctor && nextMeeting.reportLink && (
-                <a
-                  href={nextMeeting.reportLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Button variant="outline" className="rounded-xl">
-                    View Report
-                  </Button>
-                </a>
-              )}
+            {/* Date Calendar Widget - Responsive design for mobile and desktop */}
+            <div className="lg:min-w-[200px] flex justify-center lg:justify-end">
+              {/* Mobile: Horizontal rectangular calendar box, Desktop: Square calendar box */}
+              <div
+                className="bg-gradient-to-br from-[#ec5228]/10 to-[#d14a22]/10 rounded-2xl border border-[#ec5228]/20 
+                               p-4 sm:p-6 text-center
+                               w-full max-w-xs sm:max-w-none sm:w-auto
+                               flex sm:block items-center justify-between sm:justify-center
+                               min-h-[80px] sm:min-h-auto"
+              >
+                {/* Date and Month display */}
+                <div className="flex items-center sm:block gap-3 sm:gap-0">
+                  <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#000080] mb-0 sm:mb-1">
+                    {new Date().toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </div>
+                  <div className="text-xs sm:text-sm text-gray-600 font-medium">
+                    {new Date().toLocaleDateString("en-US", {
+                      weekday: "long",
+                    })}
+                  </div>
+                </div>
+                {/* Year display - positioned at right on mobile, below on desktop */}
+                <div className="text-xs text-gray-500 sm:mt-1">
+                  {new Date().getFullYear()}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {upcomingMeetings.length === 0 ? (
-        <div className="text-center mt-6 text-muted-foreground">
-          <p className="italic">
-            You're all caught up! No upcoming meetings scheduled.
-          </p>
+        {/* Action Buttons Section */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4 mb-8">
+          {role && role !== "user" ? (
+            <Link to={"/meetinghistory"}>
+              <Button
+                variant="outline"
+                className="bg-white hover:bg-[#ec5228] hover:text-white border-[#ec5228] text-[#ec5228] font-medium px-6 py-2 rounded-lg transition-all duration-300 shadow-sm hover:shadow-md"
+              >
+                Meeting History
+              </Button>
+            </Link>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="bg-[#ec5228] hover:bg-[#d14a22] text-white border-none font-medium px-6 py-2 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl"
+                  disabled={loadingServices}
+                >
+                  {loadingServices ? "Loading..." : "Book More Sessions"}
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-64 bg-white shadow-xl rounded-xl border-0 p-2">
+                <DropdownMenuLabel className="text-[#000080] font-semibold text-base px-3 py-2">
+                  Available Services
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-gray-200" />
+                {services &&
+                  Object.entries(services).map(([serviceKey, serviceData]) => (
+                    <DropdownMenuGroup key={serviceKey}>
+                      <DropdownMenuLabel className="text-xs font-semibold text-[#ec5228] uppercase tracking-wide px-3 py-2">
+                        {serviceData.displayName}
+                      </DropdownMenuLabel>
+                      {serviceData.plans.map((plan) => (
+                        <DropdownMenuItem
+                          key={`${serviceKey}-${plan}`}
+                          onClick={() => handleServiceClick(serviceKey, plan)}
+                          className="cursor-pointer hover:bg-[#fffae3] transition-colors mx-1 my-1 rounded-lg px-3 py-3"
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-medium capitalize text-[#000080]">
+                              {plan} Session
+                            </span>
+                            <span className="text-xs text-gray-500 mt-1">
+                              {plan === "single"
+                                ? "One-time session"
+                                : "Multiple sessions package"}
+                            </span>
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
+                      <DropdownMenuSeparator className="bg-gray-100 my-2" />
+                    </DropdownMenuGroup>
+                  ))}
+                {!services && !loadingServices && (
+                  <DropdownMenuItem disabled className="px-3 py-4">
+                    <span className="text-gray-500">No services available</span>
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
-      ) : (
-        <Card className="w-full shadow-xl rounded-2xl overflow-hidden">
-          <CardContent className="p-6">
-            <ScrollArea className="w-full">
-              <table className="min-w-full text-sm text-left border border-gray-200 rounded-lg overflow-hidden">
-                <thead className="bg-gray-100 text-gray-700 uppercase text-xs tracking-wider">
-                  <tr>
-                    <th className="px-6 py-3 border">Meeting Date</th>
-                    <th className="px-6 py-3 border">Meeting Time</th>
-                    <th className="px-6 py-3 border">Meeting Day</th>
-                    {isAdmin ? (
-                      <>
-                        <th className="px-6 py-3 border">Client Email</th>
-                        <th className="px-6 py-3 border">Psychologist Email</th>
-                        <th className="px-6 py-3 border">User Joined</th>
-                        <th className="px-6 py-3 border">Psychologist Joined</th>
-                      </>
-                    ) : (
-                      <th className="px-6 py-3 border">
-                        {isDoctor ? "Client Email" : "Doctor Email"}
+
+        {/* Next Meeting Highlight Card */}
+        {nextMeeting && (
+          <div className="bg-gradient-to-r from-[#000080] via-[#0000a0] to-[#000080] rounded-2xl shadow-2xl p-6 sm:p-8 lg:p-10 text-white transform hover:scale-[1.02] transition-all duration-300">
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6">
+              <div className="space-y-4 flex-1">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white/20 p-2 rounded-full">
+                    <Calendar className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="text-sm uppercase tracking-wider font-semibold text-white/90">
+                    Next Meeting
+                  </span>
+                </div>
+
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold leading-tight">
+                  {formatDay(nextMeeting.meetingDate)},{" "}
+                  {formatDate(nextMeeting.meetingDate)}
+                </h2>
+
+                <div className="flex items-center gap-3 text-lg font-semibold">
+                  <Clock className="w-5 h-5 text-white/80" />
+                  <span>{nextMeeting.meetingTime}</span>
+                </div>
+
+                <div className="bg-white/10 rounded-xl p-4 space-y-3">
+                  {/* Meeting participant information display */}
+                  {!isDoctor && !isAdmin && (
+                    <div className="flex items-center gap-3">
+                      <User className="w-4 h-4 text-white/80" />
+                      <span className="text-sm">
+                        <span className="font-semibold">BH Associate:</span>{" "}
+                        {nextMeeting.doctorName}
+                      </span>
+                    </div>
+                  )}
+                  {isDoctor && (
+                    <div className="flex items-center gap-3">
+                      <User className="w-4 h-4 text-white/80" />
+                      <span className="text-sm">
+                        <span className="font-semibold">Client:</span>{" "}
+                        {nextMeeting.clientName}
+                      </span>
+                    </div>
+                  )}
+                  {isAdmin && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3">
+                        <User className="w-4 h-4 text-white/80" />
+                        <span className="text-sm">
+                          <span className="font-semibold">Client:</span>{" "}
+                          {nextMeeting.clientName}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <User className="w-4 h-4 text-white/80" />
+                        <span className="text-sm">
+                          <span className="font-semibold">BH Associate:</span>{" "}
+                          {nextMeeting.doctorName}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center lg:items-end gap-4 lg:min-w-[280px]">
+                <div className="bg-white/20 backdrop-blur-sm rounded-2xl px-6 py-4 text-center">
+                  <div className="text-xs uppercase tracking-wider font-semibold text-white/80 mb-1">
+                    Starts in
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-bold text-white">
+                    {countdown}
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row lg:flex-col gap-3 w-full lg:w-auto">
+                  {canJoinMeeting(
+                    nextMeeting.meetingDate,
+                    nextMeeting.meetingTime
+                  ) ? (
+                    <Button
+                      className="bg-[#ec5228] hover:bg-[#d14a22] text-white font-semibold px-6 py-3 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2 hover:scale-105"
+                      onClick={() =>
+                        handleJoinMeeting(
+                          nextMeeting._id,
+                          nextMeeting.meetingLink
+                        )
+                      }
+                    >
+                      <Video className="w-5 h-5" />
+                      Join Meeting
+                    </Button>
+                  ) : (
+                    <Button
+                      disabled
+                      className="bg-white/10 text-white/60 font-semibold px-6 py-3 rounded-xl shadow-inner transition-all duration-300 flex items-center justify-center gap-2 cursor-not-allowed"
+                      title="You can join 5 minutes before the meeting starts"
+                    >
+                      <Video className="w-5 h-5" />
+                      Join Meeting
+                    </Button>
+                  )}
+                  {isDoctor && nextMeeting.reportLink && (
+                    <a
+                      href={nextMeeting.reportLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full lg:w-auto"
+                    >
+                      <Button
+                        variant="outline"
+                        className="w-full bg-white/10 border-white/30 text-white hover:bg-white hover:text-[#000080] rounded-xl py-3"
+                      >
+                        View Report
+                      </Button>
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* No Meetings State */}
+        {upcomingMeetings.length === 0 ? (
+          <div className="bg-white rounded-2xl shadow-lg p-8 sm:p-12 text-center">
+            <div className="max-w-md mx-auto">
+              <div className="bg-[#fffae3] rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
+                <Calendar className="w-10 h-10 text-[#ec5228]" />
+              </div>
+              <h3 className="text-xl sm:text-2xl font-bold text-[#000080] mb-4">
+                All Caught Up!
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                You're all set! No upcoming meetings scheduled at the moment.
+                {role === "user" && " Book a new session to get started."}
+              </p>
+            </div>
+          </div>
+        ) : (
+          /* Upcoming Meetings Table */
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div className="bg-gradient-to-r from-[#000080] to-[#0000a0] px-6 py-4">
+              <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-3">
+                <Clock className="w-5 h-5" />
+                Upcoming Sessions
+              </h3>
+            </div>
+
+            <div className="p-6">
+              <div className="overflow-x-auto">
+                <table className="min-w-full">
+                  <thead>
+                    <tr className="border-b-2 border-gray-100">
+                      <th className="text-left py-3 px-4 font-semibold text-[#000080] text-sm">
+                        Date
                       </th>
-                    )}
-                    <th className="px-6 py-3 border">Meeting Link</th>
-                    {isAdmin && <th className="px-6 py-3 border">Actions</th>}
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-100">
-                  {upcomingMeetings.map((meeting) => (
-                    <tr key={meeting._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        {formatDate(meeting.meetingDate)}
-                      </td>
-                      <td className="px-6 py-4">
-                        {isMeetingInProgress(meeting) ? (
-                          <span className="text-emerald-600 font-semibold">
-                            Join now!
-                          </span>
-                        ) : (
-                          meeting.meetingTime
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        {formatDay(meeting.meetingDate)}
-                      </td>
+                      <th className="text-left py-3 px-4 font-semibold text-[#000080] text-sm">
+                        Time
+                      </th>
+                      <th className="text-left py-3 px-4 font-semibold text-[#000080] text-sm">
+                        Day
+                      </th>
                       {isAdmin ? (
                         <>
-                          <td className="px-6 py-4">{meeting.clientId}</td>
-                          <td className="px-6 py-4">{meeting.doctorId}</td>
-                          <td className="px-6 py-4">
-                            {formatIndianTime(meeting.userJoinedAt)}
-                          </td>
-                          <td className="px-6 py-4">
-                            {formatIndianTime(meeting.docJoinedAt)}
-                          </td>
+                          <th className="text-left py-3 px-4 font-semibold text-[#000080] text-sm">
+                            Client
+                          </th>
+                          <th className="text-left py-3 px-4 font-semibold text-[#000080] text-sm">
+                            BH Associate
+                          </th>
+                          <th className="text-left py-3 px-4 font-semibold text-[#000080] text-sm">
+                            User Joined
+                          </th>
+                          <th className="text-left py-3 px-4 font-semibold text-[#000080] text-sm">
+                            Associate Joined
+                          </th>
                         </>
                       ) : (
-                        <td className="px-6 py-4">
-                          {isDoctor ? meeting.clientId : meeting.doctorId}
-                        </td>
+                        <th className="text-left py-3 px-4 font-semibold text-[#000080] text-sm">
+                          {isDoctor ? "Client" : "BH Associate"}
+                        </th>
                       )}
-                      <td className="px-6 py-4">
-                        {canJoinMeeting(
-                          meeting.meetingDate,
-                          meeting.meetingTime
-                        ) ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              handleJoinMeeting(
-                                meeting._id,
-                                meeting.meetingLink
-                              )
-                            }
-                          >
-                            Join Meeting
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled
-                            title="You can join 5 minutes before the meeting starts"
-                          >
-                            Join Meeting
-                          </Button>
-                        )}
-                      </td>
+                      <th className="text-left py-3 px-4 font-semibold text-[#000080] text-sm">
+                        Action
+                      </th>
                       {isAdmin && (
-                        <td className="px-6 py-4">
+                        <th className="text-left py-3 px-4 font-semibold text-[#000080] text-sm">
+                          Manage
+                        </th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {upcomingMeetings.map((meeting, index) => (
+                      <tr
+                        key={meeting._id}
+                        className={`hover:bg-[#fffae3] transition-colors duration-200 ${
+                          index !== upcomingMeetings.length - 1
+                            ? "border-b border-gray-50"
+                            : ""
+                        }`}
+                      >
+                        <td className="py-4 px-4 text-sm text-gray-700 font-medium">
+                          {formatDate(meeting.meetingDate)}
+                        </td>
+                        <td className="py-4 px-4 text-sm">
+                          {isMeetingInProgress(meeting) ? (
+                            <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold">
+                              Join Now!
+                            </span>
+                          ) : (
+                            <span className="text-gray-700">
+                              {meeting.meetingTime}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-4 px-4 text-sm text-gray-600">
+                          {formatDay(meeting.meetingDate)}
+                        </td>
+                        {isAdmin ? (
+                          <>
+                            <td className="py-4 px-4 text-sm text-gray-700">
+                              {meeting.clientId}
+                            </td>
+                            <td className="py-4 px-4 text-sm text-gray-700">
+                              {meeting.doctorId}
+                            </td>
+                            <td className="py-4 px-4 text-sm text-gray-600">
+                              {formatIndianTime(meeting.userJoinedAt)}
+                            </td>
+                            <td className="py-4 px-4 text-sm text-gray-600">
+                              {formatIndianTime(meeting.docJoinedAt)}
+                            </td>
+                          </>
+                        ) : (
+                          <td className="py-4 px-4 text-sm text-gray-700">
+                            {isDoctor ? meeting.clientId : meeting.doctorId}
+                          </td>
+                        )}
+                        <td className="py-4 px-4">
+                          {canJoinMeeting(
+                            meeting.meetingDate,
+                            meeting.meetingTime
+                          ) ? (
+                            <Button
+                              className="bg-[#ec5228] hover:bg-[#d14a22] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 hover:scale-105"
+                              onClick={() =>
+                                handleJoinMeeting(
+                                  meeting._id,
+                                  meeting.meetingLink
+                                )
+                              }
+                            >
+                              <Video className="w-4 h-4 mr-2" />
+                              Join
+                            </Button>
+                          ) : (
+                            <Button
+                              disabled
+                              className="bg-gray-100 text-gray-400 px-4 py-2 rounded-lg text-sm font-medium cursor-not-allowed"
+                              title="Available 5 minutes before start time"
+                            >
+                              <Video className="w-4 h-4 mr-2" />
+                              Join
+                            </Button>
+                          )}
+                        </td>
+                        {isAdmin && (
+                          <td className="py-4 px-4">
+                            <Button
+                              variant="destructive"
+                              className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm transition-all duration-300"
+                              onClick={() => handleDeleteMeeting(meeting._id)}
+                            >
+                              Delete
+                            </Button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Past Meetings Section */}
+        {(isDoctor || isAdmin) && pastMeetings.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div className="bg-gradient-to-r from-gray-700 to-gray-800 px-6 py-4">
+              <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-3">
+                <Clock className="w-5 h-5" />
+                Past Sessions
+              </h3>
+            </div>
+
+            <div className="p-6">
+              <div className="space-y-4">
+                {pastMeetings.map((meeting, index) => (
+                  <div
+                    key={meeting._id}
+                    className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 sm:p-6 border border-gray-200 hover:shadow-md transition-all duration-300"
+                  >
+                    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-gray-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                            Completed
+                          </div>
+                          <span className="text-sm text-gray-500">
+                            Session #{pastMeetings.length - index}
+                          </span>
+                        </div>
+
+                        <div className="font-semibold text-[#000080] text-lg">
+                          {formatDay(meeting.meetingDate)},{" "}
+                          {formatDate(meeting.meetingDate)} at{" "}
+                          {meeting.meetingTime}
+                        </div>
+
+                        <div className="space-y-2 text-sm text-gray-600">
+                          {isAdmin ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <div className="flex items-center gap-2">
+                                <User className="w-4 h-4 text-gray-400" />
+                                <span>
+                                  <span className="font-medium">Client:</span>{" "}
+                                  {meeting.clientName}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <User className="w-4 h-4 text-gray-400" />
+                                <span>
+                                  <span className="font-medium">
+                                    BH Associate:
+                                  </span>{" "}
+                                  {meeting.doctorName}
+                                </span>
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                User joined:{" "}
+                                {formatIndianTime(meeting.userJoinedAt)}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                Associate joined:{" "}
+                                {formatIndianTime(meeting.docJoinedAt)}
+                              </div>
+                            </div>
+                          ) : isDoctor ? (
+                            <div className="flex items-center gap-2">
+                              <User className="w-4 h-4 text-gray-400" />
+                              <span>
+                                <span className="font-medium">Client:</span>{" "}
+                                {meeting.clientName}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <User className="w-4 h-4 text-gray-400" />
+                              <span>
+                                <span className="font-medium">
+                                  BH Associate:
+                                </span>{" "}
+                                {meeting.doctorName}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-3 items-center">
+                        {isDoctor && !meeting.reportLink?.trim() && (
+                          <a
+                            href={meeting.formLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Button className="bg-[#ec5228] hover:bg-[#d14a22] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300">
+                              Submit Report
+                            </Button>
+                          </a>
+                        )}
+                        {(isDoctor || isAdmin) && meeting.reportLink && (
+                          <a
+                            href={meeting.reportLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Button
+                              variant="outline"
+                              className="border-[#000080] text-[#000080] hover:bg-[#000080] hover:text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300"
+                            >
+                              View Report
+                            </Button>
+                          </a>
+                        )}
+                        {isAdmin && (
                           <Button
                             variant="destructive"
-                            size="sm"
+                            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300"
                             onClick={() => handleDeleteMeeting(meeting._id)}
                           >
                             Delete
                           </Button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      )}
-
-      {(isDoctor || isAdmin) && pastMeetings.length > 0 && (
-        <Card className="w-full shadow-md rounded-xl overflow-hidden mt-8">
-          <CardContent className="p-6">
-            <div className="text-lg font-semibold mb-4 text-gray-700">
-              Past Meetings
-            </div>
-            <ul className="space-y-2">
-              {pastMeetings.map((meeting) => (
-                <li
-                  key={meeting._id}
-                  className="border border-gray-200 rounded-md p-4 bg-gray-50"
-                >
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
-                    <div>
-                      <div className="font-medium">
-                        {formatDay(meeting.meetingDate)},{" "}
-                        {formatDate(meeting.meetingDate)} at{" "}
-                        {meeting.meetingTime}
+                        )}
                       </div>
-                      {isAdmin ? (
-                        <>
-                          <div className="text-sm text-muted-foreground">
-                            Client: {meeting.clientName} ({meeting.clientId})
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            Psychologist: {meeting.doctorName} ({meeting.doctorId})
-                          </div>
-                          <div className="text-xs text-gray-500 mt-1">
-                            User joined:{" "}
-                            {formatIndianTime(meeting.userJoinedAt)}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            Psychologist joined:{" "}
-                            {formatIndianTime(meeting.docJoinedAt)}
-                          </div>
-                        </>
-                      ) : isDoctor ? (
-                        <div className="text-sm text-muted-foreground">
-                          Client: {meeting.clientName} ({meeting.clientId})
-                        </div>
-                      ) : (
-                        <div className="text-sm text-muted-foreground">
-                          Psychologist: {meeting.doctorName} ({meeting.doctorId})
-                        </div>
-                      )}
-                    </div>
-                    <div className="mt-2 sm:mt-0 flex gap-4 items-center">
-                      <Badge variant="secondary">Meeting Ended</Badge>
-                      {isDoctor && !meeting.reportLink?.trim() && (
-                        <a
-                          href={meeting.formLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Button size="sm">Submit Report</Button>
-                        </a>
-                      )}
-                      {(isDoctor || isAdmin) && meeting.reportLink && (
-                        <a
-                          href={meeting.reportLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Button size="sm" variant="outline">
-                            View Report
-                          </Button>
-                        </a>
-                      )}
-                      {isAdmin && (
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDeleteMeeting(meeting._id)}
-                        >
-                          Delete
-                        </Button>
-                      )}
                     </div>
                   </div>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

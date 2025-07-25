@@ -133,7 +133,7 @@ const VerifiedDoctors = () => {
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
             <h1 className="text-3xl font-bold text-gray-800 mb-4 sm:mb-0">
-              Verified Doctors
+              Verified BH Associates
             </h1>
 
             {/* Search Form */}
@@ -179,8 +179,8 @@ const VerifiedDoctors = () => {
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-700">
                 {verifiedDoctors.length > 0
-                  ? `Found ${verifiedDoctors.length} doctor(s) matching "${searchTerm}"`
-                  : `No doctors found matching "${searchTerm}"`}
+                  ? `Found ${verifiedDoctors.length} BH Associate(s) matching "${searchTerm}"`
+                  : `No BH Associates found matching "${searchTerm}"`}
               </p>
             </div>
           )}
@@ -194,7 +194,7 @@ const VerifiedDoctors = () => {
               <p className="text-gray-500">
                 {hasSearched
                   ? "Try searching with a different email address."
-                  : "No verified doctors found at the moment."}
+                  : "No verified BH Associates found at the moment."}
               </p>
             </div>
           ) : (

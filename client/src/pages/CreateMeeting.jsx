@@ -13,11 +13,15 @@ import {
   User,
   CheckCircle,
 } from "lucide-react";
-import { useGetMeetingsQuery, useCreateMeetingMutation } from "@/features/api/meetingsApi";
+import {
+  useGetMeetingsQuery,
+  useCreateMeetingMutation,
+} from "@/features/api/meetingsApi";
 
 const CreateMeeting = () => {
   useGetMeetingsQuery(); // Keep the query active for cache invalidation
-  const [createMeeting, { isLoading: createMeetingLoading }] = useCreateMeetingMutation();
+  const [createMeeting, { isLoading: createMeetingLoading }] =
+    useCreateMeetingMutation();
   const [formData, setFormData] = useState({
     clientEmail: "",
     clientName: "",
@@ -122,13 +126,13 @@ const CreateMeeting = () => {
       newErrors.clientEmail = "Please verify the client email first";
     }
 
-    // Validate doctor/Psychologist email
+    // Validate doctor/BH Associate email
     if (!formData.doctorEmail.trim()) {
-      newErrors.doctorEmail = "Psychologist email is required";
+      newErrors.doctorEmail = "BH Associate email is required";
     } else if (!isValidEmail(formData.doctorEmail)) {
       newErrors.doctorEmail = "Please enter a valid email address";
     } else if (!emailVerification.doctor.verified) {
-      newErrors.doctorEmail = "Please verify the Psychologist email first";
+      newErrors.doctorEmail = "Please verify the BH Associate email first";
     }
 
     // Check if emails are different
@@ -137,7 +141,8 @@ const CreateMeeting = () => {
       formData.doctorEmail &&
       formData.clientEmail.toLowerCase() === formData.doctorEmail.toLowerCase()
     ) {
-      newErrors.doctorEmail = "Psychologist and client emails must be different";
+      newErrors.doctorEmail =
+        "BH Associate and client emails must be different";
     }
 
     if (!formData.meetingDate) {
@@ -402,7 +407,7 @@ const CreateMeeting = () => {
             </h1>
             <div className="w-20 h-1 bg-blue-500 mx-auto rounded mb-4"></div>
             <p className="text-gray-600">
-              Create a new meeting between client and Psychologist
+              Create a new meeting between client and BH Associate
             </p>
           </div>
         </div>
@@ -504,15 +509,15 @@ const CreateMeeting = () => {
                   </div>
                 </div>
 
-                {/* Doctor/Psychologist Section */}
+                {/* BH Associate Section */}
                 <div className="space-y-4">
-                  {/* Doctor/Psychologist Email */}
+                  {/* BH Associate Email */}
                   <div>
                     <label
                       htmlFor="doctorEmail"
                       className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                      Psychologist ID *
+                      BH Associate ID *
                     </label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -523,7 +528,7 @@ const CreateMeeting = () => {
                         value={formData.doctorEmail}
                         onChange={handleInputChange}
                         onBlur={() => handleEmailBlur("doctor")}
-                        placeholder="Psychologist@ideservebetterhealth.in"
+                        placeholder="BHAssociate@ideservebetterhealth.in"
                         className={`w-full pl-10 pr-12 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
                           errors.doctorEmail
                             ? "border-red-300 focus:border-red-500"
@@ -567,13 +572,13 @@ const CreateMeeting = () => {
                     )}
                   </div>
 
-                  {/* Doctor/Psychologist Name */}
+                  {/* BH Associate Name */}
                   <div>
                     <label
                       htmlFor="doctorName"
                       className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                      Psychologist Name
+                      BH Associate Name
                     </label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -766,8 +771,8 @@ const CreateMeeting = () => {
                     </p>
                   )}
                   <p className="mt-1 text-xs text-gray-500">
-                    Link to the report form that Psychologist will fill after the
-                    meeting
+                    Link to the report form that BH Associate will fill after
+                    the meeting
                   </p>
                 </div>
               </div>
@@ -827,7 +832,9 @@ const CreateMeeting = () => {
             📋 Meeting Creation Guidelines
           </h3>
           <ul className="text-blue-700 space-y-2 text-sm">
-            <li>• Enter valid email addresses for both client and Psychologist</li>
+            <li>
+              • Enter valid email addresses for both client and BH Associate
+            </li>
             <li>
               • Email verification will automatically fetch and display names
             </li>

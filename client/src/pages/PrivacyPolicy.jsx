@@ -404,9 +404,9 @@ const PrivacyPolicy = () => {
                         contact us at:
                       </p>
                       <p className="font-semibold">Better Health</p>
-                      <p>Email: support@betterhealth.com</p>
-                      <p>Phone: +91 123 456 7890</p>
-                      <p>Address: 123 Wellness Road, Health City, HC 12345</p>
+                      <p>Email: admin@ideservebetterhealth.in</p>
+                      <p>Phone: +91 9799161609</p>
+                      <p>Address: Jaipur, Rajasthan, India</p>
                     </>
                   )}
                 </div>

@@ -73,8 +73,8 @@ const Home = () => {
                 Cosmetologist Consultancy
               </h3>
               <p className="text-gray-600 mb-4 lg:mb-8 text-center leading-relaxed">
-                Expert solution on skincare and beauty treatments from certified
-                cosmetologists.
+                Expert solution on skincare and beauty treatments from
+                professional cosmetologists.
               </p>
               <button
                 className="bg-[#ec5228] text-white border-none rounded-lg px-6 py-3 text-lg font-semibold cursor-pointer transition-all duration-300 shadow-lg hover:bg-[#d14a22] hover:-translate-y-1 hover:scale-105 hover:shadow-xl"
@@ -106,8 +106,8 @@ const Home = () => {
                 Expert Professionals
               </h3>
               <p className="text-gray-500 leading-relaxed text-sm lg:text-base">
-                Our team consists of certified professionals with years of
-                experience in their respective fields
+                Our team consists of professionals with years of experience in
+                their respective fields
               </p>
             </div>
             <div className="bg-white p-4 lg:p-8 rounded-xl text-center shadow-md transition-all duration-300 hover:-translate-y-2 hover:shadow-lg w-full">

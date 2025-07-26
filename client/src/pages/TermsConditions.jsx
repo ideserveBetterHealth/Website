@@ -804,17 +804,16 @@ const TermsConditions = () => {
                     <strong>Platform:</strong> Better Health
                   </p>
                   <p>
-                    <strong>Email:</strong> support@betterhealth.com
+                    <strong>Email:</strong> admin@ideservebetterhealth.in
                   </p>
                   <p>
-                    <strong>Phone:</strong> +91 123 456 7890
+                    <strong>Phone:</strong> +91 9799161609
                   </p>
                   <p>
                     <strong>Website:</strong> www.ideservebetterhealth.in
                   </p>
                   <p>
-                    <strong>Address:</strong> 123 Wellness Road, Health City, HC
-                    12345
+                    <strong>Address:</strong> Jaipur, Rajasthan, India
                   </p>
                 </div>
                 <p>

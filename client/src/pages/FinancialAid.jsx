@@ -136,7 +136,7 @@ const FinancialAid = () => {
             </p>
             <div className="flex gap-4 justify-center my-8">
               <a
-                href="https://forms.gle/f8XbQD8QyHr12sw26"
+                href="https://forms.fillout.com/t/rV1wwLXjXXus"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-[#ec5228] text-white px-10 py-4 rounded-lg font-semibold border-none cursor-pointer transition-all duration-300 hover:bg-[#d94516] no-underline"

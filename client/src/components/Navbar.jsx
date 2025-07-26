@@ -24,7 +24,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
   DropdownMenuTrigger,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import MobileNavbar from "./MobileNavbar";
@@ -33,7 +35,6 @@ import { useLogoutUserMutation } from "@/features/api/authApi";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { useSelector } from "react-redux";
-import { DropdownMenuSubContent } from "@radix-ui/react-dropdown-menu";
 
 function Navbar() {
   const navigate = useNavigate();
@@ -158,6 +159,15 @@ function Navbar() {
                           </div>
                         </div>
 
+                        <Link to="/details">
+                          <DropdownMenuItem className="mx-1 my-1 rounded-xl px-3 py-3 hover:bg-gradient-to-r hover:from-green-50 hover:to-green-100 transition-all duration-200 group">
+                            <FileText className="w-4 h-4 mr-3 text-green-600 group-hover:text-green-700" />
+                            <span className="font-medium text-gray-700 group-hover:text-gray-900">
+                              Submit Documents
+                            </span>
+                          </DropdownMenuItem>
+                        </Link>
+
                         <Link to="/admin/register">
                           <DropdownMenuItem className="mx-1 my-1 rounded-xl px-3 py-3 hover:bg-gradient-to-r hover:from-purple-50 hover:to-purple-100 transition-all duration-200 group">
                             <UserPlus className="w-4 h-4 mr-3 text-purple-600 group-hover:text-purple-700" />
@@ -183,24 +193,26 @@ function Navbar() {
                               Verification
                             </span>
                           </DropdownMenuSubTrigger>
-                          <DropdownMenuSubContent className="bg-white/95 backdrop-blur-md shadow-xl rounded-xl p-2 border border-gray-100 ml-2">
-                            <Link to="/admin/verify-documents">
-                              <DropdownMenuItem className="rounded-lg px-3 py-2 hover:bg-yellow-50 transition-all duration-200 group">
-                                <Settings className="w-4 h-4 mr-3 text-yellow-600 group-hover:text-yellow-700" />
-                                <span className="font-medium text-gray-700 group-hover:text-gray-900">
-                                  Pending Verifications
-                                </span>
-                              </DropdownMenuItem>
-                            </Link>
-                            <Link to="/admin/verified-doctors">
-                              <DropdownMenuItem className="rounded-lg px-3 py-2 hover:bg-green-50 transition-all duration-200 group">
-                                <CheckCircle className="w-4 h-4 mr-3 text-green-600 group-hover:text-green-700" />
-                                <span className="font-medium text-gray-700 group-hover:text-gray-900">
-                                  Verified BH Associates
-                                </span>
-                              </DropdownMenuItem>
-                            </Link>
-                          </DropdownMenuSubContent>
+                          <DropdownMenuPortal>
+                            <DropdownMenuSubContent className="w-56 bg-white/95 backdrop-blur-md shadow-xl rounded-xl p-2 border border-gray-100">
+                              <Link to="/admin/verify-documents">
+                                <DropdownMenuItem className="rounded-lg px-3 py-2 hover:bg-yellow-50 transition-all duration-200 group">
+                                  <Settings className="w-4 h-4 mr-3 text-yellow-600 group-hover:text-yellow-700" />
+                                  <span className="font-medium text-gray-700 group-hover:text-gray-900">
+                                    Pending Verifications
+                                  </span>
+                                </DropdownMenuItem>
+                              </Link>
+                              <Link to="/admin/verified-doctors">
+                                <DropdownMenuItem className="rounded-lg px-3 py-2 hover:bg-green-50 transition-all duration-200 group">
+                                  <CheckCircle className="w-4 h-4 mr-3 text-green-600 group-hover:text-green-700" />
+                                  <span className="font-medium text-gray-700 group-hover:text-gray-900">
+                                    Verified BH Associates
+                                  </span>
+                                </DropdownMenuItem>
+                              </Link>
+                            </DropdownMenuSubContent>
+                          </DropdownMenuPortal>
                         </DropdownMenuSub>
 
                         <DropdownMenuSub>
@@ -210,24 +222,26 @@ function Navbar() {
                               Coupons
                             </span>
                           </DropdownMenuSubTrigger>
-                          <DropdownMenuSubContent className="bg-white/95 backdrop-blur-md shadow-xl rounded-xl p-2 border border-gray-100 ml-2">
-                            <Link to="/admin/create-coupons">
-                              <DropdownMenuItem className="rounded-lg px-3 py-2 hover:bg-blue-50 transition-all duration-200 group">
-                                <Plus className="w-4 h-4 mr-3 text-blue-600 group-hover:text-blue-700" />
-                                <span className="font-medium text-gray-700 group-hover:text-gray-900">
-                                  Create Coupons
-                                </span>
-                              </DropdownMenuItem>
-                            </Link>
-                            <Link to="/admin/all-coupons">
-                              <DropdownMenuItem className="rounded-lg px-3 py-2 hover:bg-purple-50 transition-all duration-200 group">
-                                <Settings className="w-4 h-4 mr-3 text-purple-600 group-hover:text-purple-700" />
-                                <span className="font-medium text-gray-700 group-hover:text-gray-900">
-                                  Manage Coupons
-                                </span>
-                              </DropdownMenuItem>
-                            </Link>
-                          </DropdownMenuSubContent>
+                          <DropdownMenuPortal>
+                            <DropdownMenuSubContent className="w-56 bg-white/95 backdrop-blur-md shadow-xl rounded-xl p-2 border border-gray-100">
+                              <Link to="/admin/create-coupons">
+                                <DropdownMenuItem className="rounded-lg px-3 py-2 hover:bg-blue-50 transition-all duration-200 group">
+                                  <Plus className="w-4 h-4 mr-3 text-blue-600 group-hover:text-blue-700" />
+                                  <span className="font-medium text-gray-700 group-hover:text-gray-900">
+                                    Create Coupons
+                                  </span>
+                                </DropdownMenuItem>
+                              </Link>
+                              <Link to="/admin/all-coupons">
+                                <DropdownMenuItem className="rounded-lg px-3 py-2 hover:bg-purple-50 transition-all duration-200 group">
+                                  <Settings className="w-4 h-4 mr-3 text-purple-600 group-hover:text-purple-700" />
+                                  <span className="font-medium text-gray-700 group-hover:text-gray-900">
+                                    Manage Coupons
+                                  </span>
+                                </DropdownMenuItem>
+                              </Link>
+                            </DropdownMenuSubContent>
+                          </DropdownMenuPortal>
                         </DropdownMenuSub>
                       </>
                     )}

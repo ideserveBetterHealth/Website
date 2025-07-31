@@ -385,7 +385,10 @@ export default function DynamicForm() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [btnDisable, setBtnDisable] = useState(false);
 
-  const MEDIA_API = `${import.meta.env.VITE_BACKEND_URL}/api/v1/media`;
+  // Cloudinary configuration - you can get these from your Cloudinary dashboard
+  const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+  const CLOUDINARY_UPLOAD_PRESET = import.meta.env
+    .VITE_CLOUDINARY_UPLOAD_PRESET;
 
   const fileChangeHandler = async (
     e,
@@ -394,50 +397,106 @@ export default function DynamicForm() {
     type = "document"
   ) => {
     const file = e.target.files[0];
-    if (file) {
+    if (!file) return;
+
+    // Frontend validation for security
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    const allowedTypes = {
+      resume: [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ],
+      document: ["image/jpeg", "image/jpg", "image/png", "application/pdf"],
+      salary: ["application/pdf", "image/jpeg", "image/png"],
+    };
+
+    // Validate file size
+    if (file.size > maxSize) {
+      toast.error("File size must be less than 10MB");
+      return;
+    }
+
+    // Validate file type
+    const typeKey = type === "document" ? "document" : type;
+    if (!allowedTypes[typeKey]?.includes(file.type)) {
+      toast.error(
+        `Invalid file type. Allowed types: ${allowedTypes[typeKey]?.join(", ")}`
+      );
+      return;
+    }
+
+    // Validate file name (prevent malicious names)
+    if (file.name.length > 100) {
+      toast.error("File name too long. Please rename your file.");
+      return;
+    }
+
+    setMediaProgress(true);
+    setBtnDisable(true);
+
+    try {
+      // Create FormData for Cloudinary
       const formData = new FormData();
       formData.append("file", file);
-      setMediaProgress(true);
-      try {
-        setBtnDisable(true);
-        const res = await axios.post(`${MEDIA_API}/upload-media`, formData, {
-          withCredentials: true,
+      formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+      formData.append("folder", "employee-documents");
+
+      // Add additional security parameters
+      formData.append("resource_type", "auto");
+      formData.append("quality", "auto:good"); // Optimize images
+
+      // Upload directly to Cloudinary
+      const response = await axios.post(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
           onUploadProgress: ({ loaded, total }) => {
             setUploadProgress(Math.round((loaded * 100) / total));
           },
-        });
+          timeout: 30000, // 30 second timeout
+          withCredentials: false, // Disable credentials for Cloudinary uploads
+        }
+      );
 
-        if (res.data.success) {
-          console.log("Media uploaded successfully:", res.data);
-          if (order === undefined && type === "resume") {
-            setResumeUrl(res.data.data.url);
-          }
-          if (order === undefined && type === "salary") {
-            setSalarySlip(res.data.data.url);
-          }
-          if (order === 1) {
-            if (side === "front") {
-              setFrontImage1(res.data.data.url);
-            } else {
-              setBackImage1(res.data.data.url);
-            }
-          }
-          if (order === 2) {
-            if (side === "front") {
-              setFrontImage2(res.data.data.url);
-            } else {
-              setBackImage2(res.data.data.url);
-            }
+      if (response.data.secure_url) {
+        console.log("Media uploaded successfully:", response.data);
+        const uploadedUrl = response.data.secure_url;
+
+        // Set the appropriate state based on the upload type
+        if (order === undefined && type === "resume") {
+          setResumeUrl(uploadedUrl);
+        }
+        if (order === undefined && type === "salary") {
+          setSalarySlip(uploadedUrl);
+        }
+        if (order === 1) {
+          if (side === "front") {
+            setFrontImage1(uploadedUrl);
+          } else {
+            setBackImage1(uploadedUrl);
           }
         }
-        toast.success(res.data.message);
-      } catch (error) {
-        toast.error("Something is wrong.");
-        console.log(error);
-      } finally {
-        setMediaProgress(false);
-        setBtnDisable(false);
+        if (order === 2) {
+          if (side === "front") {
+            setFrontImage2(uploadedUrl);
+          } else {
+            setBackImage2(uploadedUrl);
+          }
+        }
+
+        toast.success("File uploaded successfully!");
       }
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Failed to upload file. Please try again.");
+    } finally {
+      setMediaProgress(false);
+      setBtnDisable(false);
+      setUploadProgress(0);
     }
   };
 

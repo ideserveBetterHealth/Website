@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Calendar, ChevronDown, Clock, User, Video } from "lucide-react";
+import { Calendar, ChevronDown, Clock, Lock, User, Video } from "lucide-react";
 import {
   useGetMeetingsQuery,
   useDeleteMeetingMutation,
@@ -26,6 +26,19 @@ import { use } from "react";
 
 const Dashboard = () => {
   const user = useSelector((state) => state?.auth?.user);
+  // Inspirational quotes for users
+  const inspirationalQuotes = [
+    "Your mental health is just as important as your physical health. Take care of yourself.",
+    "Every step towards better mental health is a step towards a brighter future.",
+    "Self-care isn't selfish; it's essential. You matter, and your well-being matters.",
+    "Progress, not perfection. Every small step counts on your journey to wellness.",
+    "You are stronger than you think, braver than you feel, and more loved than you know.",
+    "Mental health recovery is not a destination, but a journey of self-discovery.",
+    "Be patient with yourself. Healing takes time, and you're worth the effort.",
+    "Your story isn't over yet. There are beautiful chapters still to be written.",
+    "Taking care of your mental health is an act of courage and self-compassion.",
+    "You don't have to be perfect. You just have to be yourself, and that's enough.",
+  ];
   const navigate = useNavigate();
   const { data: meetingsDataFromApi, isLoading: isMeetingsDataLoading } =
     useGetMeetingsQuery(undefined, {
@@ -41,6 +54,12 @@ const Dashboard = () => {
   const [services, setServices] = useState(null);
   const [loadingServices, setLoadingServices] = useState(false);
   const [tick, setTick] = useState(0);
+
+  // Store random quote once when component mounts (only changes on page reload)
+  const [randomQuote] = useState(() => {
+    const randomIndex = Math.floor(Math.random() * inspirationalQuotes.length);
+    return inspirationalQuotes[randomIndex];
+  });
 
   // Timer for real-time updates (every second)
   useEffect(() => {
@@ -61,27 +80,9 @@ const Dashboard = () => {
     (a, b) => new Date(a.meetingDate) - new Date(b.meetingDate)
   );
 
-  // Inspirational quotes for users
-  const inspirationalQuotes = [
-    "Your mental health is just as important as your physical health. Take care of yourself.",
-    "Every step towards better mental health is a step towards a brighter future.",
-    "Self-care isn't selfish; it's essential. You matter, and your well-being matters.",
-    "Progress, not perfection. Every small step counts on your journey to wellness.",
-    "You are stronger than you think, braver than you feel, and more loved than you know.",
-    "Mental health recovery is not a destination, but a journey of self-discovery.",
-    "Be patient with yourself. Healing takes time, and you're worth the effort.",
-    "Your story isn't over yet. There are beautiful chapters still to be written.",
-    "Taking care of your mental health is an act of courage and self-compassion.",
-    "You don't have to be perfect. You just have to be yourself, and that's enough.",
-  ];
-
-  // Get a consistent inspirational quote based on user email (prevents quote changes on re-renders)
+  // Get the stored random inspirational quote (only changes on page reload)
   const getUserQuote = () => {
-    if (!user?.email) return inspirationalQuotes[0];
-    const emailSum = user.email
-      .split("")
-      .reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    return inspirationalQuotes[emailSum % inspirationalQuotes.length];
+    return randomQuote;
   };
 
   // Extract user's first name for personalized greeting
@@ -575,11 +576,30 @@ const Dashboard = () => {
           <div className="bg-white rounded-2xl shadow-lg p-8 sm:p-12 text-center">
             <div className="max-w-md mx-auto">
               <div className="bg-[#fffae3] rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
-                <Calendar className="w-10 h-10 text-[#ec5228]" />
+                {role !== "user" && user?.isVerified !== "verified" ? (
+                  <Lock className="w-10 h-10 text-[#ec5228]" />
+                ) : (
+                  <Calendar className="w-10 h-10 text-[#ec5228]" />
+                )}
               </div>
               {role !== "user" && user?.isVerified !== "verified" ? (
                 <h1 className="text-xl sm:text-2xl font-bold text-[#000080] mb-4">
-                  Please verify your documents to access the dashboard
+                  {user?.isVerified === "pending" ? (
+                    "Your documents are under review. Please give us some time for verification."
+                  ) : (
+                    <>
+                      Your dashboard is{" "}
+                      <span className="font-bold text-[#ec5228]">LOCKED</span>
+                      <br></br>
+                      <Button
+                        variant="outline"
+                        className="text-[#000080] mt-4"
+                        onClick={() => navigate("/details")}
+                      >
+                        Submit Documents
+                      </Button>
+                    </>
+                  )}
                 </h1>
               ) : (
                 <>

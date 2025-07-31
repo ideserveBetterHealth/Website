@@ -405,9 +405,36 @@ export default function DynamicForm() {
       if (error.data) {
         // If we have detailed error information from the backend
         if (error.data.errors && Array.isArray(error.data.errors)) {
-          // Show specific validation errors
+          // Check if these are MongoDB validation errors (objects) or simple strings
           const firstError = error.data.errors[0];
           const remainingCount = error.data.errors.length - 1;
+
+          let errorMessage;
+          if (typeof firstError === "object" && firstError.message) {
+            // MongoDB validation error format
+            errorMessage = firstError.message;
+          } else if (typeof firstError === "string") {
+            // Simple string error format
+            errorMessage = firstError;
+          } else {
+            // Fallback for other formats
+            errorMessage = JSON.stringify(firstError);
+          }
+
+          if (remainingCount > 0) {
+            errorMessage += ` and ${remainingCount} more error${
+              remainingCount > 1 ? "s" : ""
+            }`;
+          }
+
+          toast.error(`Validation failed: ${errorMessage}`);
+        } else if (
+          error.data.detailedErrors &&
+          Array.isArray(error.data.detailedErrors)
+        ) {
+          // Use detailedErrors if available (these are formatted strings)
+          const firstError = error.data.detailedErrors[0];
+          const remainingCount = error.data.detailedErrors.length - 1;
 
           let errorMessage = firstError;
           if (remainingCount > 0) {

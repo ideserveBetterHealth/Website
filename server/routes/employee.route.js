@@ -21,6 +21,6 @@ router.get("/status-verified", isAuthenticated, statusVerified);
 
 router.get("/doctor-details/:userId", isAuthenticated, getDoctorDetails);
 
-router.patch("/verify-doctor/:userId", isAuthenticated, verifyDoctor);
+router.post("/verify-doctor/:userId", isAuthenticated, verifyDoctor);
 
 export const employeeRouter = router;

@@ -395,6 +395,34 @@ export const createEmployee = async (req, res) => {
       }
     }
 
+    // Additional bank account field validations
+    if (bankAccount.accountNumber) {
+      const accountNumber = bankAccount.accountNumber.toString().trim();
+      if (accountNumber.length < 8) {
+        validationErrors.push(
+          `Bank Account: Account number must be at least 8 characters long. Current length: ${accountNumber.length}. Received: ${accountNumber}`
+        );
+      }
+    }
+
+    if (bankAccount.ifsc) {
+      const ifscPattern = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+      if (!ifscPattern.test(bankAccount.ifsc.toString().trim())) {
+        validationErrors.push(
+          `Bank Account: IFSC code format is invalid. Expected format: 4 letters + 0 + 6 alphanumeric characters (e.g., ABCD0123456). Received: ${bankAccount.ifsc}`
+        );
+      }
+    }
+
+    if (bankAccount.upi) {
+      const upiPattern = /^[\w.-]+@[\w.-]+$/;
+      if (!upiPattern.test(bankAccount.upi.toString().trim())) {
+        validationErrors.push(
+          `Bank Account: UPI ID format is invalid. Expected format: username@provider (e.g., user@paytm). Received: ${bankAccount.upi}`
+        );
+      }
+    }
+
     // If there are validation errors, return them
     if (validationErrors.length > 0) {
       return res.status(400).json({
@@ -503,14 +531,32 @@ export const createEmployee = async (req, res) => {
 
       console.error("Validation Errors Detail:", validationErrors);
 
+      // Create user-friendly error messages
+      const userFriendlyErrors = validationErrors.map((err) => {
+        // Convert field path to human-readable format
+        let fieldName = err.field;
+        if (fieldName.includes(".")) {
+          const parts = fieldName.split(".");
+          if (parts[0] === "bankAccount") {
+            fieldName = `Bank Account ${parts[1]}`;
+          } else if (parts[0] === "personalInfo") {
+            fieldName = `Personal Info ${parts[1]}`;
+          } else {
+            fieldName = parts.join(" ");
+          }
+        }
+
+        // Return a user-friendly error message
+        return `${fieldName}: ${err.message}`;
+      });
+
       return res.status(400).json({
         success: false,
         message: "Database validation failed",
         errorType: "ValidationError",
-        errors: validationErrors,
-        detailedErrors: Object.keys(error.errors).map(
-          (key) => `${key}: ${error.errors[key].message}`
-        ),
+        errors: userFriendlyErrors, // Send user-friendly messages
+        rawErrors: validationErrors, // Keep original for debugging
+        detailedErrors: userFriendlyErrors, // Also provide in detailedErrors for frontend compatibility
       });
     }
 

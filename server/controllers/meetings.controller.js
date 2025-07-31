@@ -18,31 +18,16 @@ export const getMeetings = async (req, res) => {
   const user = await User.findById(userId);
   const role = user.role;
   const userEmail = user.email;
+  if (role !== "user") {
+    if (user.isVerified !== "verified") {
+      return res.status(403).json({
+        message: "Access denied",
+      });
+    }
+  }
 
   let query = {};
   const now = new Date();
-
-  // For user viewing, we need to consider both date and time
-  // const isPastMeeting = (meeting) => {
-  //   const meetingDateTime = new Date(meeting.meetingDate);
-  //   const [timePart, ampm] = meeting.meetingTime.split(" ");
-  //   const [hours, minutes] = timePart.split(":").map(Number);
-
-  //   const adjustedHours =
-  //     ampm.toLowerCase() === "pm" && hours !== 12
-  //       ? hours + 12
-  //       : ampm.toLowerCase() === "am" && hours === 12
-  //       ? 0
-  //       : hours;
-
-  //   meetingDateTime.setHours(adjustedHours, minutes, 0, 0);
-
-  //   // Add one hour buffer
-  //   const oneHourAfterMeeting = new Date(meetingDateTime);
-  //   oneHourAfterMeeting.setHours(oneHourAfterMeeting.getHours() + 1);
-
-  //   return oneHourAfterMeeting < now;
-  // };
 
   try {
     if (role === "admin") {
@@ -104,13 +89,12 @@ export const createMeeting = async (req, res) => {
   const userId = req.id;
   const user = await User.findById(userId);
   const role = user.role;
-
-  if (role !== "admin") {
+  if (role !== "admin" || user.isVerified !== "verified") {
     return res.status(403).json({
-      message: "Access denied: Only administrators can create meetings.",
+      message:
+        "Access denied: Only verified administrators can access this resource.",
     });
   }
-
   const {
     clientId,
     doctorId,
@@ -239,19 +223,15 @@ export const meetingJoinedAt = async (req, res) => {
       return res.status(404).json({ message: "Meeting not found." });
     }
 
-    // Get current time in IST (UTC+5:30)
-    const now = moment().utcOffset("+05:30");
+    // Check if the meeting time has arrived
+    const now = new Date();
+    const meetingDate = new Date(meeting.meetingDate);
 
-    // Extract just the date part from meetingDate and convert to IST
-    const meetingDateOnly = moment(meeting.meetingDate)
-      .utcOffset("+05:30")
-      .startOf("day");
-
-    // Parse the meetingTime string
+    // Convert meetingTime (e.g. "10:00 AM") to hours and minutes
     const [timePart, ampm] = meeting.meetingTime.split(" ");
     const [hours, minutes] = timePart.split(":").map(Number);
 
-    // Convert to 24-hour format
+    // Adjust hours for PM
     const adjustedHours =
       ampm.toLowerCase() === "pm" && hours !== 12
         ? hours + 12
@@ -259,40 +239,23 @@ export const meetingJoinedAt = async (req, res) => {
         ? 0
         : hours;
 
-    // Combine date and time to create the full meeting datetime in IST
-    const meetingDateTime = meetingDateOnly
-      .clone()
-      .hour(adjustedHours)
-      .minute(minutes)
-      .second(0)
-      .millisecond(0);
+    // Create a new Date object with the meeting date and time
+    const meetingDateTime = new Date(meetingDate);
+    meetingDateTime.setHours(adjustedHours, minutes, 0, 0);
 
     // Allow joining 5 minutes before the scheduled time
-    const joinWindow = meetingDateTime.clone().subtract(5, "minutes");
-
-    // Debug logging for timezone issues
-    console.log("Meeting Join Debug:", {
-      meetingId,
-      userEmail,
-      role,
-      currentTimeIST: now.format("YYYY-MM-DD HH:mm:ss"),
-      meetingDateFromDB: meeting.meetingDate,
-      meetingTimeFromDB: meeting.meetingTime,
-      calculatedMeetingDateTime: meetingDateTime.format("YYYY-MM-DD HH:mm:ss"),
-      joinWindowIST: joinWindow.format("YYYY-MM-DD HH:mm:ss"),
-      canJoinNow: now.isAfter(joinWindow),
-      minutesUntilJoin: joinWindow.diff(now, "minutes"),
-    });
+    const joinWindow = new Date(meetingDateTime);
+    joinWindow.setMinutes(joinWindow.getMinutes() - 5);
 
     // Check if current time is before the join window
-    if (now.isBefore(joinWindow)) {
-      const minutesUntilMeeting = joinWindow.diff(now, "minutes");
+    if (now < joinWindow) {
+      const timeUntilMeeting = joinWindow - now;
+      const minutesUntilMeeting = Math.ceil(timeUntilMeeting / (1000 * 60));
 
       return res.status(403).json({
         message: `Meeting has not started yet. You can join ${minutesUntilMeeting} minutes before the scheduled time.`,
-        scheduledTime: meetingDateTime.format("YYYY-MM-DD HH:mm:ss") + " IST",
-        joinWindow: joinWindow.format("YYYY-MM-DD HH:mm:ss") + " IST",
-        currentTime: now.format("YYYY-MM-DD HH:mm:ss") + " IST",
+        scheduledTime: meetingDateTime,
+        joinWindow: joinWindow,
       });
     }
 
@@ -322,13 +285,13 @@ export const meetingJoinedAt = async (req, res) => {
       });
     }
 
-    // Record join time in IST but store as UTC
-    const joinedAt = moment().utc().toISOString();
+    // Record join time
+    const joinedAt = new Date();
 
     if (role === "user") {
-      meeting.userJoinedAt = joinedAt;
+      meeting.userJoinedAt = joinedAt.toISOString();
     } else if (role === "doctor") {
-      meeting.docJoinedAt = joinedAt;
+      meeting.docJoinedAt = joinedAt.toISOString();
     }
 
     await meeting.save();
@@ -351,9 +314,10 @@ export const deleteMeeting = async (req, res) => {
   const userId = req.id;
   const user = await User.findById(userId);
   const role = user.role;
-  if (role !== "admin") {
+  if (role !== "admin" || user.isVerified !== "verified") {
     return res.status(403).json({
-      message: "Access denied: Only administrators can delete meetings.",
+      message:
+        "Access denied: Only verified administrators can access this resource.",
     });
   }
   try {
@@ -376,7 +340,11 @@ export const userAllMeetings = async (req, res) => {
   const otherId = req.id;
   const user = await User.findById(otherId);
   const role = user.role;
-
+  if (role !== "admin" || user.isVerified !== "verified") {
+    return res.status(403).json({
+      message: "Access denied.",
+    });
+  }
   if (role == "user") {
     return res.status(403).json({
       message: "Access denied: Only users can view their meetings.",
@@ -423,10 +391,10 @@ export const verifyUserEmail = async (req, res) => {
   const userId = req.id;
   const user = await User.findById(userId);
   const role = user.role;
-
-  if (role !== "admin") {
+  if (role !== "admin" || user.isVerified !== "verified") {
     return res.status(403).json({
-      message: "Access denied: Only administrators can verify user emails.",
+      message:
+        "Access denied: Only verified administrators can access this resource.",
     });
   }
 

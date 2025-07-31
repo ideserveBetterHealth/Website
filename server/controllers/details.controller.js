@@ -5,7 +5,7 @@ export const createEmployee = async (req, res) => {
   try {
     const userId = req.id;
     const user = await User.findById(userId);
-    if (user.role !== "doctor") {
+    if (user.role !== "doctor" || user.role !== "admin") {
       return res.status(403).json({
         success: false,
         message: "You are not authorized to create employee details.",
@@ -309,7 +309,7 @@ export const verifyDoctor = async (req, res) => {
 
     // Check if the requester is an admin
     const admin = await User.findById(adminId);
-    if (admin.role !== "admin") {
+    if (admin.role !== "admin" || admin.isVerified !== "verified") {
       return res.status(403).json({
         success: false,
         message: "You are not authorized to verify doctors.",

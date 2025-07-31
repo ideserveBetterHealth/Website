@@ -13,8 +13,15 @@ import {
   User,
   CheckCircle,
 } from "lucide-react";
+import {
+  useGetMeetingsQuery,
+  useCreateMeetingMutation,
+} from "@/features/api/meetingsApi";
 
 const CreateMeeting = () => {
+  useGetMeetingsQuery(); // Keep the query active for cache invalidation
+  const [createMeeting, { isLoading: createMeetingLoading }] =
+    useCreateMeetingMutation();
   const [formData, setFormData] = useState({
     clientEmail: "",
     clientName: "",
@@ -22,12 +29,11 @@ const CreateMeeting = () => {
     doctorName: "",
     meetingDate: "",
     meetingTime: "",
-    meetingPeriod: "AM", // New state for AM/PM
+    meetingPeriod: "AM",
     meetingLink: "",
     formLink: "",
   });
 
-  const [loading, setLoading] = useState(false);
   const [emailVerification, setEmailVerification] = useState({
     client: { loading: false, verified: false },
     doctor: { loading: false, verified: false },
@@ -120,13 +126,13 @@ const CreateMeeting = () => {
       newErrors.clientEmail = "Please verify the client email first";
     }
 
-    // Validate doctor email
+    // Validate doctor/BH Associate email
     if (!formData.doctorEmail.trim()) {
-      newErrors.doctorEmail = "Doctor email is required";
+      newErrors.doctorEmail = "BH Associate email is required";
     } else if (!isValidEmail(formData.doctorEmail)) {
       newErrors.doctorEmail = "Please enter a valid email address";
     } else if (!emailVerification.doctor.verified) {
-      newErrors.doctorEmail = "Please verify the doctor email first";
+      newErrors.doctorEmail = "Please verify the BH Associate email first";
     }
 
     // Check if emails are different
@@ -135,7 +141,8 @@ const CreateMeeting = () => {
       formData.doctorEmail &&
       formData.clientEmail.toLowerCase() === formData.doctorEmail.toLowerCase()
     ) {
-      newErrors.doctorEmail = "Doctor and client emails must be different";
+      newErrors.doctorEmail =
+        "BH Associate and client emails must be different";
     }
 
     if (!formData.meetingDate) {
@@ -212,7 +219,7 @@ const CreateMeeting = () => {
     try {
       new URL(string);
       return true;
-    } catch (_) {
+    } catch {
       return false;
     }
   };
@@ -297,8 +304,6 @@ const CreateMeeting = () => {
       return;
     }
 
-    setLoading(true);
-
     try {
       // Combine time and period before submitting
       const fullTime = `${formData.meetingTime} ${formData.meetingPeriod}`;
@@ -313,42 +318,35 @@ const CreateMeeting = () => {
         formLink: formData.formLink,
       };
 
-      const response = await axios.post(
-        `${API_BASE}/create-meeting`,
-        submitData
-      );
+      await createMeeting(submitData).unwrap();
 
-      if (response.status === 201) {
-        toast.success("Meeting created successfully!");
+      toast.success("Meeting created successfully!");
 
-        // Reset form
-        setFormData({
-          clientEmail: "",
-          clientName: "",
-          doctorEmail: "",
-          doctorName: "",
-          meetingDate: "",
-          meetingTime: "",
-          meetingPeriod: "AM",
-          meetingLink: "",
-          formLink: "",
-        });
-        setEmailVerification({
-          client: { loading: false, verified: false },
-          doctor: { loading: false, verified: false },
-        });
-        setErrors({});
-      }
+      // Reset form
+      setFormData({
+        clientEmail: "",
+        clientName: "",
+        doctorEmail: "",
+        doctorName: "",
+        meetingDate: "",
+        meetingTime: "",
+        meetingPeriod: "AM",
+        meetingLink: "",
+        formLink: "",
+      });
+      setEmailVerification({
+        client: { loading: false, verified: false },
+        doctor: { loading: false, verified: false },
+      });
+      setErrors({});
     } catch (error) {
       console.error("Error creating meeting:", error);
 
-      if (error.response?.data?.message) {
-        toast.error(error.response.data.message);
+      if (error?.data?.message) {
+        toast.error(error.data.message);
       } else {
         toast.error("Failed to create meeting. Please try again.");
       }
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -409,7 +407,7 @@ const CreateMeeting = () => {
             </h1>
             <div className="w-20 h-1 bg-blue-500 mx-auto rounded mb-4"></div>
             <p className="text-gray-600">
-              Create a new meeting between client and doctor
+              Create a new meeting between client and BH Associate
             </p>
           </div>
         </div>
@@ -511,15 +509,15 @@ const CreateMeeting = () => {
                   </div>
                 </div>
 
-                {/* Doctor Section */}
+                {/* BH Associate Section */}
                 <div className="space-y-4">
-                  {/* Doctor Email */}
+                  {/* BH Associate Email */}
                   <div>
                     <label
                       htmlFor="doctorEmail"
                       className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                      Doctor ID *
+                      BH Associate ID *
                     </label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -530,7 +528,7 @@ const CreateMeeting = () => {
                         value={formData.doctorEmail}
                         onChange={handleInputChange}
                         onBlur={() => handleEmailBlur("doctor")}
-                        placeholder="doctor@example.com"
+                        placeholder="BHAssociate@ideservebetterhealth.in"
                         className={`w-full pl-10 pr-12 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
                           errors.doctorEmail
                             ? "border-red-300 focus:border-red-500"
@@ -574,13 +572,13 @@ const CreateMeeting = () => {
                     )}
                   </div>
 
-                  {/* Doctor Name */}
+                  {/* BH Associate Name */}
                   <div>
                     <label
                       htmlFor="doctorName"
                       className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                      Doctor Name
+                      BH Associate Name
                     </label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -773,8 +771,8 @@ const CreateMeeting = () => {
                     </p>
                   )}
                   <p className="mt-1 text-xs text-gray-500">
-                    Link to the report form that doctor will fill after the
-                    meeting
+                    Link to the report form that BH Associate will fill after
+                    the meeting
                   </p>
                 </div>
               </div>
@@ -784,10 +782,10 @@ const CreateMeeting = () => {
             <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={createMeetingLoading}
                 className="flex-1 py-4 bg-blue-600 text-white font-bold text-lg rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors transform hover:scale-105 active:scale-95"
               >
-                {loading ? (
+                {createMeetingLoading ? (
                   <div className="flex items-center justify-center">
                     <svg
                       className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
@@ -819,7 +817,7 @@ const CreateMeeting = () => {
               <button
                 type="button"
                 onClick={clearForm}
-                disabled={loading}
+                disabled={createMeetingLoading}
                 className="flex-1 py-4 bg-gray-500 text-white font-bold text-lg rounded-lg hover:bg-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
                 Clear Form
@@ -834,7 +832,9 @@ const CreateMeeting = () => {
             📋 Meeting Creation Guidelines
           </h3>
           <ul className="text-blue-700 space-y-2 text-sm">
-            <li>• Enter valid email addresses for both client and doctor</li>
+            <li>
+              • Enter valid email addresses for both client and BH Associate
+            </li>
             <li>
               • Email verification will automatically fetch and display names
             </li>

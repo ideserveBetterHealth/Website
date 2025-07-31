@@ -20,7 +20,7 @@ const VerifiedDoctorInDetail = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth.user);
-
+  axios.defaults.withCredentials = true;
   const API_BASE = `${import.meta.env.VITE_BACKEND_URL}/api/v1/register`;
 
   // Check if user is admin
@@ -60,7 +60,7 @@ const VerifiedDoctorInDetail = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-semibold text-gray-700">
-            Doctor not found
+            BH Associate not found
           </h2>
           <button
             onClick={() => navigate("/admin/verified-doctors")}
@@ -85,12 +85,14 @@ const VerifiedDoctorInDetail = () => {
             className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-4"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Verifed Doctors
+            Back to Verified BH Associates
           </button>
-          <h1 className="text-3xl font-bold text-gray-800">Doctor Details</h1>
+          <h1 className="text-3xl font-bold text-gray-800">
+            BH Associate Details
+          </h1>
         </div>
 
-        {/* Doctor Basic Info */}
+        {/* BH Associate Basic Info */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center space-x-4">
             <div className="bg-blue-100 rounded-full p-4">

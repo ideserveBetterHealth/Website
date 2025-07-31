@@ -51,6 +51,13 @@ const UserAllMeetings = () => {
     }
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !isLoading) {
+      e.preventDefault();
+      fetchUserMeetings();
+    }
+  };
+
   // Helper functions from Dashboard.jsx
   const formatDay = (dateStr) => {
     const date = new Date(dateStr);
@@ -130,6 +137,7 @@ const UserAllMeetings = () => {
               placeholder="Enter user email"
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
+              onKeyDown={handleKeyDown}
               className="flex-grow"
             />
             <Button onClick={fetchUserMeetings} disabled={isLoading}>

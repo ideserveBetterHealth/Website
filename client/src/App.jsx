@@ -79,6 +79,10 @@ function App() {
             </AuthenticatedUser>
           ),
         },
+        {
+          path: "*",
+          element: <ErrorPage />,
+        },
       ],
     },
     {
@@ -86,6 +90,10 @@ function App() {
       element: <MainLayout />,
       errorElement: <ErrorPage />,
       children: [
+        {
+          path: "*", // handles 404 in protected routes
+          element: <ErrorPage />,
+        },
         // Public routes (accessible to all)
         {
           path: "/details",

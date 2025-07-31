@@ -13,6 +13,12 @@ export const ProtectedRoute = ({ children, adminOnly = false }) => {
         navigate("/login");
       } else if (adminOnly && user.role !== "admin") {
         navigate("/dashboard");
+      } else if (
+        adminOnly &&
+        user.role == "admin" &&
+        user.isVerified !== "verified"
+      ) {
+        navigate("/dashboard");
       }
     }
   }, [user, isLoading, navigate, adminOnly]);

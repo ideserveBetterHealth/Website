@@ -67,13 +67,9 @@ const VerificationPending = () => {
   const handleVerifyDoctor = async () => {
     try {
       setVerifying(true);
-      const response = await axios.patch(
-        `${API_BASE}/verify-doctor/${userId}`,
-        {},
-        {
-          withCredentials: true,
-        }
-      );
+      const response = await axios.post(`${API_BASE}/verify-doctor/${userId}`, {
+        withCredentials: true,
+      });
 
       if (response.data.success) {
         toast.success("Doctor verified successfully!");
@@ -487,7 +483,7 @@ const VerificationPending = () => {
               ) : (
                 <>
                   <CheckCircle className="h-5 w-5 mr-2" />
-                  Verify Doctor
+                  Verify
                 </>
               )}
             </button>

@@ -170,6 +170,22 @@ export default function DynamicForm() {
   // New state for form errors
   const [errors, setErrors] = useState({});
 
+  // Function to clear specific field errors
+  const clearFieldError = (fieldName) => {
+    if (errors[fieldName]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[fieldName];
+        return newErrors;
+      });
+    }
+  };
+
+  // Function to clear all errors
+  const clearAllErrors = () => {
+    setErrors({});
+  };
+
   // Validate form fields
   const validateForm = () => {
     const newErrors = {};
@@ -284,19 +300,25 @@ export default function DynamicForm() {
     if (!upi.trim()) newErrors.upi = "UPI ID is required";
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return { isValid: Object.keys(newErrors).length === 0, errors: newErrors };
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Clear previous errors before validation
+    setErrors({});
+
     // Validate form
-    if (!validateForm()) {
-      // Show all errors in toast
-      const errorKeys = Object.keys(errors);
+    const validation = validateForm();
+    if (!validation.isValid) {
+      // Use the current validation errors directly
+      const errorKeys = Object.keys(validation.errors);
       if (errorKeys.length > 0) {
         // Show first 3 errors in toast
-        const mainErrors = errorKeys.slice(0, 3).map((key) => errors[key]);
+        const mainErrors = errorKeys
+          .slice(0, 3)
+          .map((key) => validation.errors[key]);
         const remainingCount = errorKeys.length - 3;
 
         let errorMessage = mainErrors.join(", ");
@@ -310,10 +332,12 @@ export default function DynamicForm() {
       }
 
       // Scroll to the first error
-      const firstError = document.querySelector(".error-message");
-      if (firstError) {
-        firstError.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
+      setTimeout(() => {
+        const firstError = document.querySelector(".error-message");
+        if (firstError) {
+          firstError.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 100);
 
       return;
     }
@@ -375,7 +399,32 @@ export default function DynamicForm() {
       toast.success("Form submitted successfully!");
       // Reset form or redirect here
     } catch (error) {
-      toast.error(error.data?.message || "Something went wrong");
+      console.error("Form submission error:", error);
+
+      // Handle different types of errors
+      if (error.data) {
+        // If we have detailed error information from the backend
+        if (error.data.errors && Array.isArray(error.data.errors)) {
+          // Show specific validation errors
+          const firstError = error.data.errors[0];
+          const remainingCount = error.data.errors.length - 1;
+
+          let errorMessage = firstError;
+          if (remainingCount > 0) {
+            errorMessage += ` and ${remainingCount} more error${
+              remainingCount > 1 ? "s" : ""
+            }`;
+          }
+
+          toast.error(`Validation failed: ${errorMessage}`);
+        } else {
+          // Show general error message
+          toast.error(error.data.message || "Validation failed");
+        }
+      } else {
+        // Network or other errors
+        toast.error("Something went wrong. Please try again.");
+      }
     } finally {
       refetch();
     }

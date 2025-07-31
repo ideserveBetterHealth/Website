@@ -18,31 +18,16 @@ export const getMeetings = async (req, res) => {
   const user = await User.findById(userId);
   const role = user.role;
   const userEmail = user.email;
+  if (role !== "user") {
+    if (user.isVerified !== "verified") {
+      return res.status(403).json({
+        message: "Access denied",
+      });
+    }
+  }
 
   let query = {};
   const now = new Date();
-
-  // For user viewing, we need to consider both date and time
-  // const isPastMeeting = (meeting) => {
-  //   const meetingDateTime = new Date(meeting.meetingDate);
-  //   const [timePart, ampm] = meeting.meetingTime.split(" ");
-  //   const [hours, minutes] = timePart.split(":").map(Number);
-
-  //   const adjustedHours =
-  //     ampm.toLowerCase() === "pm" && hours !== 12
-  //       ? hours + 12
-  //       : ampm.toLowerCase() === "am" && hours === 12
-  //       ? 0
-  //       : hours;
-
-  //   meetingDateTime.setHours(adjustedHours, minutes, 0, 0);
-
-  //   // Add one hour buffer
-  //   const oneHourAfterMeeting = new Date(meetingDateTime);
-  //   oneHourAfterMeeting.setHours(oneHourAfterMeeting.getHours() + 1);
-
-  //   return oneHourAfterMeeting < now;
-  // };
 
   try {
     if (role === "admin") {
@@ -104,13 +89,12 @@ export const createMeeting = async (req, res) => {
   const userId = req.id;
   const user = await User.findById(userId);
   const role = user.role;
-
-  if (role !== "admin") {
+  if (role !== "admin" || user.isVerified !== "verified") {
     return res.status(403).json({
-      message: "Access denied: Only administrators can create meetings.",
+      message:
+        "Access denied: Only verified administrators can access this resource.",
     });
   }
-
   const {
     clientId,
     doctorId,
@@ -330,9 +314,10 @@ export const deleteMeeting = async (req, res) => {
   const userId = req.id;
   const user = await User.findById(userId);
   const role = user.role;
-  if (role !== "admin") {
+  if (role !== "admin" || user.isVerified !== "verified") {
     return res.status(403).json({
-      message: "Access denied: Only administrators can delete meetings.",
+      message:
+        "Access denied: Only verified administrators can access this resource.",
     });
   }
   try {
@@ -355,7 +340,11 @@ export const userAllMeetings = async (req, res) => {
   const otherId = req.id;
   const user = await User.findById(otherId);
   const role = user.role;
-
+  if (role !== "admin" || user.isVerified !== "verified") {
+    return res.status(403).json({
+      message: "Access denied.",
+    });
+  }
   if (role == "user") {
     return res.status(403).json({
       message: "Access denied: Only users can view their meetings.",
@@ -402,10 +391,10 @@ export const verifyUserEmail = async (req, res) => {
   const userId = req.id;
   const user = await User.findById(userId);
   const role = user.role;
-
-  if (role !== "admin") {
+  if (role !== "admin" || user.isVerified !== "verified") {
     return res.status(403).json({
-      message: "Access denied: Only administrators can verify user emails.",
+      message:
+        "Access denied: Only verified administrators can access this resource.",
     });
   }
 

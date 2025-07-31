@@ -20,7 +20,7 @@ const VerifiedDoctorInDetail = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth.user);
-
+  axios.defaults.withCredentials = true;
   const API_BASE = `${import.meta.env.VITE_BACKEND_URL}/api/v1/register`;
 
   // Check if user is admin

@@ -20,16 +20,22 @@ import {
 } from "@/features/api/meetingsApi";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { use } from "react";
 
 const Dashboard = () => {
+  const user = useSelector((state) => state?.auth?.user);
+  const navigate = useNavigate();
   const { data: meetingsDataFromApi, isLoading: isMeetingsDataLoading } =
-    useGetMeetingsQuery();
+    useGetMeetingsQuery(undefined, {
+      skip:
+        (user?.role === "admin" || user?.role === "doctor") &&
+        user?.isVerified !== "verified",
+    });
   const [deleteMeeting] = useDeleteMeetingMutation();
   const [joinMeeting] = useJoinMeetingMutation();
   const role = useSelector((state) => state?.auth?.user?.role);
-  const user = useSelector((state) => state?.auth?.user);
   // State variables for managing meeting data, services, and UI updates
   const [meetingData, setMeetingData] = useState([]);
   const [services, setServices] = useState(null);
@@ -379,14 +385,14 @@ const Dashboard = () => {
         {/* Action Buttons Section */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4 mb-8">
           {role && role !== "user" ? (
-            <Link to={"/meetinghistory"}>
-              <Button
-                variant="outline"
-                className="bg-white hover:bg-[#ec5228] hover:text-white border-[#ec5228] text-[#ec5228] font-medium px-6 py-2 rounded-lg transition-all duration-300 shadow-sm hover:shadow-md"
-              >
-                Meeting History
-              </Button>
-            </Link>
+            <Button
+              variant="outline"
+              disabled={user?.isVerified !== "verified"}
+              onClick={() => navigate("/meetinghistory")}
+              className="bg-white hover:bg-[#ec5228] hover:text-white border-[#ec5228] text-[#ec5228] font-medium px-6 py-2 rounded-lg transition-all duration-300 shadow-sm hover:shadow-md"
+            >
+              Meeting History
+            </Button>
           ) : (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -571,13 +577,22 @@ const Dashboard = () => {
               <div className="bg-[#fffae3] rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
                 <Calendar className="w-10 h-10 text-[#ec5228]" />
               </div>
-              <h3 className="text-xl sm:text-2xl font-bold text-[#000080] mb-4">
-                All Caught Up!
-              </h3>
-              <p className="text-gray-600 leading-relaxed">
-                You're all set! No upcoming meetings scheduled at the moment.
-                {role === "user" && " Book a new session to get started."}
-              </p>
+              {role !== "user" && user?.isVerified !== "verified" ? (
+                <h1 className="text-xl sm:text-2xl font-bold text-[#000080] mb-4">
+                  Please verify your documents to access the dashboard
+                </h1>
+              ) : (
+                <>
+                  <h3 className="text-xl sm:text-2xl font-bold text-[#000080] mb-4">
+                    All Caught Up!
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed">
+                    You're all set! No upcoming meetings scheduled at the
+                    moment.
+                    {role === "user" && " Book a new session to get started."}
+                  </p>
+                </>
+              )}
             </div>
           </div>
         ) : (
@@ -730,42 +745,70 @@ const Dashboard = () => {
         )}
 
         {/* Past Meetings Section */}
-        {(isDoctor || isAdmin) && pastMeetings.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            <div className="bg-gradient-to-r from-gray-700 to-gray-800 px-6 py-4">
-              <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-3">
-                <Clock className="w-5 h-5" />
-                Past Sessions
-              </h3>
-            </div>
+        {(isDoctor || isAdmin) &&
+          user?.isVerified === "verified" &&
+          pastMeetings.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+              <div className="bg-gradient-to-r from-gray-700 to-gray-800 px-6 py-4">
+                <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-3">
+                  <Clock className="w-5 h-5" />
+                  Past Sessions
+                </h3>
+              </div>
 
-            <div className="p-6">
-              <div className="space-y-4">
-                {pastMeetings.map((meeting, index) => (
-                  <div
-                    key={meeting._id}
-                    className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 sm:p-6 border border-gray-200 hover:shadow-md transition-all duration-300"
-                  >
-                    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
-                      <div className="flex-1 space-y-3">
-                        <div className="flex items-center gap-3">
-                          <div className="bg-gray-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                            Completed
+              <div className="p-6">
+                <div className="space-y-4">
+                  {pastMeetings.map((meeting, index) => (
+                    <div
+                      key={meeting._id}
+                      className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 sm:p-6 border border-gray-200 hover:shadow-md transition-all duration-300"
+                    >
+                      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+                        <div className="flex-1 space-y-3">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-gray-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                              Completed
+                            </div>
+                            <span className="text-sm text-gray-500">
+                              Session #{pastMeetings.length - index}
+                            </span>
                           </div>
-                          <span className="text-sm text-gray-500">
-                            Session #{pastMeetings.length - index}
-                          </span>
-                        </div>
 
-                        <div className="font-semibold text-[#000080] text-lg">
-                          {formatDay(meeting.meetingDate)},{" "}
-                          {formatDate(meeting.meetingDate)} at{" "}
-                          {meeting.meetingTime}
-                        </div>
+                          <div className="font-semibold text-[#000080] text-lg">
+                            {formatDay(meeting.meetingDate)},{" "}
+                            {formatDate(meeting.meetingDate)} at{" "}
+                            {meeting.meetingTime}
+                          </div>
 
-                        <div className="space-y-2 text-sm text-gray-600">
-                          {isAdmin ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div className="space-y-2 text-sm text-gray-600">
+                            {isAdmin ? (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div className="flex items-center gap-2">
+                                  <User className="w-4 h-4 text-gray-400" />
+                                  <span>
+                                    <span className="font-medium">Client:</span>{" "}
+                                    {meeting.clientName}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <User className="w-4 h-4 text-gray-400" />
+                                  <span>
+                                    <span className="font-medium">
+                                      BH Associate:
+                                    </span>{" "}
+                                    {meeting.doctorName}
+                                  </span>
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  User joined:{" "}
+                                  {formatIndianTime(meeting.userJoinedAt)}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  Associate joined:{" "}
+                                  {formatIndianTime(meeting.docJoinedAt)}
+                                </div>
+                              </div>
+                            ) : isDoctor ? (
                               <div className="flex items-center gap-2">
                                 <User className="w-4 h-4 text-gray-400" />
                                 <span>
@@ -773,6 +816,7 @@ const Dashboard = () => {
                                   {meeting.clientName}
                                 </span>
                               </div>
+                            ) : (
                               <div className="flex items-center gap-2">
                                 <User className="w-4 h-4 text-gray-400" />
                                 <span>
@@ -782,80 +826,53 @@ const Dashboard = () => {
                                   {meeting.doctorName}
                                 </span>
                               </div>
-                              <div className="text-xs text-gray-500">
-                                User joined:{" "}
-                                {formatIndianTime(meeting.userJoinedAt)}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                Associate joined:{" "}
-                                {formatIndianTime(meeting.docJoinedAt)}
-                              </div>
-                            </div>
-                          ) : isDoctor ? (
-                            <div className="flex items-center gap-2">
-                              <User className="w-4 h-4 text-gray-400" />
-                              <span>
-                                <span className="font-medium">Client:</span>{" "}
-                                {meeting.clientName}
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <User className="w-4 h-4 text-gray-400" />
-                              <span>
-                                <span className="font-medium">
-                                  BH Associate:
-                                </span>{" "}
-                                {meeting.doctorName}
-                              </span>
-                            </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-3 items-center">
+                          {isDoctor && !meeting.reportLink?.trim() && (
+                            <a
+                              href={meeting.formLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <Button className="bg-[#ec5228] hover:bg-[#d14a22] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300">
+                                Submit Report
+                              </Button>
+                            </a>
+                          )}
+                          {(isDoctor || isAdmin) && meeting.reportLink && (
+                            <a
+                              href={meeting.reportLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <Button
+                                variant="outline"
+                                className="border-[#000080] text-[#000080] hover:bg-[#000080] hover:text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300"
+                              >
+                                View Report
+                              </Button>
+                            </a>
+                          )}
+                          {isAdmin && (
+                            <Button
+                              variant="destructive"
+                              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300"
+                              onClick={() => handleDeleteMeeting(meeting._id)}
+                            >
+                              Delete
+                            </Button>
                           )}
                         </div>
                       </div>
-
-                      <div className="flex flex-wrap gap-3 items-center">
-                        {isDoctor && !meeting.reportLink?.trim() && (
-                          <a
-                            href={meeting.formLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <Button className="bg-[#ec5228] hover:bg-[#d14a22] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300">
-                              Submit Report
-                            </Button>
-                          </a>
-                        )}
-                        {(isDoctor || isAdmin) && meeting.reportLink && (
-                          <a
-                            href={meeting.reportLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <Button
-                              variant="outline"
-                              className="border-[#000080] text-[#000080] hover:bg-[#000080] hover:text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300"
-                            >
-                              View Report
-                            </Button>
-                          </a>
-                        )}
-                        {isAdmin && (
-                          <Button
-                            variant="destructive"
-                            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300"
-                            onClick={() => handleDeleteMeeting(meeting._id)}
-                          >
-                            Delete
-                          </Button>
-                        )}
-                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
       </div>
     </div>
   );

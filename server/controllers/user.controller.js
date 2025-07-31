@@ -4,6 +4,15 @@ import { generateToken } from "../utils/generateToken.js";
 import { deleteMediaFromCloudinary, uploadMedia } from "../utils/cloudinary.js";
 
 export const register = async (req, res) => {
+  const userId = req.id;
+  const user = await User.findById(userId);
+  const role = user.role;
+  if (role !== "admin" || user.isVerified !== "verified") {
+    return res.status(403).json({
+      message:
+        "Access denied: Only verified administrators can access this resource.",
+    });
+  }
   try {
     const { name, email, password, role: userRole } = req.body;
     if (!name || !email || !password || !userRole) {

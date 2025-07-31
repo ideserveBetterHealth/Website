@@ -207,10 +207,10 @@ export const getAllCoupons = async (req, res) => {
   const userId = req.id;
   const user = await User.findById(userId);
   const role = user.role;
-
-  if (role !== "admin") {
+  if (role !== "admin" || user.isVerified !== "verified") {
     return res.status(403).json({
-      message: "Access denied: Only administrators can create meetings.",
+      message:
+        "Access denied: Only verified administrators can access this resource.",
     });
   }
   try {
@@ -234,11 +234,11 @@ export const getAllCoupons = async (req, res) => {
 export const updateCouponStatus = async (req, res) => {
   const userId = req.id;
   const user = await User.findById(userId);
-  const role = user?.role;
-
-  if (role !== "admin") {
+  const role = user.role;
+  if (role !== "admin" || user.isVerified !== "verified") {
     return res.status(403).json({
-      message: "Access denied: Only administrators can create meetings.",
+      message:
+        "Access denied: Only verified administrators can access this resource.",
     });
   }
   try {
@@ -284,10 +284,10 @@ export const deleteCoupon = async (req, res) => {
   const userId = req.id;
   const user = await User.findById(userId);
   const role = user.role;
-
-  if (role !== "admin") {
+  if (role !== "admin" || user.isVerified !== "verified") {
     return res.status(403).json({
-      message: "Access denied: Only administrators can create meetings.",
+      message:
+        "Access denied: Only verified administrators can access this resource.",
     });
   }
   try {
@@ -321,10 +321,10 @@ export const createCoupon = async (req, res) => {
   const userId = req.id;
   const user = await User.findById(userId);
   const role = user.role;
-
-  if (role !== "admin") {
+  if (role !== "admin" || user.isVerified !== "verified") {
     return res.status(403).json({
-      message: "Access denied: Only administrators can create coupons.",
+      message:
+        "Access denied: Only verified administrators can access this resource.",
     });
   }
 

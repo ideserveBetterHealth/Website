@@ -32,7 +32,7 @@ const VerifiedDoctorInDetail = () => {
     }
   }, [user, navigate]);
 
-  // Fetch doctor details
+  // Fetch BH Associate details
   const fetchDoctorDetails = async () => {
     try {
       const response = await axios.get(`${API_BASE}/doctor-details/${userId}`, {
@@ -43,8 +43,8 @@ const VerifiedDoctorInDetail = () => {
         setDoctorData(response.data);
       }
     } catch (error) {
-      console.error("Error fetching doctor details:", error);
-      toast.error("Failed to fetch doctor details");
+      console.error("Error fetching BH Associate details:", error);
+      toast.error("Failed to fetch BH Associate details");
       navigate("/admin/verified-doctors");
     }
   };
@@ -97,7 +97,7 @@ const VerifiedDoctorInDetail = () => {
           <div className="flex items-center space-x-4">
             <div className="bg-blue-100 rounded-full p-4">
               <span className="text-blue-600 font-semibold text-2xl">
-                {doctor.name?.charAt(0)?.toUpperCase() || "D"}
+                {doctor.name?.charAt(0)?.toUpperCase() || "A"}
               </span>
             </div>
             <div>

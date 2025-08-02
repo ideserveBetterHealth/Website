@@ -24,7 +24,7 @@ const VerifyDocuments = () => {
     }
   }, [user, navigate]);
 
-  // Fetch pending doctors
+  // Fetch pending BH Associates
   const fetchPendingDoctors = async () => {
     try {
       setLoading(true);
@@ -36,8 +36,8 @@ const VerifyDocuments = () => {
         setPendingDoctors(response.data.user);
       }
     } catch (error) {
-      console.error("Error fetching pending doctors:", error);
-      toast.error("Failed to fetch pending doctors");
+      console.error("Error fetching pending BH Associates:", error);
+      toast.error("Failed to fetch pending BH Associates");
     } finally {
       setLoading(false);
     }
@@ -76,14 +76,14 @@ const VerifyDocuments = () => {
                 All Caught Up!
               </h2>
               <p className="text-gray-500">
-                No doctors with pending verification at the moment.
+                No BH Associates with pending verification at the moment.
               </p>
             </div>
           ) : (
             <div className="grid gap-4">
               <div className="mb-4">
                 <p className="text-gray-600">
-                  {pendingDoctors.length} doctor(s) pending verification
+                  {pendingDoctors.length} BH Associate(s) pending verification
                 </p>
               </div>
 
@@ -97,7 +97,7 @@ const VerifyDocuments = () => {
                       <div className="flex items-center space-x-4">
                         <div className="bg-blue-100 rounded-full p-3">
                           <span className="text-blue-600 font-semibold text-lg">
-                            {doctor.name?.charAt(0)?.toUpperCase() || "D"}
+                            {doctor.name?.charAt(0)?.toUpperCase() || "A"}
                           </span>
                         </div>
                         <div>

@@ -38,7 +38,7 @@ const VerificationPending = () => {
     }
   }, [user, navigate]);
 
-  // Fetch doctor details
+  // Fetch BH Associate details
   const fetchDoctorDetails = async () => {
     try {
       setLoading(true);
@@ -50,8 +50,8 @@ const VerificationPending = () => {
         setDoctorData(response.data);
       }
     } catch (error) {
-      console.error("Error fetching doctor details:", error);
-      toast.error("Failed to fetch doctor details");
+      console.error("Error fetching BH Associate details:", error);
+      toast.error("Failed to fetch BH Associate details");
       navigate("/admin/verify-documents");
     } finally {
       setLoading(false);
@@ -72,12 +72,14 @@ const VerificationPending = () => {
       });
 
       if (response.data.success) {
-        toast.success("Doctor verified successfully!");
+        toast.success("BH Associate verified successfully!");
         navigate("/admin/verify-documents");
       }
     } catch (error) {
-      console.error("Error verifying doctor:", error);
-      toast.error(error.response?.data?.message || "Failed to verify doctor");
+      console.error("Error verifying BH Associate:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to verify BH Associate"
+      );
     } finally {
       setVerifying(false);
     }
@@ -96,7 +98,7 @@ const VerificationPending = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-semibold text-gray-700">
-            Doctor not found
+            BH Associate not found
           </h2>
           <button
             onClick={() => navigate("/admin/verify-documents")}
@@ -124,16 +126,16 @@ const VerificationPending = () => {
             Back to Verify Documents
           </button>
           <h1 className="text-3xl font-bold text-gray-800">
-            Doctor Verification
+            BH Associate Verification
           </h1>
         </div>
 
-        {/* Doctor Basic Info */}
+        {/* BH Associate Basic Info */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center space-x-4">
             <div className="bg-blue-100 rounded-full p-4">
               <span className="text-blue-600 font-semibold text-2xl">
-                {doctor.name?.charAt(0)?.toUpperCase() || "D"}
+                {doctor.name?.charAt(0)?.toUpperCase() || "A"}
               </span>
             </div>
             <div>
@@ -467,7 +469,7 @@ const VerificationPending = () => {
                 Verification Status
               </h3>
               <p className="text-gray-600">
-                Review all information and verify this doctor
+                Review all information and verify this BH Associate
               </p>
             </div>
             <button

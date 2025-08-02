@@ -55,8 +55,8 @@ const VerifiedDoctors = () => {
         setHasNextPage(response.data.pagination.hasNextPage);
       }
     } catch (error) {
-      console.error("Error fetching verified doctors:", error);
-      toast.error("Failed to fetch verified doctors");
+      console.error("Error fetching verified BH Associates:", error);
+      toast.error("Failed to fetch verified BH Associates");
     } finally {
       if (!isSearch) setLoading(false);
     }
@@ -80,7 +80,7 @@ const VerifiedDoctors = () => {
       setPage(1);
       setHasNextPage(false); // Disable infinite scroll for search results
     } catch (error) {
-      console.error("Error searching doctors:", error);
+      console.error("Error searching BH Associates:", error);
     } finally {
       setSearchLoading(false);
     }
@@ -212,7 +212,7 @@ const VerifiedDoctors = () => {
                         <div className="flex items-center space-x-4">
                           <div className="bg-blue-100 rounded-full p-3">
                             <span className="text-blue-600 font-semibold text-lg">
-                              {doctor.name?.charAt(0)?.toUpperCase() || "D"}
+                              {doctor.name?.charAt(0)?.toUpperCase() || "A"}
                             </span>
                           </div>
                           <div>

@@ -10,10 +10,12 @@ import { useLoadUserQuery } from "@/features/api/authApi";
 import { useSelector } from "react-redux";
 import { Loader } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import countriesData from "../data/countries.json";
 
 axios.defaults.withCredentials = true;
 
 const initialEmployment = {
+  id: Date.now() + Math.random(), // Add unique ID
   organization: "",
   jobTitle: "",
   startDate: null,
@@ -23,10 +25,12 @@ const initialEmployment = {
 };
 
 const initialEducation = {
+  id: Date.now() + Math.random(), // Add unique ID
   level: "", // Changed from educationLevel
   degreeName: "", // Changed from degree
   institutionName: "", // Changed from institution
   graduationYear: "",
+  major: "", // Add missing major field
 };
 
 const calendarInputStyle =
@@ -43,9 +47,14 @@ export default function DynamicForm() {
 
   // Existing states
   const [employmentDetails, setEmploymentDetails] = useState([
-    initialEmployment,
+    { ...initialEmployment, id: Date.now() + Math.random() },
   ]);
-  const [educationDetails, setEducationDetails] = useState([initialEducation]);
+  const [educationDetails, setEducationDetails] = useState([
+    {
+      ...initialEducation,
+      id: Date.now() + Math.random() + 1, // Ensure different ID
+    },
+  ]);
   const [sameAddress, setSameAddress] = useState(false);
   const [currentAddress, setCurrentAddress] = useState("");
   const [permanentAddress, setPermanentAddress] = useState("");
@@ -83,14 +92,22 @@ export default function DynamicForm() {
   const [documentId1, setDocumentId1] = useState("");
   const [frontImage1, setFrontImage1] = useState(null);
   const [backImage1, setBackImage1] = useState(null);
+  const [frontImage1Name, setFrontImage1Name] = useState("");
+  const [backImage1Name, setBackImage1Name] = useState("");
 
   const [document2Type, setDocument2Type] = useState("");
   const [documentId2, setDocumentId2] = useState("");
   const [frontImage2, setFrontImage2] = useState(null);
   const [backImage2, setBackImage2] = useState(null);
+  const [frontImage2Name, setFrontImage2Name] = useState("");
+  const [backImage2Name, setBackImage2Name] = useState("");
 
   // New state for salary slip
   const [salarySlip, setSalarySlip] = useState("");
+  const [salarySlipName, setSalarySlipName] = useState("");
+
+  // State for resume file name
+  const [resumeName, setResumeName] = useState("");
 
   const navigate = useNavigate();
 
@@ -112,7 +129,13 @@ export default function DynamicForm() {
   };
 
   const addEmployment = () => {
-    setEmploymentDetails([...employmentDetails, initialEmployment]);
+    setEmploymentDetails([
+      ...employmentDetails,
+      {
+        ...initialEmployment,
+        id: Date.now() + Math.random(), // Generate new unique ID
+      },
+    ]);
   };
 
   const removeEmployment = (index) => {
@@ -127,7 +150,13 @@ export default function DynamicForm() {
   };
 
   const addEducation = () => {
-    setEducationDetails([...educationDetails, initialEducation]);
+    setEducationDetails([
+      ...educationDetails,
+      {
+        ...initialEducation,
+        id: Date.now() + Math.random(), // Generate new unique ID
+      },
+    ]);
   };
 
   const removeEducation = (index) => {
@@ -147,6 +176,21 @@ export default function DynamicForm() {
   const { isLoading: userIsLoading, refetch } = useLoadUserQuery();
 
   const user = useSelector((state) => state.auth.user);
+
+  // Helper function to truncate file names
+  const truncateFileName = (fileName, maxLength = 25) => {
+    if (!fileName) return "";
+    if (fileName.length <= maxLength) return fileName;
+
+    const extension = fileName.split(".").pop();
+    const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf("."));
+    const truncatedName = nameWithoutExt.substring(
+      0,
+      maxLength - extension.length - 4
+    );
+
+    return `${truncatedName}...${extension}`;
+  };
 
   // Email validation
   const validateEmail = (email) => {
@@ -254,34 +298,34 @@ export default function DynamicForm() {
     // Employment validation
     employmentDetails.forEach((employment, index) => {
       if (!employment.organization.trim())
-        newErrors[`employment[${index}].organization`] =
+        newErrors[`employment_${index}_organization`] =
           "Organization is required";
       if (!employment.jobTitle.trim())
-        newErrors[`employment[${index}].jobTitle`] = "Job title is required";
+        newErrors[`employment_${index}_jobTitle`] = "Job title is required";
       if (!employment.startDate)
-        newErrors[`employment[${index}].startDate`] = "Start date is required";
+        newErrors[`employment_${index}_startDate`] = "Start date is required";
       if (!employment.employmentType)
-        newErrors[`employment[${index}].employmentType`] =
+        newErrors[`employment_${index}_employmentType`] =
           "Employment type is required";
       if (!employment.isCurrentJob && !employment.endDate)
-        newErrors[`employment[${index}].endDate`] =
+        newErrors[`employment_${index}_endDate`] =
           "End date is required for previous jobs";
     });
 
-    // Salary slip validation
-    if (!salarySlip) newErrors.salarySlip = "Salary slip is required";
+    // Salary slip validation (optional)
+    // No validation needed as it's now optional
 
     // Education validation
     educationDetails.forEach((edu, index) => {
       if (!edu.level)
-        newErrors[`education[${index}].level`] = "Education level is required";
+        newErrors[`education_${index}_level`] = "Education level is required";
       if (!edu.degreeName.trim())
-        newErrors[`education[${index}].degreeName`] = "Degree name is required";
+        newErrors[`education_${index}_degreeName`] = "Degree name is required";
       if (!edu.institutionName.trim())
-        newErrors[`education[${index}].institutionName`] =
+        newErrors[`education_${index}_institutionName`] =
           "Institution name is required";
       if (!edu.graduationYear.trim())
-        newErrors[`education[${index}].graduationYear`] =
+        newErrors[`education_${index}_graduationYear`] =
           "Graduation year is required";
     });
 
@@ -479,9 +523,7 @@ export default function DynamicForm() {
     const maxSize = 10 * 1024 * 1024; // 10MB
     const allowedTypes = {
       resume: [
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/pdf", // Only PDF files allowed for resume
       ],
       document: ["image/jpeg", "image/jpg", "image/png", "application/pdf"],
       salary: ["application/pdf", "image/jpeg", "image/png"],
@@ -496,9 +538,17 @@ export default function DynamicForm() {
     // Validate file type
     const typeKey = type === "document" ? "document" : type;
     if (!allowedTypes[typeKey]?.includes(file.type)) {
-      toast.error(
-        `Invalid file type. Allowed types: ${allowedTypes[typeKey]?.join(", ")}`
-      );
+      if (type === "resume") {
+        toast.error(
+          "Invalid file type. Please upload a PDF file only for resume."
+        );
+      } else {
+        toast.error(
+          `Invalid file type. Allowed types: ${allowedTypes[typeKey]?.join(
+            ", "
+          )}`
+        );
+      }
       return;
     }
 
@@ -545,22 +595,28 @@ export default function DynamicForm() {
         // Set the appropriate state based on the upload type
         if (order === undefined && type === "resume") {
           setResumeUrl(uploadedUrl);
+          setResumeName(file.name);
         }
         if (order === undefined && type === "salary") {
           setSalarySlip(uploadedUrl);
+          setSalarySlipName(file.name);
         }
         if (order === 1) {
           if (side === "front") {
             setFrontImage1(uploadedUrl);
+            setFrontImage1Name(file.name);
           } else {
             setBackImage1(uploadedUrl);
+            setBackImage1Name(file.name);
           }
         }
         if (order === 2) {
           if (side === "front") {
             setFrontImage2(uploadedUrl);
+            setFrontImage2Name(file.name);
           } else {
             setBackImage2(uploadedUrl);
+            setBackImage2Name(file.name);
           }
         }
 
@@ -952,11 +1008,11 @@ export default function DynamicForm() {
                     onChange={(e) => setCountry(e.target.value)}
                   >
                     <option value="">Select Country</option>
-                    <option value="India">India</option>
-                    <option value="USA">USA</option>
-                    <option value="UK">UK</option>
-                    <option value="Canada">Canada</option>
-                    <option value="Australia">Australia</option>
+                    {countriesData.countries.map((countryName) => (
+                      <option key={countryName} value={countryName}>
+                        {countryName}
+                      </option>
+                    ))}
                   </select>
                   <ErrorMessage error={errors.country} />
                 </div>
@@ -1215,7 +1271,7 @@ export default function DynamicForm() {
                 <div className="relative">
                   <input
                     type="file"
-                    accept=".pdf,.doc,.docx"
+                    accept=".pdf"
                     onChange={(e) =>
                       fileChangeHandler(e, undefined, undefined, "resume")
                     }
@@ -1247,6 +1303,9 @@ export default function DynamicForm() {
                         <span className="text-lg font-medium">
                           Resume uploaded successfully!
                         </span>
+                        <span className="text-sm font-medium text-[#000080] bg-green-100 px-3 py-1 rounded-full">
+                          📄 {truncateFileName(resumeName)}
+                        </span>
                         <span className="text-sm text-gray-600">
                           Click to replace
                         </span>
@@ -1269,9 +1328,7 @@ export default function DynamicForm() {
                         <span className="text-lg font-medium">
                           Upload your resume
                         </span>
-                        <span className="text-sm">
-                          PDF, DOC, or DOCX files only
-                        </span>
+                        <span className="text-sm">PDF files only</span>
                       </div>
                     )}
                   </label>
@@ -1411,6 +1468,9 @@ export default function DynamicForm() {
                             <span className="text-sm font-medium">
                               Front side uploaded
                             </span>
+                            <span className="text-xs font-medium text-[#000080] bg-green-100 px-2 py-1 rounded-full">
+                              📷 {truncateFileName(frontImage1Name)}
+                            </span>
                           </div>
                         ) : (
                           <div className="flex flex-col items-center gap-2 text-gray-500">
@@ -1477,6 +1537,9 @@ export default function DynamicForm() {
                             </svg>
                             <span className="text-sm font-medium">
                               Back side uploaded
+                            </span>
+                            <span className="text-xs font-medium text-[#000080] bg-green-100 px-2 py-1 rounded-full">
+                              📷 {truncateFileName(backImage1Name)}
                             </span>
                           </div>
                         ) : (
@@ -1639,6 +1702,9 @@ export default function DynamicForm() {
                             <span className="text-sm font-medium">
                               Front side uploaded
                             </span>
+                            <span className="text-xs font-medium text-[#000080] bg-green-100 px-2 py-1 rounded-full">
+                              📷 {truncateFileName(frontImage2Name)}
+                            </span>
                           </div>
                         ) : (
                           <div className="flex flex-col items-center gap-2 text-gray-500">
@@ -1706,6 +1772,9 @@ export default function DynamicForm() {
                             <span className="text-sm font-medium">
                               Back side uploaded
                             </span>
+                            <span className="text-xs font-medium text-[#000080] bg-green-100 px-2 py-1 rounded-full">
+                              📷 {truncateFileName(backImage2Name)}
+                            </span>
                           </div>
                         ) : (
                           <div className="flex flex-col items-center gap-2 text-gray-500">
@@ -1766,7 +1835,7 @@ export default function DynamicForm() {
             <div className="p-8 space-y-6">
               {employmentDetails.map((employment, index) => (
                 <div
-                  key={index}
+                  key={employment.id}
                   className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100 relative"
                 >
                   {/* Delete button for multiple employment records */}
@@ -2055,7 +2124,8 @@ export default function DynamicForm() {
                 </h2>
               </div>
               <p className="text-white/80 mt-2">
-                Upload your recent salary slip for verification
+                Upload your recent salary slip for verification (optional but
+                recommended)
               </p>
             </div>
 
@@ -2075,7 +2145,7 @@ export default function DynamicForm() {
                       d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                     />
                   </svg>
-                  Salary Slip (Last 3-6 months) *
+                  Salary Slip (Last 3-6 months)
                 </h3>
 
                 <div className="relative">
@@ -2112,6 +2182,9 @@ export default function DynamicForm() {
                         </svg>
                         <span className="text-lg font-medium">
                           Salary slip uploaded successfully!
+                        </span>
+                        <span className="text-sm font-medium text-[#000080] bg-green-100 px-3 py-1 rounded-full">
+                          📄 {truncateFileName(salarySlipName)}
                         </span>
                         <span className="text-sm text-gray-600">
                           Click to replace
@@ -2159,7 +2232,7 @@ export default function DynamicForm() {
                       />
                     </svg>
                     Please upload your salary slip for the last 3-6 months for
-                    employment verification
+                    employment verification (optional but recommended)
                   </p>
                 </div>
 
@@ -2209,7 +2282,7 @@ export default function DynamicForm() {
             <div className="p-8 space-y-6">
               {educationDetails.map((edu, index) => (
                 <div
-                  key={index}
+                  key={edu.id}
                   className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100 relative"
                 >
                   {/* Delete button for multiple education records */}
@@ -2570,7 +2643,7 @@ export default function DynamicForm() {
                   <div className="form-group">
                     <label
                       htmlFor="upi"
-                      className="block text-sm font-semibold text-[#000080] mb-2 flex items-center gap-2"
+                      className="text-sm font-semibold text-[#000080] mb-2 flex items-center gap-2"
                     >
                       <svg
                         className="w-4 h-4 text-purple-600"

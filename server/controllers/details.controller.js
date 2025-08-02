@@ -241,14 +241,8 @@ export const createEmployee = async (req, res) => {
       }
     }
 
-    // Validate salary slip
-    if (!salarySlip || salarySlip.toString().trim() === "") {
-      validationErrors.push(
-        `Salary slip for last 3-6 months is required but received: ${
-          salarySlip || "undefined"
-        }`
-      );
-    }
+    // Validate salary slip (optional)
+    // Note: Salary slip is now optional, no validation error if empty
 
     // Validate employment details if provided
     if (employmentDetails && employmentDetails.length > 0) {

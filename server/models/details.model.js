@@ -145,10 +145,11 @@ const employeeSchema = new mongoose.Schema(
 
     salarySlip: {
       type: String,
-      required: true,
+      required: false, // Made optional - salary slip is no longer mandatory
       validate: {
         validator: function (v) {
-          return /^https?:\/\/.+/.test(v);
+          // Only validate URL format if value is provided
+          return !v || /^https?:\/\/.+/.test(v);
         },
         message: "Please enter a valid URL",
       },

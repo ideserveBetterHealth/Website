@@ -22,6 +22,7 @@ import AboutUs from "./pages/AboutUs";
 import Services from "./pages/Services";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsConditions from "./pages/TermsConditions";
+import RefundCancellationPolicy from "./pages/RefundCancellationPolicy";
 import VerifiedDoctors from "./pages/VerifiedDoctors";
 import VerifiedDoctorInDetail from "./pages/VerifedDoctorInDetail";
 import PaymentPage from "./pages/PaymentPage";
@@ -66,6 +67,10 @@ function App() {
         {
           path: "/terms-conditions",
           element: <TermsConditions />,
+        },
+        {
+          path: "/refund-cancellation-policy",
+          element: <RefundCancellationPolicy />,
         },
         {
           path: "/make-payment/:service/:planType",

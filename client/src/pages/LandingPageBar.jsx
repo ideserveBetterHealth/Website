@@ -260,6 +260,14 @@ export function LandingPageFooter() {
                   Terms & Conditions
                 </Link>
               </li>
+              <li className="mb-2 md:mb-3">
+                <Link
+                  to="/refund-cancellation-policy"
+                  className="text-[#000080] no-underline transition-colors duration-200 text-sm hover:text-[#ec5228]"
+                >
+                  Refund & Cancellation Policy
+                </Link>
+              </li>
             </ul>
           </div>
 

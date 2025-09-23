@@ -268,13 +268,21 @@ export function LandingPageFooter() {
                   Refund & Cancellation Policy
                 </Link>
               </li>
+              <li className="mb-2 md:mb-3">
+                <Link
+                  to="/contact-us"
+                  className="text-[#000080] no-underline transition-colors duration-200 text-sm hover:text-[#ec5228]"
+                >
+                  Contact Us
+                </Link>
+              </li>
             </ul>
           </div>
 
-          {/* Contact Us */}
+          {/* Contact Information */}
           <div className="flex flex-col gap-2 md:gap-3 text-center md:text-left">
             <h4 className="text-[#000080] text-[1.1rem] font-bold font-inter mb-2 md:mb-4 tracking-[-0.005em]">
-              Contact Us
+              Get In Touch
             </h4>
             <div className="flex flex-col gap-0.5 md:gap-1">
               <div className="m-0">
@@ -294,7 +302,7 @@ export function LandingPageFooter() {
                   rel="noopener noreferrer"
                 >
                   <span className="text-sm text-[#000080]">💬</span>
-                  <span>Start WhatsApp Chat</span>
+                  <span>WhatsApp Chat</span>
                 </a>
               </div>
               <div className="m-0">
@@ -308,12 +316,15 @@ export function LandingPageFooter() {
               </div>
 
               {/* Social Media Buttons */}
-              <div className="flex flex-col gap-2 mt-1 w-full items-center md:items-start">
+              <div className="flex flex-col gap-2 mt-3 w-full items-center md:items-start">
+                <p className="text-xs text-[#000080] font-medium mb-2">
+                  Follow Us
+                </p>
                 <a
                   href="https://instagram.com/ideservebetterhealth"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-3 px-6 py-3 w-full max-w-[280px] md:max-w-[250px] border-none rounded-xl text-base font-medium text-white no-underline shadow-[0_2px_5px_rgba(0,0,0,0.1)] transition-all duration-200 relative overflow-hidden hover:translate-y-[-3px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)]"
+                  className="flex items-center justify-center gap-3 px-4 py-2 w-full max-w-[280px] md:max-w-[250px] border-none rounded-lg text-sm font-medium text-white no-underline shadow-[0_2px_5px_rgba(0,0,0,0.1)] transition-all duration-200 relative overflow-hidden hover:translate-y-[-2px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)]"
                   style={{
                     background:
                       "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)",
@@ -322,7 +333,7 @@ export function LandingPageFooter() {
                   <img
                     src="/instagram.svg"
                     alt="Instagram"
-                    className="w-5 h-5 brightness-0 invert"
+                    className="w-4 h-4 brightness-0 invert"
                   />
                   Instagram
                 </a>
@@ -330,12 +341,12 @@ export function LandingPageFooter() {
                   href="https://www.linkedin.com/company/better-health-official"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-3 px-6 py-3 w-full max-w-[280px] md:max-w-[250px] border-none rounded-xl text-base font-medium text-white no-underline shadow-[0_2px_5px_rgba(0,0,0,0.1)] transition-all duration-200 relative overflow-hidden bg-[#0077b5] hover:translate-y-[-3px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)]"
+                  className="flex items-center justify-center gap-3 px-4 py-2 w-full max-w-[280px] md:max-w-[250px] border-none rounded-lg text-sm font-medium text-white no-underline shadow-[0_2px_5px_rgba(0,0,0,0.1)] transition-all duration-200 relative overflow-hidden bg-[#0077b5] hover:translate-y-[-2px] hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)]"
                 >
                   <img
                     src="/linkedin.svg"
                     alt="LinkedIn"
-                    className="w-5 h-5 brightness-0 invert"
+                    className="w-4 h-4 brightness-0 invert"
                   />
                   LinkedIn
                 </a>

@@ -29,6 +29,7 @@ import PaymentPage from "./pages/PaymentPage";
 import CreateCoupon from "./pages/CreateCoupons";
 import AllCoupons from "./pages/AllCoupons";
 import CreateMeeting from "./pages/CreateMeeting";
+import ContactUs from "./pages/ContactUs";
 
 function App() {
   const appRouter = createBrowserRouter([
@@ -71,6 +72,10 @@ function App() {
         {
           path: "/refund-cancellation-policy",
           element: <RefundCancellationPolicy />,
+        },
+        {
+          path: "/contact-us",
+          element: <ContactUs />,
         },
         {
           path: "/make-payment/:service/:planType",

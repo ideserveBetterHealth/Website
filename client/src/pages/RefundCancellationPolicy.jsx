@@ -419,6 +419,9 @@ const RefundCancellationPolicy = () => {
                         </h4>
                         <div className="space-y-2 text-gray-700">
                           <p>
+                            <strong>Contact Person:</strong> Avval Yadav
+                          </p>
+                          <p>
                             <strong>Email:</strong>{" "}
                             admin@ideservebetterhealth.in
                           </p>

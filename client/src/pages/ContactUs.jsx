@@ -14,9 +14,7 @@ const ContactUs = () => {
   const sections = [
     { id: "introduction", title: "Introduction" },
     { id: "contact-info", title: "Contact Information" },
-    { id: "contact-form", title: "Send us a Message" },
     { id: "office-hours", title: "Office Hours" },
-    { id: "location", title: "Our Location" },
   ];
 
   return (
@@ -129,70 +127,14 @@ const ContactUs = () => {
                               <h4 className="font-semibold text-[#000080]">
                                 Address
                               </h4>
-                              <p>Jaipur, Rajasthan, India</p>
+                              <p>
+                                B-7, Om Vihar, Radhaswami Bagh, Chomu, Jaipur,
+                                Rajasthan, 303702
+                              </p>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </>
-                  )}
-
-                  {section.id === "contact-form" && (
-                    <>
-                      <p>
-                        Fill out the form below to send us a message. We&apos;ll
-                        get back to you as soon as possible.
-                      </p>
-                      <form className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Full Name *
-                            </label>
-                            <input
-                              type="text"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec5228]"
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Email *
-                            </label>
-                            <input
-                              type="email"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec5228]"
-                              required
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Subject *
-                          </label>
-                          <input
-                            type="text"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec5228]"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Message *
-                          </label>
-                          <textarea
-                            rows="5"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ec5228]"
-                            required
-                          ></textarea>
-                        </div>
-                        <button
-                          type="submit"
-                          className="bg-[#ec5228] text-white px-6 py-2 rounded-md hover:bg-[#d43d1f] transition-colors duration-200"
-                        >
-                          Send Message
-                        </button>
-                      </form>
                     </>
                   )}
 
@@ -220,36 +162,6 @@ const ContactUs = () => {
                           For urgent matters outside business hours, please call
                           our emergency line: +91 9799161609
                         </p>
-                      </div>
-                    </>
-                  )}
-
-                  {section.id === "location" && (
-                    <>
-                      <div className="space-y-4">
-                        <p>
-                          Our main office is located in Jaipur, Rajasthan,
-                          India. While we primarily operate online, you can
-                          visit us for in-person consultations by appointment
-                          only.
-                        </p>
-                        <div className="bg-gray-50 p-6 rounded-lg">
-                          <h3 className="text-xl font-semibold text-[#000080] mb-2">
-                            Address
-                          </h3>
-                          <p>Jaipur, Rajasthan, India</p>
-                          <p className="mt-2">
-                            <strong>Note:</strong> Please contact us in advance
-                            to schedule an in-person visit.
-                          </p>
-                        </div>
-                        <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
-                          <p className="text-blue-800">
-                            <strong>Virtual Consultations:</strong> We offer
-                            online consultations via video call, phone, or chat
-                            for your convenience.
-                          </p>
-                        </div>
                       </div>
                     </>
                   )}

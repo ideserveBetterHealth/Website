@@ -317,9 +317,6 @@ export function LandingPageFooter() {
 
               {/* Social Media Buttons */}
               <div className="flex flex-col gap-2 mt-3 w-full items-center md:items-start">
-                <p className="text-xs text-[#000080] font-medium mb-2">
-                  Follow Us
-                </p>
                 <a
                   href="https://instagram.com/ideservebetterhealth"
                   target="_blank"

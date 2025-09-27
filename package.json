@@ -1,0 +1,17 @@
+{
+  "name": "better-health-monorepo",
+  "version": "3.0.0",
+  "description": "Better Health - Mental Health and Wellness Platform",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "cd server && npm start",
+    "build": "echo 'No build step needed'",
+    "heroku-postbuild": "cd server && npm install --production",
+    "dev": "cd server && npm run dev"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "author": "Better Health Team"
+}

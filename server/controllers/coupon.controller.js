@@ -6,6 +6,8 @@ export const validateCoupon = async (req, res) => {
   try {
     const { code, serviceType, orderAmount, userId } = req.body;
 
+    console.log(code);
+
     if (!code) {
       return res.status(400).json({
         success: false,
@@ -13,17 +15,51 @@ export const validateCoupon = async (req, res) => {
       });
     }
 
+    // First find coupon by code and active status only
     const coupon = await Coupon.findOne({
       code: code.toUpperCase(),
       isActive: true,
-      validFrom: { $lte: new Date() },
-      validTill: { $gte: new Date() },
     });
+
+    console.log("Coupon found:", coupon);
 
     if (!coupon) {
       return res.status(400).json({
         success: false,
-        message: "Invalid or expired coupon code.",
+        message: "Invalid coupon code.",
+      });
+    }
+
+    // Get current IST time for comparison
+    const nowIST = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000);
+
+    // Database dates are already stored in IST, so direct comparison
+    const validFromIST = new Date(coupon.validFrom);
+    const validTillIST = new Date(coupon.validTill);
+
+    console.log("Date comparison (IST):", {
+      nowIST: nowIST.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
+      validFromIST: validFromIST.toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+      }),
+      validTillIST: validTillIST.toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+      }),
+      isAfterValidFrom: nowIST >= validFromIST,
+      isBeforeValidTill: nowIST <= validTillIST,
+    });
+
+    if (nowIST < validFromIST) {
+      return res.status(400).json({
+        success: false,
+        message: "Coupon is not yet active.",
+      });
+    }
+
+    if (nowIST > validTillIST) {
+      return res.status(400).json({
+        success: false,
+        message: "Coupon has expired.",
       });
     }
 
@@ -142,6 +178,29 @@ export const createCoupon = async (req, res) => {
       });
     }
 
+    // Convert input dates to IST before storing
+    const validFromDate = new Date(validFrom);
+    const validTillDate = new Date(validTill);
+
+    // Add IST offset (UTC + 5:30) to store dates in IST
+    const validFromIST = new Date(
+      validFromDate.getTime() + 5.5 * 60 * 60 * 1000
+    );
+    const validTillIST = new Date(
+      validTillDate.getTime() + 5.5 * 60 * 60 * 1000
+    );
+
+    console.log("Storing coupon dates in IST:", {
+      originalValidFrom: validFromDate.toISOString(),
+      validFromIST: validFromIST.toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+      }),
+      originalValidTill: validTillDate.toISOString(),
+      validTillIST: validTillIST.toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+      }),
+    });
+
     const coupon = await Coupon.create({
       code: code.toUpperCase(),
       discount,
@@ -149,8 +208,8 @@ export const createCoupon = async (req, res) => {
       maxUses,
       minOrderAmount: minOrderAmount || 0,
       maxDiscountAmount,
-      validFrom: new Date(validFrom),
-      validTill: new Date(validTill),
+      validFrom: validFromIST,
+      validTill: validTillIST,
       isActive: isActive !== undefined ? isActive : true,
       isNewUserOnly: isNewUserOnly || false,
       applicableServices: applicableServices || [],

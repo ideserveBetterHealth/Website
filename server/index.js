@@ -115,7 +115,7 @@ try {
                 meeting.duration
               } min session with ${meeting.bhAssocName} at ${convertTo12Hour(
                 meeting.meetingTime
-              )} IST.\n\n👉 Please join the meeting via your dashboard on time.\n\n🔗 Dashboard Link: ideservebetterhealth.in/dashboard\n\nWe look forward to supporting you in your journey with BetterHealth 💙.\n\nBest regards,\nTeam BetterHealth 🧡`
+              )} IST.\n\n👉 Please join the meeting via your dashboard on time.\n\n🔗 Dashboard Link: ideservebetterhealth.in/dashboard\n\nWe look forward to supporting you in your journey with BetterHealth.\n\nBest regards,\nTeam BetterHealth 🧡`
             );
             console.log(`✅ WhatsApp sent to ${meeting.clientName}`);
 

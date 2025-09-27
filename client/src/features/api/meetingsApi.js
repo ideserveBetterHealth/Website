@@ -8,11 +8,11 @@ export const meetingApi = createApi({
     baseUrl: MEETING_API,
     credentials: "include",
   }),
-  tagTypes: ["Meetings"],
+  tagTypes: ["Meetings", "Credits", "Availability"],
   endpoints: (builder) => ({
     getMeetings: builder.query({
       query: () => ({
-        url: "/get-meetings",
+        url: "/",
         method: "GET",
       }),
       providesTags: ["Meetings"],
@@ -24,7 +24,7 @@ export const meetingApi = createApi({
         method: "POST",
         body: meetingData,
       }),
-      invalidatesTags: ["Meetings"],
+      invalidatesTags: ["Meetings", "Credits", "Availability"],
     }),
 
     joinMeeting: builder.mutation({
@@ -38,9 +38,9 @@ export const meetingApi = createApi({
     deleteMeeting: builder.mutation({
       query: (meetingId) => ({
         url: `/deleteMeeting/${meetingId}`,
-        method: "GET",
+        method: "DELETE",
       }),
-      invalidatesTags: ["Meetings"],
+      invalidatesTags: ["Meetings", "Availability"],
     }),
     userAllMeetings: builder.mutation({
       query: (userId) => ({

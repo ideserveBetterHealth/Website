@@ -1,0 +1,4 @@
+{
+  "ignore": ["baileys/session.json", "baileys/auth_info/*", "node_modules"],
+  "ext": "js,json"
+}

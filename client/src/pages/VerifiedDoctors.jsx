@@ -47,10 +47,26 @@ const VerifiedDoctors = () => {
 
       if (response.data.success) {
         const newDoctors = response.data.user;
+
+        // Sort function: admins first, then doctors/psychologists
+        const sortedDoctors = newDoctors.sort((a, b) => {
+          if (a.role === "admin" && b.role !== "admin") return -1;
+          if (a.role !== "admin" && b.role === "admin") return 1;
+          return 0; // Keep original order for same roles
+        });
+
         if (isSearch) {
-          setVerifiedDoctors(newDoctors);
+          setVerifiedDoctors(sortedDoctors);
         } else {
-          setVerifiedDoctors((prev) => [...prev, ...newDoctors]);
+          setVerifiedDoctors((prev) => {
+            const combined = [...prev, ...sortedDoctors];
+            // Re-sort the combined array to maintain order
+            return combined.sort((a, b) => {
+              if (a.role === "admin" && b.role !== "admin") return -1;
+              if (a.role !== "admin" && b.role === "admin") return 1;
+              return 0;
+            });
+          });
         }
         setHasNextPage(response.data.pagination.hasNextPage);
       }
@@ -198,59 +214,164 @@ const VerifiedDoctors = () => {
               </p>
             </div>
           ) : (
-            <div className="grid gap-4">
-              {verifiedDoctors.map((doctor, index) => {
-                const isLast = index === verifiedDoctors.length - 1;
+            <div className="space-y-6">
+              {/* Group doctors by role for display */}
+              {(() => {
+                const adminDoctors = verifiedDoctors.filter(
+                  (doctor) => doctor.role === "admin"
+                );
+                const bhAssociates = verifiedDoctors.filter(
+                  (doctor) => doctor.role === "doctor"
+                );
+
                 return (
-                  <div
-                    key={doctor._id}
-                    ref={isLast && !hasSearched ? lastDoctorRef : null}
-                    className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-4">
-                          <div className="bg-blue-100 rounded-full p-3">
-                            <span className="text-blue-600 font-semibold text-lg">
-                              {doctor.name?.charAt(0)?.toUpperCase() || "A"}
-                            </span>
-                          </div>
-                          <div>
-                            <h3 className="text-xl font-semibold text-gray-800">
-                              {doctor.name}
-                            </h3>
-                            <p className="text-gray-600">{doctor.email}</p>
-                            <div className="flex items-center space-x-4 mt-2">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-black-800">
-                                verified
-                              </span>
-                              <span className="text-sm text-gray-500">
-                                Role: {doctor.role}
-                              </span>
-                            </div>
-                          </div>
+                  <>
+                    {/* Admin Section */}
+                    {adminDoctors.length > 0 && (
+                      <div>
+                        <h2 className="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
+                          Admins ({adminDoctors.length})
+                        </h2>
+                        <div className="grid gap-4">
+                          {adminDoctors.map((doctor, index) => {
+                            const isLast =
+                              index === adminDoctors.length - 1 &&
+                              bhAssociates.length === 0;
+                            return (
+                              <div
+                                key={doctor._id}
+                                ref={
+                                  isLast && !hasSearched ? lastDoctorRef : null
+                                }
+                                className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center space-x-4">
+                                      <div className="bg-purple-100 rounded-full p-3">
+                                        <span className="text-purple-600 font-semibold text-lg">
+                                          {doctor.name
+                                            ?.charAt(0)
+                                            ?.toUpperCase() || "A"}
+                                        </span>
+                                      </div>
+                                      <div>
+                                        <h3 className="text-xl font-semibold text-gray-800">
+                                          {doctor.name}
+                                        </h3>
+                                        <p className="text-gray-600">
+                                          {doctor.email}
+                                        </p>
+                                        <div className="flex items-center space-x-4 mt-2">
+                                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-black-800">
+                                            verified
+                                          </span>
+                                          <span className="text-sm text-gray-500">
+                                            Role:{" "}
+                                            {doctor.role === "doctor"
+                                              ? "BH Associate"
+                                              : doctor.role}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex space-x-3">
+                                    <button
+                                      onClick={() =>
+                                        handleViewDetails(doctor._id)
+                                      }
+                                      className="inline-flex items-center px-4 py-2 border border-purple-300 rounded-md shadow-sm text-sm font-medium text-purple-700 bg-purple-50 hover:bg-purple-100"
+                                    >
+                                      <Eye className="h-4 w-4 mr-2" />
+                                      View Details
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
+                    )}
 
-                      <div className="flex space-x-3">
-                        <button
-                          onClick={() => handleViewDetails(doctor._id)}
-                          className="inline-flex items-center px-4 py-2 border border-blue-300 rounded-md shadow-sm text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100"
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Details
-                        </button>
+                    {/* BH Associates Section */}
+                    {bhAssociates.length > 0 && (
+                      <div>
+                        <h2 className="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
+                          BH Associates ({bhAssociates.length})
+                        </h2>
+                        <div className="grid gap-4">
+                          {bhAssociates.map((doctor, index) => {
+                            const isLast = index === bhAssociates.length - 1;
+                            return (
+                              <div
+                                key={doctor._id}
+                                ref={
+                                  isLast && !hasSearched ? lastDoctorRef : null
+                                }
+                                className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center space-x-4">
+                                      <div className="bg-blue-100 rounded-full p-3">
+                                        <span className="text-blue-600 font-semibold text-lg">
+                                          {doctor.name
+                                            ?.charAt(0)
+                                            ?.toUpperCase() || "A"}
+                                        </span>
+                                      </div>
+                                      <div>
+                                        <h3 className="text-xl font-semibold text-gray-800">
+                                          {doctor.name}
+                                        </h3>
+                                        <p className="text-gray-600">
+                                          {doctor.email}
+                                        </p>
+                                        <div className="flex items-center space-x-4 mt-2">
+                                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-black-800">
+                                            verified
+                                          </span>
+                                          <span className="text-sm text-gray-500">
+                                            Role:{" "}
+                                            {doctor.role === "doctor"
+                                              ? "BH Associate"
+                                              : doctor.role}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex space-x-3">
+                                    <button
+                                      onClick={() =>
+                                        handleViewDetails(doctor._id)
+                                      }
+                                      className="inline-flex items-center px-4 py-2 border border-blue-300 rounded-md shadow-sm text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100"
+                                    >
+                                      <Eye className="h-4 w-4 mr-2" />
+                                      View Details
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                );
-              })}
+                    )}
 
-              {loading && (
-                <div className="flex justify-center py-4">
-                  <Loader className="h-6 w-6 animate-spin text-blue-500" />
-                </div>
-              )}
+                    {loading && (
+                      <div className="flex justify-center py-4">
+                        <Loader className="h-6 w-6 animate-spin text-blue-500" />
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           )}
         </div>

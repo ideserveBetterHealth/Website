@@ -12,16 +12,16 @@ export const authApi = createApi({
     credentials: "include",
   }),
   endpoints: (builder) => ({
-    registerUser: builder.mutation({
+    sendOTP: builder.mutation({
       query: (inputData) => ({
-        url: "register",
+        url: "send-otp",
         method: "POST",
         body: inputData,
       }),
     }),
-    loginUser: builder.mutation({
+    verifyOTP: builder.mutation({
       query: (inputData) => ({
-        url: "login",
+        url: "verify-otp",
         method: "POST",
         body: inputData,
       }),
@@ -35,6 +35,22 @@ export const authApi = createApi({
         }
       },
     }),
+    completeProfile: builder.mutation({
+      query: (inputData) => ({
+        url: "complete-profile",
+        method: "PUT",
+        body: inputData,
+      }),
+      async onQueryStarted(arg, { queryFulfilled, dispatch }) {
+        try {
+          const result = await queryFulfilled;
+          dispatch(userLoggedIn({ user: result.data.user }));
+        } catch (error) {
+          console.log(error);
+        }
+      },
+      invalidatesTags: ["logout"],
+    }),
     logoutUser: builder.mutation({
       query: () => ({
         url: "logout",
@@ -44,10 +60,8 @@ export const authApi = createApi({
       async onQueryStarted(_, { queryFulfilled, dispatch }) {
         try {
           const result = await queryFulfilled;
-          // Make sure to dispatch logout action after the API call completes
           dispatch(userLoggedOut());
           dispatch(meetingApi.util.invalidateTags(["Meetings"]));
-          // For better debugging
           console.log("Logout successful:", result);
         } catch (error) {
           console.error("Logout error:", error);
@@ -84,8 +98,9 @@ export const authApi = createApi({
 });
 
 export const {
-  useRegisterUserMutation,
-  useLoginUserMutation,
+  useSendOTPMutation,
+  useVerifyOTPMutation,
+  useCompleteProfileMutation,
   useLoadUserQuery,
   useUpdateUserMutation,
   useLogoutUserMutation,

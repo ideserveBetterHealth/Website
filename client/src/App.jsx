@@ -1,35 +1,41 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import "./App.css";
-import Login from "./pages/Login";
+import { Login } from "./pages/auth/Login";
+import OTPLogin from "./pages/auth/OTPLogin";
 import MainLayout from "./layout/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import {
   AuthenticatedUser,
   ProtectedRoute,
-} from "./components/ProtectedRoutes";
-import Signup from "./pages/signup";
+} from "./components/auth/ProtectedRoutes";
+import Signup from "./pages/auth/signup";
 import DynamicForm from "./pages/EmployeeForm";
-import UserAllMeetings from "./pages/UserAllMeetings";
 import ErrorPage from "./pages/ErrorPage";
 import VerificationPending from "./pages/VerificationPening";
 import VerifyDocuments from "./pages/VerifyDocuments";
 import LandingPage from "./pages/LandingPageBar";
 import Home from "./pages/Home";
-import MentalHealth from "./pages/MentalHealth";
+import MentalHealth from "./pages/services/MentalHealth";
 import FinancialAid from "./pages/FinancialAid";
-import Cosmetology from "./pages/Cosmetology";
+import Cosmetology from "./pages/services/Cosmetology";
 import AboutUs from "./pages/AboutUs";
-import Services from "./pages/Services";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import TermsConditions from "./pages/TermsConditions";
-import RefundCancellationPolicy from "./pages/RefundCancellationPolicy";
+import Services from "./pages/services/Services";
+import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
+import TermsConditions from "./pages/legal/TermsConditions";
+import RefundCancellationPolicy from "./pages/legal/RefundCancellationPolicy";
 import VerifiedDoctors from "./pages/VerifiedDoctors";
 import VerifiedDoctorInDetail from "./pages/VerifedDoctorInDetail";
-import PaymentPage from "./pages/PaymentPage";
+import PaymentPage from "./pages/payment/PaymentPage";
 import CreateCoupon from "./pages/CreateCoupons";
 import AllCoupons from "./pages/AllCoupons";
+import ViewPastSessions from "./pages/ViewPastSessions";
 import CreateMeeting from "./pages/CreateMeeting";
-import ContactUs from "./pages/ContactUs";
+import MySchedule from "./pages/MySchedule";
+import ManageSchedule from "./pages/admin/ManageSchedule";
+import ManageBHFamily from "./pages/admin/ManageBHFamily";
+import Career from "./pages/Career";
+import PaymentSuccess from "./pages/payment/PaymentSuccess";
+import BHAssociateProfile from "./pages/profile/bhAssociateProfile";
 
 function App() {
   const appRouter = createBrowserRouter([
@@ -74,12 +80,12 @@ function App() {
           element: <RefundCancellationPolicy />,
         },
         {
-          path: "/contact-us",
-          element: <ContactUs />,
-        },
-        {
           path: "/make-payment/:service/:planType",
           element: <PaymentPage />,
+        },
+        {
+          path: "/payment-success",
+          element: <PaymentSuccess />,
         },
         {
           path: "/login",
@@ -88,6 +94,22 @@ function App() {
               <Login />
             </AuthenticatedUser>
           ),
+        },
+        {
+          path: "/otp-login",
+          element: (
+            <AuthenticatedUser>
+              <OTPLogin />
+            </AuthenticatedUser>
+          ),
+        },
+        {
+          path: "/career",
+          element: <Career />,
+        },
+        {
+          path: "/bh-associate-profile/:id",
+          element: <BHAssociateProfile />,
         },
         {
           path: "*",
@@ -128,10 +150,20 @@ function App() {
           ),
         },
         {
-          path: "/meetinghistory",
+          path: "/view-past-sessions",
           element: (
             <ProtectedRoute>
-              <UserAllMeetings />
+              <ViewPastSessions />
+            </ProtectedRoute>
+          ),
+        },
+
+        // Doctor routes
+        {
+          path: "/my-schedule",
+          element: (
+            <ProtectedRoute doctorOnly={true}>
+              <MySchedule />
             </ProtectedRoute>
           ),
         },
@@ -206,6 +238,22 @@ function App() {
           element: (
             <ProtectedRoute adminOnly={true}>
               <CreateMeeting />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "/admin/manage-schedule",
+          element: (
+            <ProtectedRoute adminOnly={true}>
+              <ManageSchedule />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "/admin/manage-bh-family",
+          element: (
+            <ProtectedRoute adminOnly={true}>
+              <ManageBHFamily />
             </ProtectedRoute>
           ),
         },

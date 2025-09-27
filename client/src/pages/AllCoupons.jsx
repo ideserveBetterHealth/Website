@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
 const AllCoupons = () => {
@@ -12,22 +12,18 @@ const AllCoupons = () => {
     couponCode: "",
   });
 
-  useEffect(() => {
-    fetchAllCoupons();
-  }, []);
-
-  const API_BASE = `${import.meta.env.VITE_BACKEND_URL}/api/v1/payments`;
+  const API_BASE = `${import.meta.env.VITE_BACKEND_URL}/api/v1/coupons`;
   axios.defaults.withCredentials = true;
 
-  const fetchAllCoupons = async () => {
+  const fetchAllCoupons = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE}/coupons`, {
+      const response = await axios.get(`${API_BASE}/`, {
         withCredentials: true,
       });
 
       if (response.data.success) {
-        setCoupons(response.data.data);
+        setCoupons(response.data.coupons);
       }
     } catch (error) {
       console.error("Error fetching coupons:", error);
@@ -36,16 +32,17 @@ const AllCoupons = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_BASE]);
+
+  useEffect(() => {
+    fetchAllCoupons();
+  }, [fetchAllCoupons]);
 
   const handleToggleStatus = async (couponId, currentStatus) => {
     try {
-      const response = await axios.patch(
-        `${API_BASE}/coupon/${couponId}/status`,
-        {
-          isActive: !currentStatus,
-        }
-      );
+      const response = await axios.put(`${API_BASE}/${couponId}`, {
+        isActive: !currentStatus,
+      });
 
       if (response.data.success) {
         setMessage(
@@ -63,7 +60,7 @@ const AllCoupons = () => {
 
   const handleDeleteCoupon = async (couponId) => {
     try {
-      const response = await axios.delete(`${API_BASE}/coupon/${couponId}`);
+      const response = await axios.delete(`${API_BASE}/${couponId}`);
 
       if (response.data.success) {
         setMessage("Coupon deleted successfully");
@@ -84,10 +81,6 @@ const AllCoupons = () => {
 
   const closeDeleteModal = () => {
     setDeleteModal({ show: false, couponId: null, couponCode: "" });
-  };
-
-  const formatServiceName = (serviceName) => {
-    return serviceName.replace(/([A-Z])/g, " $1").trim();
   };
 
   const formatDate = (dateString) => {
@@ -239,17 +232,26 @@ const AllCoupons = () => {
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="text-xl font-bold text-gray-800 mb-1">
-                        {coupon.couponCode}
+                        {coupon.code}
                       </h3>
-                      <span
-                        className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
-                          coupon.forNewUsers
-                            ? "bg-green-100 text-green-800"
-                            : "bg-blue-100 text-blue-800"
-                        }`}
-                      >
-                        {coupon.forNewUsers ? "New Users" : "Existing Users"}
-                      </span>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <span
+                          className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
+                            coupon.discountType === "percentage"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-green-100 text-green-800"
+                          }`}
+                        >
+                          {coupon.discountType === "percentage"
+                            ? `${coupon.discount}% OFF`
+                            : `₹${coupon.discount} OFF`}
+                        </span>
+                        {coupon.isNewUserOnly && (
+                          <span className="inline-block px-3 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
+                            New Users Only
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center space-x-2">
                       <span
@@ -268,94 +270,142 @@ const AllCoupons = () => {
                   </div>
                 </div>
 
-                {/* Payment Links */}
+                {/* Coupon Details */}
                 <div className="p-6">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                    Payment Links:
-                  </h4>
-
-                  {/* Mental Health Counselling */}
-                  <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <h5 className="text-sm font-medium text-blue-800 mb-2">
-                      Mental Health Counselling
-                    </h5>
-                    <div className="space-y-1 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Single:</span>
-                        <span
-                          className="text-blue-600 truncate ml-2 max-w-32"
-                          title={
-                            coupon.paymentLinks.mentalHealthCounselling.single
-                          }
-                        >
-                          {coupon.paymentLinks.mentalHealthCounselling.single.substring(
-                            0,
-                            30
-                          )}
-                          ...
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Bundle:</span>
-                        <span
-                          className="text-blue-600 truncate ml-2 max-w-32"
-                          title={
-                            coupon.paymentLinks.mentalHealthCounselling.bundle
-                          }
-                        >
-                          {coupon.paymentLinks.mentalHealthCounselling.bundle.substring(
-                            0,
-                            30
-                          )}
-                          ...
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Cosmetologist Consultancy */}
-                  <div className="mb-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
-                    <h5 className="text-sm font-medium text-purple-800 mb-2">
-                      Cosmetologist Consultancy
-                    </h5>
-                    <div className="space-y-1 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Single:</span>
-                        <span
-                          className="text-purple-600 truncate ml-2 max-w-32"
-                          title={
-                            coupon.paymentLinks.cosmetologistConsultancy.single
-                          }
-                        >
-                          {coupon.paymentLinks.cosmetologistConsultancy.single.substring(
-                            0,
-                            30
-                          )}
-                          ...
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Bundle:</span>
-                        <span
-                          className="text-purple-600 truncate ml-2 max-w-32"
-                          title={
-                            coupon.paymentLinks.cosmetologistConsultancy.bundle
-                          }
-                        >
-                          {coupon.paymentLinks.cosmetologistConsultancy.bundle.substring(
-                            0,
-                            30
-                          )}
-                          ...
-                        </span>
+                  <div className="space-y-4">
+                    {/* Discount Info */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                        Discount Details
+                      </h4>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Type:</span>
+                          <span className="font-medium">
+                            {coupon.discountType === "percentage"
+                              ? "Percentage"
+                              : "Fixed Amount"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Value:</span>
+                          <span className="font-medium">
+                            {coupon.discountType === "percentage"
+                              ? `${coupon.discount}%`
+                              : `₹${coupon.discount}`}
+                          </span>
+                        </div>
+                        {coupon.maxDiscountAmount && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Max Discount:</span>
+                            <span className="font-medium">
+                              ₹{coupon.maxDiscountAmount}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Min Order:</span>
+                          <span className="font-medium">
+                            ₹{coupon.minOrderAmount || 0}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">New Users Only:</span>
+                          <span
+                            className={`font-medium ${
+                              coupon.isNewUserOnly
+                                ? "text-orange-600"
+                                : "text-gray-600"
+                            }`}
+                          >
+                            {coupon.isNewUserOnly ? "Yes" : "No"}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Timestamps */}
-                  <div className="text-xs text-gray-500 mb-4">
-                    <div>Created: {formatDate(coupon.createdAt)}</div>
-                    <div>Updated: {formatDate(coupon.updatedAt)}</div>
+                    {/* Usage Info */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                        Usage Information
+                      </h4>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Used:</span>
+                          <span className="font-medium">
+                            {coupon.usedCount || 0} times
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Max Uses:</span>
+                          <span className="font-medium">
+                            {coupon.maxUses
+                              ? `${coupon.maxUses} times`
+                              : "Unlimited"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Validity Period */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                        Validity Period
+                      </h4>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">From:</span>
+                          <span className="font-medium">
+                            {formatDate(coupon.validFrom)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Till:</span>
+                          <span className="font-medium">
+                            {formatDate(coupon.validTill)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Applicable Services */}
+                    {coupon.applicableServices.length > 0 && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                          Applicable Services
+                        </h4>
+                        <div className="flex flex-wrap gap-1">
+                          {coupon.applicableServices.map((service, index) => (
+                            <span
+                              key={index}
+                              className="inline-block px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800"
+                            >
+                              {service === "mental_health"
+                                ? "Mental Health"
+                                : "Cosmetology"}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Description */}
+                    {coupon.description && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                          Description
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          {coupon.description}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Timestamps */}
+                    <div className="text-xs text-gray-500">
+                      <div>Created: {formatDate(coupon.createdAt)}</div>
+                      <div>Updated: {formatDate(coupon.updatedAt)}</div>
+                    </div>
                   </div>
                 </div>
 
@@ -376,9 +426,7 @@ const AllCoupons = () => {
                     </button>
 
                     <button
-                      onClick={() =>
-                        openDeleteModal(coupon._id, coupon.couponCode)
-                      }
+                      onClick={() => openDeleteModal(coupon._id, coupon.code)}
                       className="flex-1 px-4 py-2 text-sm font-medium bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
                     >
                       Delete
@@ -412,11 +460,11 @@ const AllCoupons = () => {
                   Delete Coupon
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  Are you sure you want to delete the coupon "
+                  Are you sure you want to delete the coupon &quot;
                   <span className="font-medium text-red-600">
                     {deleteModal.couponCode}
                   </span>
-                  "? This action cannot be undone.
+                  &quot;? This action cannot be undone.
                 </p>
                 <div className="flex space-x-4">
                   <button

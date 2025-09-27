@@ -3,6 +3,13 @@ import rootReducer from "./rootReducer";
 import { authApi } from "@/features/api/authApi";
 import { detailsApi } from "@/features/api/detailsApi";
 import { meetingApi } from "@/features/api/meetingsApi";
+import { pricingApi } from "@/features/api/pricingApi";
+import { psychologistApi } from "@/features/api/psychologistApi";
+import { questionnaireApi } from "@/features/api/questionnaireApi";
+import { couponApi } from "@/features/api/couponApi";
+import { paymentApi } from "@/features/api/paymentApi";
+import { userApi } from "@/features/api/userApi";
+import { bhAssociateApi } from "@/features/api/bhAssociateApi";
 
 export const appStore = configureStore({
   reducer: rootReducer,
@@ -10,7 +17,14 @@ export const appStore = configureStore({
     defaultMiddleware().concat(
       authApi.middleware,
       detailsApi.middleware,
-      meetingApi.middleware
+      meetingApi.middleware,
+      pricingApi.middleware,
+      psychologistApi.middleware,
+      questionnaireApi.middleware,
+      couponApi.middleware,
+      paymentApi.middleware,
+      userApi.middleware,
+      bhAssociateApi.middleware
     ),
 });
 

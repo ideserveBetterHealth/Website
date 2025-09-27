@@ -1,54 +1,121 @@
 import mongoose from "mongoose";
 
-const serviceLinksSchema = new mongoose.Schema({
-  single: {
-    type: String,
-    required: true,
-  },
-  bundle: {
-    type: String,
-    required: true,
-  },
-});
-
-const paymentLinksSchema = new mongoose.Schema({
-  mentalHealthCounselling: {
-    type: serviceLinksSchema,
-    required: true,
-  },
-  cosmetologistConsultancy: {
-    type: serviceLinksSchema,
-    required: true,
-  },
-  // Future services can be added here with single and bundle links
-});
-
-const couponSchema = new mongoose.Schema(
+const paymentSchema = new mongoose.Schema(
   {
-    couponCode: {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    clientName: {
       type: String,
       required: true,
-      unique: true,
-      uppercase: true,
-      trim: true,
     },
-    forNewUsers: {
-      type: Boolean,
+    associateId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "BHAssociate",
+      required: false,
+    },
+    meetingId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Meeting",
+    },
+    serviceType: {
+      type: String,
+      enum: ["mental_health", "cosmetology", "other"],
       required: true,
+    },
+    sessions: {
+      type: Number,
+      default: 1,
+    },
+    amount: {
+      type: Number,
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: ["pending", "paid", "cancelled", "completed"],
+      default: "pending",
+    },
+    paymentId: {
+      type: String,
+      default: null,
+    },
+    paymentMethod: {
+      type: String,
+      default: null,
+    },
+    paymentTime: {
+      type: Date,
+      default: null,
+    },
+    bankReference: {
+      type: String,
+      default: null,
+    },
+    paymentMessage: {
+      type: String,
+      default: null,
+    },
+    orderId: {
+      type: String,
+      default: null,
+    },
+    paymentGatewayOrderId: {
+      type: String,
+      default: null,
+    },
+    finalAmount: {
+      type: Number,
+      default: null,
+    },
+    duration: {
+      type: Number,
+      default: null,
+    },
+    sessionType: {
+      type: String,
+      enum: ["single", "pack", "custom", "credits"],
+      default: null,
+    },
+    creditsCount: {
+      type: Number,
+      default: null,
+    },
+    isCreditsOnly: {
+      type: Boolean,
       default: false,
     },
-    paymentLinks: {
-      type: paymentLinksSchema,
-      required: true,
+    appliedCoupon: {
+      code: String,
+      discount: Number,
+      discountType: String,
     },
-    isActive: {
-      type: Boolean,
-      default: true,
+    appointmentDate: {
+      type: Date,
+      default: null,
+    },
+    appointmentTime: {
+      type: String,
+      default: null,
+    },
+    questionnaireResponses: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    completedAt: {
+      type: Date,
+      default: null,
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-export const Coupon = mongoose.model("Coupon", couponSchema);
+// Update the updatedAt field before saving
+paymentSchema.pre("save", function (next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
+export const Payment = mongoose.model("Payment", paymentSchema);

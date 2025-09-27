@@ -3,19 +3,18 @@ import axios from "axios";
 
 const CreateCoupon = () => {
   const [formData, setFormData] = useState({
-    couponCode: "",
-    forNewUsers: false,
+    code: "",
+    discount: "",
+    discountType: "percentage",
+    maxUses: "",
+    minOrderAmount: "",
+    maxDiscountAmount: "",
+    validFrom: "",
+    validTill: "",
     isActive: true,
-    paymentLinks: {
-      mentalHealthCounselling: {
-        single: "",
-        bundle: "",
-      },
-      cosmetologistConsultancy: {
-        single: "",
-        bundle: "",
-      },
-    },
+    isNewUserOnly: false,
+    applicableServices: [],
+    description: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -23,7 +22,7 @@ const CreateCoupon = () => {
   const [messageType, setMessageType] = useState("");
   const [errors, setErrors] = useState({});
 
-  const API_BASE = `${import.meta.env.VITE_BACKEND_URL}/api/v1/payments`;
+  const API_BASE = `${import.meta.env.VITE_BACKEND_URL}/api/v1/coupons`;
 
   axios.defaults.withCredentials = true;
 
@@ -31,47 +30,83 @@ const CreateCoupon = () => {
     const newErrors = {};
 
     // Validate coupon code
-    if (!formData.couponCode.trim()) {
-      newErrors.couponCode = "Coupon code is required";
-    } else if (formData.couponCode.length < 3) {
-      newErrors.couponCode = "Coupon code must be at least 3 characters";
+    if (!formData.code.trim()) {
+      newErrors.code = "Coupon code is required";
+    } else if (formData.code.length < 3) {
+      newErrors.code = "Coupon code must be at least 3 characters";
     }
 
-    // Validate payment links
-    const services = ["mentalHealthCounselling", "cosmetologistConsultancy"];
-    const plans = ["single", "bundle"];
+    // Validate discount
+    if (!formData.discount) {
+      newErrors.discount = "Discount is required";
+    } else if (formData.discount <= 0) {
+      newErrors.discount = "Discount must be greater than 0";
+    }
 
-    services.forEach((service) => {
-      plans.forEach((plan) => {
-        const link = formData.paymentLinks[service][plan];
-        if (!link.trim()) {
-          newErrors[`${service}_${plan}`] = "Payment link is required";
-        } else if (!isValidUrl(link)) {
-          newErrors[`${service}_${plan}`] = "Please enter a valid URL";
-        }
-      });
-    });
+    // Validate discount percentage
+    if (formData.discountType === "percentage" && formData.discount > 100) {
+      newErrors.discount = "Percentage discount cannot exceed 100%";
+    }
+
+    // Validate validity dates
+    if (!formData.validFrom) {
+      newErrors.validFrom = "Valid from date is required";
+    }
+
+    if (!formData.validTill) {
+      newErrors.validTill = "Valid till date is required";
+    }
+
+    if (formData.validFrom && formData.validTill) {
+      const fromDate = new Date(formData.validFrom);
+      const tillDate = new Date(formData.validTill);
+
+      if (fromDate >= tillDate) {
+        newErrors.validTill = "Valid till date must be after valid from date";
+      }
+    }
+
+    // Validate max uses if provided
+    if (formData.maxUses && formData.maxUses < 1) {
+      newErrors.maxUses = "Max uses must be at least 1";
+    }
+
+    // Validate min order amount if provided
+    if (formData.minOrderAmount && formData.minOrderAmount < 0) {
+      newErrors.minOrderAmount = "Minimum order amount cannot be negative";
+    }
+
+    // Validate max discount amount for percentage discounts
+    if (
+      formData.discountType === "percentage" &&
+      formData.maxDiscountAmount &&
+      formData.maxDiscountAmount < 0
+    ) {
+      newErrors.maxDiscountAmount =
+        "Maximum discount amount cannot be negative";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const isValidUrl = (string) => {
-    try {
-      new URL(string);
-      return true;
-    } catch (_) {
-      return false;
-    }
-  };
-
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    if (name === "couponCode") {
+    if (name === "code") {
       setFormData((prev) => ({
         ...prev,
         [name]: value.toUpperCase(),
+      }));
+    } else if (name === "applicableServices") {
+      const serviceValue = value;
+      setFormData((prev) => ({
+        ...prev,
+        applicableServices: checked
+          ? [...(prev.applicableServices || []), serviceValue]
+          : (prev.applicableServices || []).filter(
+              (service) => service !== serviceValue
+            ),
       }));
     } else if (type === "checkbox") {
       setFormData((prev) => ({
@@ -84,19 +119,6 @@ const CreateCoupon = () => {
         [name]: value,
       }));
     }
-  };
-
-  const handlePaymentLinkChange = (service, plan, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      paymentLinks: {
-        ...prev.paymentLinks,
-        [service]: {
-          ...prev.paymentLinks[service],
-          [plan]: value,
-        },
-      },
-    }));
   };
 
   const handleSubmit = async (e) => {
@@ -112,7 +134,7 @@ const CreateCoupon = () => {
     setMessage("");
 
     try {
-      const response = await axios.post(`${API_BASE}/coupon`, formData);
+      const response = await axios.post(`${API_BASE}/`, formData);
 
       if (response.data.success) {
         setMessage("Coupon created successfully!");
@@ -120,19 +142,18 @@ const CreateCoupon = () => {
 
         // Reset form
         setFormData({
-          couponCode: "",
-          forNewUsers: false,
+          code: "",
+          discount: "",
+          discountType: "percentage",
+          maxUses: "",
+          minOrderAmount: "",
+          maxDiscountAmount: "",
+          validFrom: "",
+          validTill: "",
           isActive: true,
-          paymentLinks: {
-            mentalHealthCounselling: {
-              single: "",
-              bundle: "",
-            },
-            cosmetologistConsultancy: {
-              single: "",
-              bundle: "",
-            },
-          },
+          isNewUserOnly: false,
+          applicableServices: [],
+          description: "",
         });
         setErrors({});
       }
@@ -154,19 +175,18 @@ const CreateCoupon = () => {
 
   const clearForm = () => {
     setFormData({
-      couponCode: "",
-      forNewUsers: false,
+      code: "",
+      discount: "",
+      discountType: "percentage",
+      maxUses: "",
+      minOrderAmount: "",
+      maxDiscountAmount: "",
+      validFrom: "",
+      validTill: "",
       isActive: true,
-      paymentLinks: {
-        mentalHealthCounselling: {
-          single: "",
-          bundle: "",
-        },
-        cosmetologistConsultancy: {
-          single: "",
-          bundle: "",
-        },
-      },
+      isNewUserOnly: false,
+      applicableServices: [],
+      description: "",
     });
     setErrors({});
     setMessage("");
@@ -188,7 +208,6 @@ const CreateCoupon = () => {
           </div>
         </div>
 
-        {/* Main Form */}
         <div className="bg-white rounded-xl shadow-lg p-8">
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Basic Information */}
@@ -201,256 +220,366 @@ const CreateCoupon = () => {
                 {/* Coupon Code */}
                 <div>
                   <label
-                    htmlFor="couponCode"
+                    htmlFor="code"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
                     Coupon Code *
                   </label>
                   <input
                     type="text"
-                    id="couponCode"
-                    name="couponCode"
-                    value={formData.couponCode}
+                    id="code"
+                    name="code"
+                    value={formData.code}
                     onChange={handleInputChange}
                     placeholder="e.g., NEWUSER20"
                     className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
-                      errors.couponCode
+                      errors.code
                         ? "border-red-300 focus:border-red-500"
                         : "border-gray-300 focus:border-blue-500"
                     }`}
                   />
-                  {errors.couponCode && (
+                  {errors.code && (
+                    <p className="mt-1 text-sm text-red-600">{errors.code}</p>
+                  )}
+                </div>
+
+                {/* Discount */}
+                <div>
+                  <label
+                    htmlFor="discount"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Discount Amount *
+                  </label>
+                  <input
+                    type="number"
+                    id="discount"
+                    name="discount"
+                    value={formData.discount}
+                    onChange={handleInputChange}
+                    placeholder="e.g., 20"
+                    min="0"
+                    className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
+                      errors.discount
+                        ? "border-red-300 focus:border-red-500"
+                        : "border-gray-300 focus:border-blue-500"
+                    }`}
+                  />
+                  {errors.discount && (
                     <p className="mt-1 text-sm text-red-600">
-                      {errors.couponCode}
+                      {errors.discount}
                     </p>
                   )}
                 </div>
 
-                {/* User Type */}
+                {/* Discount Type */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Target Users *
+                    Discount Type *
                   </label>
                   <div className="space-y-3">
                     <label className="flex items-center cursor-pointer p-3 border-2 border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
                       <input
                         type="radio"
-                        name="forNewUsers"
-                        checked={formData.forNewUsers === true}
-                        onChange={() =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            forNewUsers: true,
-                          }))
-                        }
+                        name="discountType"
+                        value="percentage"
+                        checked={formData.discountType === "percentage"}
+                        onChange={handleInputChange}
                         className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                       />
                       <span className="ml-3 text-gray-700 font-medium">
-                        New Users Only
+                        Percentage (%)
                       </span>
                     </label>
 
                     <label className="flex items-center cursor-pointer p-3 border-2 border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
                       <input
                         type="radio"
-                        name="forNewUsers"
-                        checked={formData.forNewUsers === false}
-                        onChange={() =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            forNewUsers: false,
-                          }))
-                        }
+                        name="discountType"
+                        value="fixed"
+                        checked={formData.discountType === "fixed"}
+                        onChange={handleInputChange}
                         className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                       />
                       <span className="ml-3 text-gray-700 font-medium">
-                        Existing Users Only
+                        Fixed Amount (₹)
                       </span>
                     </label>
                   </div>
                 </div>
-              </div>
 
-              {/* Active Status */}
-              <div className="mt-6">
-                <label className="flex items-center cursor-pointer">
+                {/* Max Uses */}
+                <div>
+                  <label
+                    htmlFor="maxUses"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Maximum Uses (Optional)
+                  </label>
+                  <input
+                    type="number"
+                    id="maxUses"
+                    name="maxUses"
+                    value={formData.maxUses}
+                    onChange={handleInputChange}
+                    placeholder="Leave empty for unlimited"
+                    min="1"
+                    className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
+                      errors.maxUses
+                        ? "border-red-300 focus:border-red-500"
+                        : "border-gray-300 focus:border-blue-500"
+                    }`}
+                  />
+                  {errors.maxUses && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.maxUses}
+                    </p>
+                  )}
+                </div>
+
+                {/* Min Order Amount */}
+                <div>
+                  <label
+                    htmlFor="minOrderAmount"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Minimum Order Amount (₹)
+                  </label>
+                  <input
+                    type="number"
+                    id="minOrderAmount"
+                    name="minOrderAmount"
+                    value={formData.minOrderAmount}
+                    onChange={handleInputChange}
+                    placeholder="0"
+                    min="0"
+                    className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
+                      errors.minOrderAmount
+                        ? "border-red-300 focus:border-red-500"
+                        : "border-gray-300 focus:border-blue-500"
+                    }`}
+                  />
+                  {errors.minOrderAmount && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.minOrderAmount}
+                    </p>
+                  )}
+                </div>
+
+                {/* Max Discount Amount (for percentage only) */}
+                {formData.discountType === "percentage" && (
+                  <div>
+                    <label
+                      htmlFor="maxDiscountAmount"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Maximum Discount Amount (₹)
+                    </label>
+                    <input
+                      type="number"
+                      id="maxDiscountAmount"
+                      name="maxDiscountAmount"
+                      value={formData.maxDiscountAmount}
+                      onChange={handleInputChange}
+                      placeholder="Leave empty for no limit"
+                      min="0"
+                      className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
+                        errors.maxDiscountAmount
+                          ? "border-red-300 focus:border-red-500"
+                          : "border-gray-300 focus:border-blue-500"
+                      }`}
+                    />
+                    {errors.maxDiscountAmount && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.maxDiscountAmount}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Validity Period */}
+            <div className="border-b border-gray-200 pb-8">
+              <h2 className="text-xl font-semibold text-gray-800 mb-6">
+                Validity Period
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Valid From */}
+                <div>
+                  <label
+                    htmlFor="validFrom"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Valid From *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    id="validFrom"
+                    name="validFrom"
+                    value={formData.validFrom}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
+                      errors.validFrom
+                        ? "border-red-300 focus:border-red-500"
+                        : "border-gray-300 focus:border-blue-500"
+                    }`}
+                  />
+                  {errors.validFrom && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.validFrom}
+                    </p>
+                  )}
+                </div>
+
+                {/* Valid Till */}
+                <div>
+                  <label
+                    htmlFor="validTill"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Valid Till *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    id="validTill"
+                    name="validTill"
+                    value={formData.validTill}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
+                      errors.validTill
+                        ? "border-red-300 focus:border-red-500"
+                        : "border-gray-300 focus:border-blue-500"
+                    }`}
+                  />
+                  {errors.validTill && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.validTill}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Applicable Services */}
+            <div className="border-b border-gray-200 pb-8">
+              <h2 className="text-xl font-semibold text-gray-800 mb-6">
+                Applicable Services
+              </h2>
+              <p className="text-gray-600 mb-4">
+                Select which services this coupon can be applied to (leave empty
+                for all services)
+              </p>
+
+              <div className="space-y-4">
+                <label className="flex items-center cursor-pointer p-4 border-2 border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
                   <input
                     type="checkbox"
-                    name="isActive"
-                    checked={formData.isActive}
+                    name="applicableServices"
+                    value="mental_health"
+                    checked={(formData.applicableServices || []).includes(
+                      "mental_health"
+                    )}
                     onChange={handleInputChange}
                     className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <span className="ml-3 text-gray-700 font-medium">
-                    Coupon is Active
-                  </span>
+                  <div className="ml-4">
+                    <span className="text-gray-700 font-medium text-lg">
+                      Mental Health Counselling
+                    </span>
+                    <p className="text-gray-500 text-sm">
+                      Apply coupon to mental health consultation services
+                    </p>
+                  </div>
+                </label>
+
+                <label className="flex items-center cursor-pointer p-4 border-2 border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
+                  <input
+                    type="checkbox"
+                    name="applicableServices"
+                    value="cosmetology"
+                    checked={(formData.applicableServices || []).includes(
+                      "cosmetology"
+                    )}
+                    onChange={handleInputChange}
+                    className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <div className="ml-4">
+                    <span className="text-gray-700 font-medium text-lg">
+                      Cosmetology Consultation
+                    </span>
+                    <p className="text-gray-500 text-sm">
+                      Apply coupon to cosmetology consultation services
+                    </p>
+                  </div>
                 </label>
               </div>
             </div>
 
-            {/* Payment Links */}
+            {/* Description and Status */}
             <div>
               <h2 className="text-xl font-semibold text-gray-800 mb-6">
-                Payment Links
+                Additional Details
               </h2>
 
-              {/* Mental Health Counselling */}
-              <div className="mb-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
-                <h3 className="text-lg font-medium text-blue-800 mb-4 flex items-center">
-                  <svg
-                    className="w-5 h-5 mr-2"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
+              <div className="space-y-6">
+                {/* Description */}
+                <div>
+                  <label
+                    htmlFor="description"
+                    className="block text-sm font-medium text-gray-700 mb-2"
                   >
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Mental Health Counselling
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Single Session Link *
-                    </label>
-                    <input
-                      type="url"
-                      value={
-                        formData.paymentLinks.mentalHealthCounselling.single
-                      }
-                      onChange={(e) =>
-                        handlePaymentLinkChange(
-                          "mentalHealthCounselling",
-                          "single",
-                          e.target.value
-                        )
-                      }
-                      placeholder="https://payment.com/mental-health-single"
-                      className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
-                        errors.mentalHealthCounselling_single
-                          ? "border-red-300 focus:border-red-500"
-                          : "border-gray-300 focus:border-blue-500"
-                      }`}
-                    />
-                    {errors.mentalHealthCounselling_single && (
-                      <p className="mt-1 text-sm text-red-600">
-                        {errors.mentalHealthCounselling_single}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Bundle Sessions Link *
-                    </label>
-                    <input
-                      type="url"
-                      value={
-                        formData.paymentLinks.mentalHealthCounselling.bundle
-                      }
-                      onChange={(e) =>
-                        handlePaymentLinkChange(
-                          "mentalHealthCounselling",
-                          "bundle",
-                          e.target.value
-                        )
-                      }
-                      placeholder="https://payment.com/mental-health-bundle"
-                      className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
-                        errors.mentalHealthCounselling_bundle
-                          ? "border-red-300 focus:border-red-500"
-                          : "border-gray-300 focus:border-blue-500"
-                      }`}
-                    />
-                    {errors.mentalHealthCounselling_bundle && (
-                      <p className="mt-1 text-sm text-red-600">
-                        {errors.mentalHealthCounselling_bundle}
-                      </p>
-                    )}
-                  </div>
+                    Description (Optional)
+                  </label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    rows={3}
+                    placeholder="Brief description of the coupon..."
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  />
                 </div>
-              </div>
 
-              {/* Cosmetologist Consultancy */}
-              <div className="p-6 bg-purple-50 rounded-lg border border-purple-200">
-                <h3 className="text-lg font-medium text-purple-800 mb-4 flex items-center">
-                  <svg
-                    className="w-5 h-5 mr-2"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm8 0a1 1 0 011-1h4a1 1 0 011 1v6a1 1 0 01-1 1h-4a1 1 0 01-1-1V8z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Cosmetologist Consultancy
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Single Session Link *
-                    </label>
+                {/* Active Status */}
+                <div>
+                  <label className="flex items-center cursor-pointer">
                     <input
-                      type="url"
-                      value={
-                        formData.paymentLinks.cosmetologistConsultancy.single
-                      }
-                      onChange={(e) =>
-                        handlePaymentLinkChange(
-                          "cosmetologistConsultancy",
-                          "single",
-                          e.target.value
-                        )
-                      }
-                      placeholder="https://payment.com/cosmetologist-single"
-                      className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
-                        errors.cosmetologistConsultancy_single
-                          ? "border-red-300 focus:border-red-500"
-                          : "border-gray-300 focus:border-blue-500"
-                      }`}
+                      type="checkbox"
+                      name="isActive"
+                      checked={formData.isActive}
+                      onChange={handleInputChange}
+                      className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
-                    {errors.cosmetologistConsultancy_single && (
-                      <p className="mt-1 text-sm text-red-600">
-                        {errors.cosmetologistConsultancy_single}
-                      </p>
-                    )}
-                  </div>
+                    <span className="ml-3 text-gray-700 font-medium">
+                      Coupon is Active
+                    </span>
+                  </label>
+                  <p className="text-gray-500 text-sm mt-1 ml-8">
+                    Inactive coupons cannot be used by customers
+                  </p>
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Bundle Sessions Link *
-                    </label>
+                {/* New User Only */}
+                <div>
+                  <label className="flex items-center cursor-pointer">
                     <input
-                      type="url"
-                      value={
-                        formData.paymentLinks.cosmetologistConsultancy.bundle
-                      }
-                      onChange={(e) =>
-                        handlePaymentLinkChange(
-                          "cosmetologistConsultancy",
-                          "bundle",
-                          e.target.value
-                        )
-                      }
-                      placeholder="https://payment.com/cosmetologist-bundle"
-                      className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
-                        errors.cosmetologistConsultancy_bundle
-                          ? "border-red-300 focus:border-red-500"
-                          : "border-gray-300 focus:border-blue-500"
-                      }`}
+                      type="checkbox"
+                      name="isNewUserOnly"
+                      checked={formData.isNewUserOnly}
+                      onChange={handleInputChange}
+                      className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
-                    {errors.cosmetologistConsultancy_bundle && (
-                      <p className="mt-1 text-sm text-red-600">
-                        {errors.cosmetologistConsultancy_bundle}
-                      </p>
-                    )}
-                  </div>
+                    <span className="ml-3 text-gray-700 font-medium">
+                      New User Only
+                    </span>
+                  </label>
+                  <p className="text-gray-500 text-sm mt-1 ml-8">
+                    This coupon can only be used by users who haven&apos;t
+                    booked any meetings previously
+                  </p>
                 </div>
               </div>
             </div>
@@ -551,17 +680,25 @@ const CreateCoupon = () => {
           <ul className="text-blue-700 space-y-2 text-sm">
             <li>
               • Coupon codes should be unique and descriptive (e.g., NEWUSER20,
-              BUNDLE50)
+              SUMMER50)
             </li>
             <li>
-              • Choose target users carefully - new users or existing users only
+              • For percentage discounts, the value should be between 1-100
+            </li>
+            <li>• For fixed discounts, enter the amount in rupees</li>
+            <li>
+              • Set validity period carefully - expired coupons cannot be used
             </li>
             <li>
-              • Ensure all payment links are valid and functional before
-              creating
+              • Select applicable services or leave empty to apply to all
+              services
             </li>
             <li>
-              • Test payment links in a separate browser tab before submission
+              • Maximum discount amount helps cap percentage-based discounts
+            </li>
+            <li>
+              • Enable &quot;New User Only&quot; to restrict coupon usage to
+              users who haven&apos;t booked any meetings
             </li>
             <li>• Coupons can be deactivated later if needed</li>
           </ul>

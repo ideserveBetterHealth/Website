@@ -4,7 +4,7 @@ export const generateToken = (res, user, message) => {
   const token = jwt.sign(
     { userId: user._id },
     process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: "1d" }
+    { expiresIn: "1y" }
   );
 
   const { password, ...userWithoutPassword } = user.toObject();
@@ -13,13 +13,13 @@ export const generateToken = (res, user, message) => {
     .status(200)
     .cookie("token", token, {
       httpOnly: true,
-      sameSite: true,
-      secure: true,
+      sameSite: "Lax",
+      secure: process.env.NODE_ENV === "production",
       path: "/",
-      maxAge: 24 * 60 * 60 * 1000,
+      maxAge: 365 * 24 * 60 * 60 * 1000,
     })
     .json({
-      success: "true",
+      success: true,
       message: `Welcome Back ${user.name}`,
       user: userWithoutPassword,
     });

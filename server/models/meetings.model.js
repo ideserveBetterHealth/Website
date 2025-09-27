@@ -2,26 +2,22 @@ import mongoose from "mongoose";
 
 const meetingSchema = new mongoose.Schema(
   {
-    clientId: {
-      type: String,
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: true,
-      lowercase: true,
-      trim: true,
-      match: [/.+\@.+\..+/, "Please enter a valid email address"],
     },
     clientName: {
       type: String,
       required: true,
       trim: true,
     },
-    doctorId: {
-      type: String,
+    bhAssocId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: true,
-      lowercase: true,
-      trim: true,
-      match: [/.+\@.+\..+/, "Please enter a valid email address"],
     },
-    doctorName: {
+    bhAssocName: {
       type: String,
       required: true,
       trim: true,
@@ -32,6 +28,10 @@ const meetingSchema = new mongoose.Schema(
     },
     meetingTime: {
       type: String,
+      required: true,
+    },
+    duration: {
+      type: Number,
       required: true,
     },
     meetingLink: {
@@ -51,6 +51,16 @@ const meetingSchema = new mongoose.Schema(
       type: String,
       required: false,
       default: null,
+    },
+    serviceType: {
+      type: String,
+      enum: ["mental_health", "cosmetology"],
+      required: true,
+    },
+    questionnaireResponses: {
+      type: Map,
+      of: mongoose.Schema.Types.Mixed,
+      default: new Map(),
     },
   },
   { timestamps: true }

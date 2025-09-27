@@ -65,7 +65,7 @@ const Home = () => {
             </div>
             <div className="bg-white rounded-2xl shadow-lg p-6 lg:p-8 flex-1 max-w-lg min-w-80 flex flex-col items-center transition-all duration-300 gap-4 lg:gap-6 hover:-translate-y-2 hover:shadow-2xl">
               <img
-                src="https://skinstudio.ee/wp-content/uploads/2024/01/konsultatsioon-1.jpg"
+                src="/cosmetologist-consultancy.png"
                 alt="Cosmetologist Consultancy"
                 className="w-full h-48 lg:h-64 object-cover rounded-xl shadow-md"
               />

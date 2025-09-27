@@ -1,26 +1,17 @@
 import express from "express";
 import {
-  createEmployee,
-  getDoctorDetails,
-  isVerified,
-  statusPending,
-  statusVerified,
-  verifyDoctor,
-} from "../controllers/details.controller.js";
+  register,
+  getAllEmployees,
+  updateEmployee,
+  deleteEmployee,
+} from "../controllers/employee.controller.js";
 import { isAuthenticated } from "../middlewares/isAuthenticated.js";
 
 const router = express.Router();
 
-router.post("/employees", isAuthenticated, createEmployee);
+router.route("/").post(isAuthenticated, register);
+router.route("/all").get(isAuthenticated, getAllEmployees);
+router.route("/:id").put(isAuthenticated, updateEmployee);
+router.route("/:id").delete(isAuthenticated, deleteEmployee);
 
-router.get("/check-verified", isAuthenticated, isVerified);
-
-router.get("/status-pending", isAuthenticated, statusPending);
-
-router.get("/status-verified", isAuthenticated, statusVerified);
-
-router.get("/doctor-details/:userId", isAuthenticated, getDoctorDetails);
-
-router.post("/verify-doctor/:userId", isAuthenticated, verifyDoctor);
-
-export const employeeRouter = router;
+export { router as employeeRouter };

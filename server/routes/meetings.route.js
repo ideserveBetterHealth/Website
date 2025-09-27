@@ -1,26 +1,19 @@
 import express from "express";
-import { isAuthenticated } from "../middlewares/isAuthenticated.js";
 import {
-  createMeeting,
-  deleteMeeting,
   getMeetings,
+  deleteMeeting,
   meetingJoinedAt,
   userAllMeetings,
-  verifyUserEmail,
+  createMeetingFromCredits,
 } from "../controllers/meetings.controller.js";
+import { isAuthenticated } from "../middlewares/isAuthenticated.js";
 
 const router = express.Router();
 
-router.post("/create-meeting", isAuthenticated, createMeeting);
+router.route("/").get(isAuthenticated, getMeetings);
+router.route("/create-meeting").post(isAuthenticated, createMeetingFromCredits);
+router.route("/user").get(isAuthenticated, userAllMeetings);
+router.route("/meetingJoinedAt/:id").post(isAuthenticated, meetingJoinedAt);
+router.route("/deleteMeeting/:id").delete(isAuthenticated, deleteMeeting);
 
-router.get("/get-meetings", isAuthenticated, getMeetings);
-
-router.post("/meetingJoinedAt/:meetingId", isAuthenticated, meetingJoinedAt);
-
-router.get("/deleteMeeting/:meetingId", isAuthenticated, deleteMeeting);
-
-router.post("/userMeetings", isAuthenticated, userAllMeetings);
-
-router.post("/verify-email", isAuthenticated, verifyUserEmail);
-
-export const meetingRouter = router;
+export { router as meetingRouter };

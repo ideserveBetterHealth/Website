@@ -10,7 +10,7 @@ import { useLoadUserQuery } from "@/features/api/authApi";
 import { useSelector } from "react-redux";
 import { Loader } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import countriesData from "../data/countries.json";
+import countriesData from "@/data/countries.json";
 
 axios.defaults.withCredentials = true;
 

@@ -301,3 +301,19 @@
   animation-delay: 3.4s;
   opacity: 0;
 }
+
+/* Mouse scroll animation */
+@keyframes scroll {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+}

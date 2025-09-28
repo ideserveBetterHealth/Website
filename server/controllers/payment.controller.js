@@ -123,7 +123,7 @@ const processSuccessfulPayment = async (payment) => {
         await sendMessageViaWhatsApp(
           `+91${user.phoneNumber}`,
           `*BetterHealth – Session Scheduled*\n\nHello ${
-            user.name
+            user.name || payment.clientName || "Buddy"
           },\n\nYour session with ${
             meeting.bhAssocName
           } has been scheduled on ${formatDateWithComma(
@@ -139,7 +139,7 @@ const processSuccessfulPayment = async (payment) => {
           `*BetterHealth – New Session Assigned*\n\nHello ${
             associate.name
           },\n\nYou have been assigned a new session:\n\n📅 Session Details:\n• Client: ${
-            user.name
+            user.name || payment.clientName || "Buddy"
           }\n• Scheduled Date: ${formatDateWithComma(
             payment.appointmentDate
           )}\n• Scheduled Time: ${convertTo12Hour(
@@ -161,7 +161,7 @@ const processSuccessfulPayment = async (payment) => {
             `*BetterHealth – Management Alert*\n\nHello ${
               admin.name
             },\n\n📅 New Session Scheduled:\n• Client: ${
-              user.name
+              user.name || payment.clientName || "Buddy"
             }\n• BH Associate: ${
               meeting.bhAssocName
             }\n• Scheduled Date: ${formatDateWithComma(

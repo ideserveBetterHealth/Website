@@ -1,7 +1,6 @@
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -13,28 +12,38 @@ import {
   History,
   UserPlus,
   Calendar,
-  Shield,
   CheckCircle,
-  Tag,
   Plus,
   Settings,
   LogOut,
   FileText,
+  Users,
 } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
 import { useLogoutUserMutation } from "@/features/api/authApi";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useSelector } from "react-redux";
 
-// eslint-disable-next-line react/prop-types
-function MobileNavbar({ role }) {
+function MobileNavbar() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const { user } = useSelector((Store) => Store.auth);
   const [logoutUser, { data, isSuccess }] = useLogoutUserMutation();
 
   const logoutHandler = async () => {
-    await logoutUser();
+    try {
+      await logoutUser().unwrap();
+      // Fallback: clear cookies if server didn't
+      document.cookie.split(";").forEach(function (c) {
+        document.cookie =
+          c.trim().split("=")[0] +
+          "=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;";
+      });
+    } catch (error) {
+      toast.error("Logout failed. Please try again.");
+      console.error("Logout error:", error);
+    }
   };
 
   function navigateHandler(path) {
@@ -44,11 +53,13 @@ function MobileNavbar({ role }) {
 
   useEffect(() => {
     if (isSuccess) {
-      toast.success(data.message || "User logged out");
+      toast.success(data?.message || "User logged out");
       navigate("/login");
       setOpen(false);
     }
-  }, [isSuccess, data, navigate]);
+  }, [isSuccess, data?.message, navigate]);
+
+  const role = user?.role || "user";
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -67,10 +78,10 @@ function MobileNavbar({ role }) {
           <div className="bg-gradient-to-r from-[#ec5228] to-[#d14a22] p-4 border-b border-gray-200">
             <SheetHeader className="relative z-10">
               <SheetTitle
-                onClick={() => navigateHandler("/")}
+                onClick={() => navigateHandler("/dashboard")}
                 className="text-white text-lg font-semibold cursor-pointer hover:text-orange-100 transition-colors"
               >
-                Better Health Dashboard
+                Better Health
               </SheetTitle>
             </SheetHeader>
           </div>
@@ -109,41 +120,42 @@ function MobileNavbar({ role }) {
               </div>
             </button>
 
-            {/* Doctor Specific Options */}
-            {role === "doctor" && (
-              <>
-                <button
-                  onClick={() => navigateHandler("/my-schedule")}
-                  className="w-full group bg-white hover:bg-gray-100 rounded-lg p-3 transition-all duration-200 border border-gray-200 hover:border-gray-300"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                      <Calendar className="w-4 h-4 text-orange-600" />
-                    </div>
-                    <span className="text-gray-700 font-medium text-sm">
-                      My Schedule
-                    </span>
+            {/* Doctor Specific Options - Only show if doctor is verified */}
+            {user && role === "doctor" && user.isVerified === "verified" && (
+              <button
+                onClick={() => navigateHandler("/my-schedule")}
+                className="w-full group bg-white hover:bg-gray-100 rounded-lg p-3 transition-all duration-200 border border-gray-200 hover:border-gray-300"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <Calendar className="w-4 h-4 text-orange-600" />
                   </div>
-                </button>
-
-                <button
-                  onClick={() => navigateHandler("/details")}
-                  className="w-full group bg-white hover:bg-gray-100 rounded-lg p-3 transition-all duration-200 border border-gray-200 hover:border-gray-300"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                      <FileText className="w-4 h-4 text-green-600" />
-                    </div>
-                    <span className="text-gray-700 font-medium text-sm">
-                      Submit Documents
-                    </span>
-                  </div>
-                </button>
-              </>
+                  <span className="text-gray-700 font-medium text-sm">
+                    My Schedule
+                  </span>
+                </div>
+              </button>
             )}
 
-            {/* Admin Specific Options */}
-            {role === "admin" && (
+            {/* Submit Documents — for Doctors and Admins (regardless of verification) */}
+            {(role === "doctor" || role === "admin") && (
+              <button
+                onClick={() => navigateHandler("/details")}
+                className="w-full group bg-white hover:bg-gray-100 rounded-lg p-3 transition-all duration-200 border border-gray-200 hover:border-gray-300"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                    <FileText className="w-4 h-4 text-green-600" />
+                  </div>
+                  <span className="text-gray-700 font-medium text-sm">
+                    Submit Documents
+                  </span>
+                </div>
+              </button>
+            )}
+
+            {/* Admin Specific Options — only if admin is verified */}
+            {user && role === "admin" && user.isVerified === "verified" && (
               <>
                 <div className="pt-2 pb-1">
                   <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">
@@ -185,7 +197,7 @@ function MobileNavbar({ role }) {
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                      <Shield className="w-4 h-4 text-yellow-600" />
+                      <Settings className="w-4 h-4 text-yellow-600" />
                     </div>
                     <span className="text-gray-700 font-medium text-sm">
                       Pending Verifications
@@ -202,7 +214,34 @@ function MobileNavbar({ role }) {
                       <CheckCircle className="w-4 h-4 text-emerald-600" />
                     </div>
                     <span className="text-gray-700 font-medium text-sm">
-                      Verified Doctors
+                      Verified BH Associates
+                    </span>
+                  </div>
+                </button>
+                <button
+                  onClick={() => navigateHandler("/admin/manage-schedule")}
+                  className="w-full group bg-white hover:bg-gray-100 rounded-lg p-3 transition-all duration-200 border border-gray-200 hover:border-gray-300"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-cyan-100 rounded-lg flex items-center justify-center">
+                      <Calendar className="w-4 h-4 text-cyan-600" />
+                    </div>
+                    <span className="text-gray-700 font-medium text-sm">
+                      Manage Schedule
+                    </span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => navigateHandler("/admin/manage-bh-family")}
+                  className="w-full group bg-white hover:bg-gray-100 rounded-lg p-3 transition-all duration-200 border border-gray-200 hover:border-gray-300"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
+                      <Users className="w-4 h-4 text-teal-600" />
+                    </div>
+                    <span className="text-gray-700 font-medium text-sm">
+                      Manage BH Family
                     </span>
                   </div>
                 </button>

@@ -12,7 +12,6 @@ import {
   Plus,
   Settings,
   LogOut,
-  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,8 +19,6 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
@@ -59,10 +56,10 @@ function Navbar() {
 
   useEffect(() => {
     if (isSuccess) {
-      toast.success(data.message || "User logged out");
+      toast.success(data?.message || "User logged out");
       navigate("/login");
     }
-  }, [isSuccess]);
+  }, [isSuccess, data?.message, navigate]);
 
   if (isLoading) {
     // If data is still loading, you could show a spinner or return null
@@ -139,16 +136,18 @@ function Navbar() {
                       </DropdownMenuItem>
                     </Link>
 
-                    {role === "doctor" && (
-                      <Link to="/my-schedule">
-                        <DropdownMenuItem className="mx-1 my-1 rounded-xl px-3 py-3 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-100 transition-all duration-200 group">
-                          <Calendar className="w-4 h-4 mr-3 text-orange-600 group-hover:text-orange-700" />
-                          <span className="font-medium text-gray-700 group-hover:text-gray-900">
-                            My Schedule
-                          </span>
-                        </DropdownMenuItem>
-                      </Link>
-                    )}
+                    {user &&
+                      role === "doctor" &&
+                      user.isVerified === "verified" && (
+                        <Link to="/my-schedule">
+                          <DropdownMenuItem className="mx-1 my-1 rounded-xl px-3 py-3 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-100 transition-all duration-200 group">
+                            <Calendar className="w-4 h-4 mr-3 text-orange-600 group-hover:text-orange-700" />
+                            <span className="font-medium text-gray-700 group-hover:text-gray-900">
+                              My Schedule
+                            </span>
+                          </DropdownMenuItem>
+                        </Link>
+                      )}
 
                     {(role === "doctor" || role === "admin") && (
                       <>

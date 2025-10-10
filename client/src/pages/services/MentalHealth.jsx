@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import PropTypes from "prop-types";
@@ -112,11 +112,12 @@ const PricingSection = ({
     });
   }
 
-  // Fallback pricing if API data is not available
-  if (!PRICING["50"] || !PRICING["80"]) {
-    PRICING["50"] = { single: 1500, pack: 4500 };
-    PRICING["80"] = { single: 2000, pack: 6000 };
-  }
+  // Validate that pricing data is available and complete
+  const isPricingDataValid =
+    PRICING["50"]?.single &&
+    PRICING["50"]?.pack &&
+    PRICING["80"]?.single &&
+    PRICING["80"]?.pack;
 
   const handleApplyCoupon = async () => {
     // Require package selection before applying coupon
@@ -215,12 +216,83 @@ const PricingSection = ({
     );
   }
 
-  if (!PRICING[50] || !PRICING[80]) {
+  if (pricingError) {
     return (
       <div className="text-center py-20">
-        <p className="text-red-600">
-          Failed to load pricing information. Please try again.
-        </p>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 max-w-md mx-auto">
+          <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
+            <svg
+              className="w-6 h-6 text-red-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-red-800 mb-2">
+            Pricing Error
+          </h3>
+          <p className="text-red-600 mb-4">
+            Unable to load pricing information from the server.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isPricingDataValid) {
+    return (
+      <div className="text-center py-20">
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 max-w-md mx-auto">
+          <div className="flex items-center justify-center w-12 h-12 bg-amber-100 rounded-full mx-auto mb-4">
+            <svg
+              className="w-6 h-6 text-amber-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-amber-800 mb-2">
+            Pricing Unavailable
+          </h3>
+          <p className="text-amber-700 mb-4">
+            Pricing information is currently unavailable. Please try again later
+            or contact support.
+          </p>
+          <div className="flex gap-2 justify-center">
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 transition-colors"
+            >
+              Refresh
+            </button>
+            <a
+              href="mailto:hello@ideservebetterhealth.in"
+              className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Contact Support
+            </a>
+          </div>
+        </div>
       </div>
     );
   }
@@ -485,7 +557,13 @@ PricingSection.propTypes = {
 };
 
 // Contact Form Component
-const ContactForm = ({ onContinue, appliedCoupon, setAppliedCoupon }) => {
+const ContactForm = ({
+  onContinue,
+  appliedCoupon,
+  setAppliedCoupon,
+  duration,
+  selectedPack,
+}) => {
   const [formData, setFormData] = useState({
     fullName: "",
     whatsapp: "",
@@ -508,6 +586,47 @@ const ContactForm = ({ onContinue, appliedCoupon, setAppliedCoupon }) => {
   // Get questionnaire data from API
   const { data: questionnaireData, isLoading: isQuestionnaireLoading } =
     useGetQuestionnaireQuery("mental_health");
+
+  // Get pricing data from API (same as PricingSection)
+  const { data: pricingData } = useGetPricingQuery({
+    serviceType: "mental_health",
+  });
+
+  // Convert API pricing data to usable format (same logic as PricingSection)
+  const PRICING = useMemo(() => {
+    const pricing = {};
+    if (pricingData?.pricing) {
+      pricingData.pricing.forEach((item) => {
+        if (item.sessionCosts && item.serviceType === "mental_health") {
+          pricing["50"] = {
+            single: item.sessionCosts["50"],
+            pack: item.sessionCosts["50"] * 3,
+          };
+          pricing["80"] = {
+            single: item.sessionCosts["80"],
+            pack: item.sessionCosts["80"] * 3,
+          };
+        }
+      });
+    }
+
+    return pricing;
+  }, [pricingData]);
+
+  // Calculate current order amount based on selected package and duration
+  const getCurrentOrderAmount = useCallback(() => {
+    if (selectedPack === null || selectedPack === undefined || !duration) {
+      return null; // Return null if selection is not yet made
+    }
+
+    // Check if pricing data is available
+    if (!PRICING[duration]?.single || !PRICING[duration]?.pack) {
+      console.error("Pricing data not available for duration:", duration);
+      return null;
+    }
+
+    return selectedPack ? PRICING[duration].pack : PRICING[duration].single;
+  }, [selectedPack, duration, PRICING]);
 
   // Countdown effect for resend button
   useEffect(() => {
@@ -540,15 +659,28 @@ const ContactForm = ({ onContinue, appliedCoupon, setAppliedCoupon }) => {
 
       // Re-validate applied coupon with user ID for logged-in user
       if (appliedCoupon) {
+        const currentAmount = getCurrentOrderAmount();
+
+        // Skip validation if pricing data is not available
+        if (currentAmount === null) {
+          console.warn(
+            "⚠️ Skipping coupon re-validation - pricing data not available"
+          );
+          return;
+        }
+
         validateCoupon({
           code: appliedCoupon.code,
           serviceType: "mental_health",
-          orderAmount: 1000, // Dummy amount for validation
+          orderAmount: currentAmount, // Use actual order amount
           userId: user._id,
         })
           .unwrap()
           .then(() => {
-            console.log("✅ Coupon re-validation passed for logged-in user");
+            console.log(
+              "✅ Coupon re-validation passed for logged-in user with amount:",
+              currentAmount
+            );
           })
           .catch((error) => {
             console.log(
@@ -562,7 +694,14 @@ const ContactForm = ({ onContinue, appliedCoupon, setAppliedCoupon }) => {
           });
       }
     }
-  }, [userData, isAutoFilled, appliedCoupon, validateCoupon, setAppliedCoupon]);
+  }, [
+    userData,
+    isAutoFilled,
+    appliedCoupon,
+    validateCoupon,
+    setAppliedCoupon,
+    getCurrentOrderAmount,
+  ]);
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -625,11 +764,24 @@ const ContactForm = ({ onContinue, appliedCoupon, setAppliedCoupon }) => {
       // Re-validate applied coupon with user ID (same as pricing section logic)
       if (appliedCoupon) {
         try {
-          console.log("🔍 Re-validating coupon after OTP verification");
+          const currentAmount = getCurrentOrderAmount();
+
+          // Skip validation if pricing data is not available
+          if (currentAmount === null) {
+            console.warn(
+              "⚠️ Skipping coupon re-validation after OTP - pricing data not available"
+            );
+            return;
+          }
+
+          console.log(
+            "🔍 Re-validating coupon after OTP verification with amount:",
+            currentAmount
+          );
           await validateCoupon({
             code: appliedCoupon.code,
             serviceType: "mental_health",
-            orderAmount: 1000, // Dummy amount for validation
+            orderAmount: currentAmount, // Use actual order amount
             userId: response.user?._id,
           }).unwrap();
           console.log("✅ Coupon re-validation passed");
@@ -683,6 +835,58 @@ const ContactForm = ({ onContinue, appliedCoupon, setAppliedCoupon }) => {
     );
     onContinue();
   };
+
+  // Check if pricing data is available
+  const isPricingDataValid =
+    PRICING["50"]?.single &&
+    PRICING["50"]?.pack &&
+    PRICING["80"]?.single &&
+    PRICING["80"]?.pack;
+
+  if (!isPricingDataValid && pricingData) {
+    return (
+      <div className="text-center py-20">
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 max-w-md mx-auto">
+          <div className="flex items-center justify-center w-12 h-12 bg-amber-100 rounded-full mx-auto mb-4">
+            <svg
+              className="w-6 h-6 text-amber-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-amber-800 mb-2">
+            Pricing Unavailable
+          </h3>
+          <p className="text-amber-700 mb-4">
+            Pricing information is currently unavailable. Please go back to the
+            pricing step or contact support.
+          </p>
+          <div className="flex gap-2 justify-center">
+            <button
+              onClick={() => window.history.back()}
+              className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 transition-colors"
+            >
+              Go Back
+            </button>
+            <a
+              href="mailto:hello@ideservebetterhealth.in"
+              className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Contact Support
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isQuestionnaireLoading) {
     return (
@@ -1181,6 +1385,8 @@ ContactForm.propTypes = {
   onContinue: PropTypes.func.isRequired,
   appliedCoupon: PropTypes.object,
   setAppliedCoupon: PropTypes.func.isRequired,
+  duration: PropTypes.string.isRequired,
+  selectedPack: PropTypes.bool,
 };
 
 // Psychologist selection component
@@ -1521,6 +1727,8 @@ export default function MentalHealth() {
               onContinue={() => handleStepChange(currentStep + 1)}
               appliedCoupon={appliedCoupon}
               setAppliedCoupon={setAppliedCoupon}
+              duration={duration}
+              selectedPack={selectedPack}
             />
           )}
           {/* Render psychologist cards for step 2 */}

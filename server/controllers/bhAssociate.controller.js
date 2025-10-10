@@ -509,7 +509,7 @@ export const getAllBHAssociates = async (req, res) => {
         success: false,
         message: "Access denied. Admin privileges required.",
       });
-    }
+    } 
 
     // Get all BH Associates with their user data
     const bhAssociates = await BHAssociate.find({})

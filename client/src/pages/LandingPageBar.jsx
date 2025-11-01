@@ -372,6 +372,15 @@ export function LandingPageFooter() {
                   Refund & Cancellation Policy
                 </Link>
               </li>
+              <li className="mb-2 md:mb-3">
+                <Link
+                  to="/sitemap"
+                  onClick={(e) => handleFooterNavClick(e, "/sitemap")}
+                  className="text-[#000080] no-underline transition-colors duration-200 text-sm hover:text-[#ec5228]"
+                >
+                  Sitemap
+                </Link>
+              </li>
             </ul>
           </div>
 

@@ -36,6 +36,7 @@ import ManageBHFamily from "./pages/admin/ManageBHFamily";
 import Career from "./pages/Career";
 import PaymentSuccess from "./pages/payment/PaymentSuccess";
 import BHAssociateProfile from "./pages/profile/bhAssociateProfile";
+import Sitemap from "./pages/Sitemap";
 
 function App() {
   const appRouter = createBrowserRouter([
@@ -110,6 +111,10 @@ function App() {
         {
           path: "/bh-associate-profile/:id",
           element: <BHAssociateProfile />,
+        },
+        {
+          path: "/sitemap",
+          element: <Sitemap />,
         },
         {
           path: "*",

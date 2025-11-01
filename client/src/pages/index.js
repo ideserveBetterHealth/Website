@@ -41,3 +41,4 @@ export { default as VerificationPening } from "./VerificationPening";
 export { default as VerifiedDoctors } from "./VerifiedDoctors";
 export { default as VerifyDocuments } from "./VerifyDocuments";
 export { default as ViewPastSessions } from "./ViewPastSessions";
+export { default as Sitemap } from "./Sitemap";

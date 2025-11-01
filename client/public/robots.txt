@@ -1,0 +1,14 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Disallow private/protected routes
+Disallow: /dashboard
+Disallow: /admin/
+Disallow: /details
+Disallow: /my-schedule
+Disallow: /view-past-sessions
+Disallow: /make-payment/
+
+# Sitemap location
+Sitemap: https://www.ideservebetterhealth.in/sitemap.xml

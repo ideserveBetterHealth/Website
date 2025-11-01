@@ -4,16 +4,31 @@ import axios from "axios";
 const CreateCoupon = () => {
   const [formData, setFormData] = useState({
     code: "",
-    discount: "",
-    discountType: "percentage",
+    serviceDiscounts: [
+      {
+        serviceType: "mental_health",
+        enabled: false,
+        discount: "",
+        discountType: "percentage",
+        maxDiscountAmount: "",
+        minOrderAmount: "",
+        planDiscounts: [],
+      },
+      {
+        serviceType: "cosmetology",
+        enabled: false,
+        discount: "",
+        discountType: "percentage",
+        maxDiscountAmount: "",
+        minOrderAmount: "",
+        planDiscounts: [],
+      },
+    ],
     maxUses: "",
-    minOrderAmount: "",
-    maxDiscountAmount: "",
     validFrom: "",
     validTill: "",
     isActive: true,
     isNewUserOnly: false,
-    applicableServices: [],
     description: "",
   });
 
@@ -36,17 +51,53 @@ const CreateCoupon = () => {
       newErrors.code = "Coupon code must be at least 3 characters";
     }
 
-    // Validate discount
-    if (!formData.discount) {
-      newErrors.discount = "Discount is required";
-    } else if (formData.discount <= 0) {
-      newErrors.discount = "Discount must be greater than 0";
+    // Check if at least one service is enabled
+    const enabledServices = formData.serviceDiscounts.filter(
+      (sd) => sd.enabled
+    );
+    if (enabledServices.length === 0) {
+      newErrors.services = "At least one service must be selected";
     }
 
-    // Validate discount percentage
-    if (formData.discountType === "percentage" && formData.discount > 100) {
-      newErrors.discount = "Percentage discount cannot exceed 100%";
-    }
+    // Validate each enabled service
+    formData.serviceDiscounts.forEach((serviceDiscount, index) => {
+      if (serviceDiscount.enabled) {
+        if (!serviceDiscount.discount) {
+          newErrors[`service_${index}_discount`] = "Discount is required";
+        } else if (serviceDiscount.discount <= 0) {
+          newErrors[`service_${index}_discount`] =
+            "Discount must be greater than 0";
+        }
+
+        // Validate discount percentage
+        if (
+          serviceDiscount.discountType === "percentage" &&
+          serviceDiscount.discount > 100
+        ) {
+          newErrors[`service_${index}_discount`] =
+            "Percentage discount cannot exceed 100%";
+        }
+
+        // Validate max discount amount for percentage discounts
+        if (
+          serviceDiscount.discountType === "percentage" &&
+          serviceDiscount.maxDiscountAmount &&
+          serviceDiscount.maxDiscountAmount < 0
+        ) {
+          newErrors[`service_${index}_maxDiscount`] =
+            "Maximum discount amount cannot be negative";
+        }
+
+        // Validate min order amount
+        if (
+          serviceDiscount.minOrderAmount &&
+          serviceDiscount.minOrderAmount < 0
+        ) {
+          newErrors[`service_${index}_minOrder`] =
+            "Minimum order amount cannot be negative";
+        }
+      }
+    });
 
     // Validate validity dates
     if (!formData.validFrom) {
@@ -71,21 +122,6 @@ const CreateCoupon = () => {
       newErrors.maxUses = "Max uses must be at least 1";
     }
 
-    // Validate min order amount if provided
-    if (formData.minOrderAmount && formData.minOrderAmount < 0) {
-      newErrors.minOrderAmount = "Minimum order amount cannot be negative";
-    }
-
-    // Validate max discount amount for percentage discounts
-    if (
-      formData.discountType === "percentage" &&
-      formData.maxDiscountAmount &&
-      formData.maxDiscountAmount < 0
-    ) {
-      newErrors.maxDiscountAmount =
-        "Maximum discount amount cannot be negative";
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -98,16 +134,6 @@ const CreateCoupon = () => {
         ...prev,
         [name]: value.toUpperCase(),
       }));
-    } else if (name === "applicableServices") {
-      const serviceValue = value;
-      setFormData((prev) => ({
-        ...prev,
-        applicableServices: checked
-          ? [...(prev.applicableServices || []), serviceValue]
-          : (prev.applicableServices || []).filter(
-              (service) => service !== serviceValue
-            ),
-      }));
     } else if (type === "checkbox") {
       setFormData((prev) => ({
         ...prev,
@@ -119,6 +145,52 @@ const CreateCoupon = () => {
         [name]: value,
       }));
     }
+  };
+
+  const handleServiceToggle = (index) => {
+    setFormData((prev) => {
+      const newServiceDiscounts = [...prev.serviceDiscounts];
+      newServiceDiscounts[index].enabled = !newServiceDiscounts[index].enabled;
+      return { ...prev, serviceDiscounts: newServiceDiscounts };
+    });
+  };
+
+  const handleServiceInputChange = (index, field, value) => {
+    setFormData((prev) => {
+      const newServiceDiscounts = [...prev.serviceDiscounts];
+      newServiceDiscounts[index][field] = value;
+      return { ...prev, serviceDiscounts: newServiceDiscounts };
+    });
+  };
+
+  const handleAddPlanDiscount = (serviceIndex) => {
+    setFormData((prev) => {
+      const newServiceDiscounts = [...prev.serviceDiscounts];
+      newServiceDiscounts[serviceIndex].planDiscounts.push({
+        sessions: "",
+        duration: "",
+        discount: "",
+        discountType: "percentage",
+        maxDiscountAmount: "",
+      });
+      return { ...prev, serviceDiscounts: newServiceDiscounts };
+    });
+  };
+
+  const handleRemovePlanDiscount = (serviceIndex, planIndex) => {
+    setFormData((prev) => {
+      const newServiceDiscounts = [...prev.serviceDiscounts];
+      newServiceDiscounts[serviceIndex].planDiscounts.splice(planIndex, 1);
+      return { ...prev, serviceDiscounts: newServiceDiscounts };
+    });
+  };
+
+  const handlePlanDiscountChange = (serviceIndex, planIndex, field, value) => {
+    setFormData((prev) => {
+      const newServiceDiscounts = [...prev.serviceDiscounts];
+      newServiceDiscounts[serviceIndex].planDiscounts[planIndex][field] = value;
+      return { ...prev, serviceDiscounts: newServiceDiscounts };
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -134,7 +206,42 @@ const CreateCoupon = () => {
     setMessage("");
 
     try {
-      const response = await axios.post(`${API_BASE}/`, formData);
+      // Filter only enabled services and clean up the data
+      const enabledServices = formData.serviceDiscounts
+        .filter((sd) => sd.enabled)
+        .map((sd) => ({
+          serviceType: sd.serviceType,
+          discount: Number(sd.discount),
+          discountType: sd.discountType,
+          maxDiscountAmount: sd.maxDiscountAmount
+            ? Number(sd.maxDiscountAmount)
+            : null,
+          minOrderAmount: sd.minOrderAmount ? Number(sd.minOrderAmount) : 0,
+          planDiscounts: sd.planDiscounts
+            .filter((pd) => pd.sessions && pd.duration && pd.discount)
+            .map((pd) => ({
+              sessions: Number(pd.sessions),
+              duration: Number(pd.duration),
+              discount: Number(pd.discount),
+              discountType: pd.discountType,
+              maxDiscountAmount: pd.maxDiscountAmount
+                ? Number(pd.maxDiscountAmount)
+                : null,
+            })),
+        }));
+
+      const payload = {
+        code: formData.code,
+        serviceDiscounts: enabledServices,
+        maxUses: formData.maxUses ? Number(formData.maxUses) : null,
+        validFrom: formData.validFrom,
+        validTill: formData.validTill,
+        isActive: formData.isActive,
+        isNewUserOnly: formData.isNewUserOnly,
+        description: formData.description,
+      };
+
+      const response = await axios.post(`${API_BASE}/`, payload);
 
       if (response.data.success) {
         setMessage("Coupon created successfully!");
@@ -143,16 +250,31 @@ const CreateCoupon = () => {
         // Reset form
         setFormData({
           code: "",
-          discount: "",
-          discountType: "percentage",
+          serviceDiscounts: [
+            {
+              serviceType: "mental_health",
+              enabled: false,
+              discount: "",
+              discountType: "percentage",
+              maxDiscountAmount: "",
+              minOrderAmount: "",
+              planDiscounts: [],
+            },
+            {
+              serviceType: "cosmetology",
+              enabled: false,
+              discount: "",
+              discountType: "percentage",
+              maxDiscountAmount: "",
+              minOrderAmount: "",
+              planDiscounts: [],
+            },
+          ],
           maxUses: "",
-          minOrderAmount: "",
-          maxDiscountAmount: "",
           validFrom: "",
           validTill: "",
           isActive: true,
           isNewUserOnly: false,
-          applicableServices: [],
           description: "",
         });
         setErrors({});
@@ -176,20 +298,99 @@ const CreateCoupon = () => {
   const clearForm = () => {
     setFormData({
       code: "",
-      discount: "",
-      discountType: "percentage",
+      serviceDiscounts: [
+        {
+          serviceType: "mental_health",
+          enabled: false,
+          discount: "",
+          discountType: "percentage",
+          maxDiscountAmount: "",
+          minOrderAmount: "",
+          planDiscounts: [],
+        },
+        {
+          serviceType: "cosmetology",
+          enabled: false,
+          discount: "",
+          discountType: "percentage",
+          maxDiscountAmount: "",
+          minOrderAmount: "",
+          planDiscounts: [],
+        },
+      ],
       maxUses: "",
-      minOrderAmount: "",
-      maxDiscountAmount: "",
       validFrom: "",
       validTill: "",
       isActive: true,
       isNewUserOnly: false,
-      applicableServices: [],
       description: "",
     });
     setErrors({});
     setMessage("");
+  };
+
+  const getServiceName = (serviceType) => {
+    return serviceType === "mental_health"
+      ? "Mental Health Counselling"
+      : "Cosmetology Consultation";
+  };
+
+  // Helper function to get current date-time in local format
+  const getCurrentDateTime = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  // Helper function to add days to current date
+  const addDaysToDate = (days) => {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  // Quick date setters
+  const setQuickDate = (type) => {
+    const now = getCurrentDateTime();
+    let endDate = "";
+
+    switch (type) {
+      case "today":
+        endDate = addDaysToDate(1);
+        break;
+      case "week":
+        endDate = addDaysToDate(7);
+        break;
+      case "month":
+        endDate = addDaysToDate(30);
+        break;
+      case "3months":
+        endDate = addDaysToDate(90);
+        break;
+      case "6months":
+        endDate = addDaysToDate(180);
+        break;
+      case "year":
+        endDate = addDaysToDate(365);
+        break;
+      default:
+        return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      validFrom: now,
+      validTill: endDate,
+    }));
   };
 
   return (
@@ -216,7 +417,7 @@ const CreateCoupon = () => {
                 Basic Information
               </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6">
                 {/* Coupon Code */}
                 <div>
                   <label
@@ -241,71 +442,6 @@ const CreateCoupon = () => {
                   {errors.code && (
                     <p className="mt-1 text-sm text-red-600">{errors.code}</p>
                   )}
-                </div>
-
-                {/* Discount */}
-                <div>
-                  <label
-                    htmlFor="discount"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Discount Amount *
-                  </label>
-                  <input
-                    type="number"
-                    id="discount"
-                    name="discount"
-                    value={formData.discount}
-                    onChange={handleInputChange}
-                    placeholder="e.g., 20"
-                    min="0"
-                    className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
-                      errors.discount
-                        ? "border-red-300 focus:border-red-500"
-                        : "border-gray-300 focus:border-blue-500"
-                    }`}
-                  />
-                  {errors.discount && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {errors.discount}
-                    </p>
-                  )}
-                </div>
-
-                {/* Discount Type */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Discount Type *
-                  </label>
-                  <div className="space-y-3">
-                    <label className="flex items-center cursor-pointer p-3 border-2 border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
-                      <input
-                        type="radio"
-                        name="discountType"
-                        value="percentage"
-                        checked={formData.discountType === "percentage"}
-                        onChange={handleInputChange}
-                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                      />
-                      <span className="ml-3 text-gray-700 font-medium">
-                        Percentage (%)
-                      </span>
-                    </label>
-
-                    <label className="flex items-center cursor-pointer p-3 border-2 border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
-                      <input
-                        type="radio"
-                        name="discountType"
-                        value="fixed"
-                        checked={formData.discountType === "fixed"}
-                        onChange={handleInputChange}
-                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                      />
-                      <span className="ml-3 text-gray-700 font-medium">
-                        Fixed Amount (₹)
-                      </span>
-                    </label>
-                  </div>
                 </div>
 
                 {/* Max Uses */}
@@ -336,66 +472,415 @@ const CreateCoupon = () => {
                     </p>
                   )}
                 </div>
+              </div>
+            </div>
 
-                {/* Min Order Amount */}
-                <div>
-                  <label
-                    htmlFor="minOrderAmount"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Minimum Order Amount (₹)
-                  </label>
-                  <input
-                    type="number"
-                    id="minOrderAmount"
-                    name="minOrderAmount"
-                    value={formData.minOrderAmount}
-                    onChange={handleInputChange}
-                    placeholder="0"
-                    min="0"
-                    className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
-                      errors.minOrderAmount
-                        ? "border-red-300 focus:border-red-500"
-                        : "border-gray-300 focus:border-blue-500"
+            {/* Service-Specific Discounts */}
+            <div className="border-b border-gray-200 pb-8">
+              <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                Service-Specific Discounts *
+              </h2>
+              <p className="text-gray-600 mb-6">
+                Configure different discount rates for each service. Select at
+                least one service.
+              </p>
+              {errors.services && (
+                <p className="mb-4 text-sm text-red-600">{errors.services}</p>
+              )}
+
+              <div className="space-y-6">
+                {formData.serviceDiscounts.map((serviceDiscount, index) => (
+                  <div
+                    key={serviceDiscount.serviceType}
+                    className={`border-2 rounded-xl p-6 transition-all ${
+                      serviceDiscount.enabled
+                        ? "border-blue-400 bg-blue-50"
+                        : "border-gray-200 bg-gray-50"
                     }`}
-                  />
-                  {errors.minOrderAmount && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {errors.minOrderAmount}
-                    </p>
-                  )}
-                </div>
+                  >
+                    {/* Service Toggle Header */}
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={serviceDiscount.enabled}
+                          onChange={() => handleServiceToggle(index)}
+                          className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <span className="ml-3 text-lg font-semibold text-gray-800">
+                          {getServiceName(serviceDiscount.serviceType)}
+                        </span>
+                      </label>
+                      {serviceDiscount.enabled && (
+                        <span className="px-3 py-1 text-xs font-medium bg-blue-600 text-white rounded-full">
+                          Active
+                        </span>
+                      )}
+                    </div>
 
-                {/* Max Discount Amount (for percentage only) */}
-                {formData.discountType === "percentage" && (
-                  <div>
-                    <label
-                      htmlFor="maxDiscountAmount"
-                      className="block text-sm font-medium text-gray-700 mb-2"
-                    >
-                      Maximum Discount Amount (₹)
-                    </label>
-                    <input
-                      type="number"
-                      id="maxDiscountAmount"
-                      name="maxDiscountAmount"
-                      value={formData.maxDiscountAmount}
-                      onChange={handleInputChange}
-                      placeholder="Leave empty for no limit"
-                      min="0"
-                      className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
-                        errors.maxDiscountAmount
-                          ? "border-red-300 focus:border-red-500"
-                          : "border-gray-300 focus:border-blue-500"
-                      }`}
-                    />
-                    {errors.maxDiscountAmount && (
-                      <p className="mt-1 text-sm text-red-600">
-                        {errors.maxDiscountAmount}
-                      </p>
+                    {/* Service Discount Configuration */}
+                    {serviceDiscount.enabled && (
+                      <div className="space-y-4 mt-4 pt-4 border-t border-blue-200">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Discount Amount */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Discount Amount *
+                            </label>
+                            <input
+                              type="number"
+                              value={serviceDiscount.discount}
+                              onChange={(e) =>
+                                handleServiceInputChange(
+                                  index,
+                                  "discount",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="e.g., 20"
+                              min="0"
+                              className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
+                                errors[`service_${index}_discount`]
+                                  ? "border-red-300 focus:border-red-500"
+                                  : "border-gray-300 focus:border-blue-500"
+                              }`}
+                            />
+                            {errors[`service_${index}_discount`] && (
+                              <p className="mt-1 text-sm text-red-600">
+                                {errors[`service_${index}_discount`]}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Discount Type */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Discount Type *
+                            </label>
+                            <select
+                              value={serviceDiscount.discountType}
+                              onChange={(e) =>
+                                handleServiceInputChange(
+                                  index,
+                                  "discountType",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                            >
+                              <option value="percentage">Percentage (%)</option>
+                              <option value="fixed">Fixed Amount (₹)</option>
+                            </select>
+                          </div>
+
+                          {/* Min Order Amount */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Minimum Order Amount (₹)
+                            </label>
+                            <input
+                              type="number"
+                              value={serviceDiscount.minOrderAmount}
+                              onChange={(e) =>
+                                handleServiceInputChange(
+                                  index,
+                                  "minOrderAmount",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="0"
+                              min="0"
+                              className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
+                                errors[`service_${index}_minOrder`]
+                                  ? "border-red-300 focus:border-red-500"
+                                  : "border-gray-300 focus:border-blue-500"
+                              }`}
+                            />
+                            {errors[`service_${index}_minOrder`] && (
+                              <p className="mt-1 text-sm text-red-600">
+                                {errors[`service_${index}_minOrder`]}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Max Discount Amount (for percentage only) */}
+                          {serviceDiscount.discountType === "percentage" && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Maximum Discount Cap (₹)
+                              </label>
+                              <input
+                                type="number"
+                                value={serviceDiscount.maxDiscountAmount}
+                                onChange={(e) =>
+                                  handleServiceInputChange(
+                                    index,
+                                    "maxDiscountAmount",
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="No limit"
+                                min="0"
+                                className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
+                                  errors[`service_${index}_maxDiscount`]
+                                    ? "border-red-300 focus:border-red-500"
+                                    : "border-gray-300 focus:border-blue-500"
+                                }`}
+                              />
+                              {errors[`service_${index}_maxDiscount`] && (
+                                <p className="mt-1 text-sm text-red-600">
+                                  {errors[`service_${index}_maxDiscount`]}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Discount Summary */}
+                        <div className="bg-white rounded-lg p-4 border border-blue-200">
+                          <div className="flex items-start">
+                            <svg
+                              className="w-5 h-5 text-blue-600 mr-2 mt-0.5"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            <div className="text-sm text-gray-700">
+                              <strong>Summary:</strong> This coupon will give{" "}
+                              {serviceDiscount.discount
+                                ? serviceDiscount.discountType === "percentage"
+                                  ? `${serviceDiscount.discount}%`
+                                  : `₹${serviceDiscount.discount}`
+                                : "___"}{" "}
+                              off on{" "}
+                              {getServiceName(serviceDiscount.serviceType)}
+                              {serviceDiscount.minOrderAmount &&
+                                ` for orders above ₹${serviceDiscount.minOrderAmount}`}
+                              {serviceDiscount.discountType === "percentage" &&
+                                serviceDiscount.maxDiscountAmount &&
+                                ` (capped at ₹${serviceDiscount.maxDiscountAmount})`}
+                              .
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Plan-Specific Discounts (Optional) */}
+                        <div className="mt-4 pt-4 border-t border-blue-200">
+                          <div className="flex items-center justify-between mb-3">
+                            <div>
+                              <h4 className="text-sm font-semibold text-gray-800">
+                                Plan-Specific Discounts (Optional)
+                              </h4>
+                              <p className="text-xs text-gray-600 mt-1">
+                                Override the default discount for specific
+                                session plans
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleAddPlanDiscount(index)}
+                              className="px-3 py-1 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center"
+                            >
+                              <svg
+                                className="w-4 h-4 mr-1"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                              Add Plan
+                            </button>
+                          </div>
+
+                          {serviceDiscount.planDiscounts.length > 0 && (
+                            <div className="space-y-3">
+                              {serviceDiscount.planDiscounts.map(
+                                (planDiscount, planIndex) => (
+                                  <div
+                                    key={planIndex}
+                                    className="bg-gray-50 border border-gray-200 rounded-lg p-4"
+                                  >
+                                    <div className="flex items-center justify-between mb-3">
+                                      <span className="text-sm font-medium text-gray-700">
+                                        Plan #{planIndex + 1}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleRemovePlanDiscount(
+                                            index,
+                                            planIndex
+                                          )
+                                        }
+                                        className="text-red-600 hover:text-red-800 text-sm font-medium"
+                                      >
+                                        Remove
+                                      </button>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                      {/* Sessions */}
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                                          Sessions
+                                        </label>
+                                        <input
+                                          type="number"
+                                          value={planDiscount.sessions}
+                                          onChange={(e) =>
+                                            handlePlanDiscountChange(
+                                              index,
+                                              planIndex,
+                                              "sessions",
+                                              e.target.value
+                                            )
+                                          }
+                                          placeholder="e.g., 1"
+                                          min="1"
+                                          className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                      </div>
+
+                                      {/* Duration */}
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                                          Duration (min)
+                                        </label>
+                                        <input
+                                          type="number"
+                                          value={planDiscount.duration}
+                                          onChange={(e) =>
+                                            handlePlanDiscountChange(
+                                              index,
+                                              planIndex,
+                                              "duration",
+                                              e.target.value
+                                            )
+                                          }
+                                          placeholder="e.g., 30"
+                                          min="1"
+                                          className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                      </div>
+
+                                      {/* Discount */}
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                                          Discount
+                                        </label>
+                                        <input
+                                          type="number"
+                                          value={planDiscount.discount}
+                                          onChange={(e) =>
+                                            handlePlanDiscountChange(
+                                              index,
+                                              planIndex,
+                                              "discount",
+                                              e.target.value
+                                            )
+                                          }
+                                          placeholder="e.g., 25"
+                                          min="0"
+                                          className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                      </div>
+
+                                      {/* Discount Type */}
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                                          Type
+                                        </label>
+                                        <select
+                                          value={planDiscount.discountType}
+                                          onChange={(e) =>
+                                            handlePlanDiscountChange(
+                                              index,
+                                              planIndex,
+                                              "discountType",
+                                              e.target.value
+                                            )
+                                          }
+                                          className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        >
+                                          <option value="percentage">%</option>
+                                          <option value="fixed">₹</option>
+                                        </select>
+                                      </div>
+
+                                      {/* Max Discount (for percentage) */}
+                                      {planDiscount.discountType ===
+                                        "percentage" && (
+                                        <div>
+                                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                                            Max Cap (₹)
+                                          </label>
+                                          <input
+                                            type="number"
+                                            value={
+                                              planDiscount.maxDiscountAmount
+                                            }
+                                            onChange={(e) =>
+                                              handlePlanDiscountChange(
+                                                index,
+                                                planIndex,
+                                                "maxDiscountAmount",
+                                                e.target.value
+                                              )
+                                            }
+                                            placeholder="Optional"
+                                            min="0"
+                                            className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                          />
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Plan Discount Summary */}
+                                    <div className="mt-3 bg-white rounded p-2 border border-gray-200">
+                                      <p className="text-xs text-gray-600">
+                                        <strong>Plan Override:</strong>{" "}
+                                        {planDiscount.planName || "___"} (
+                                        {planDiscount.sessions || "_"} sessions,{" "}
+                                        {planDiscount.duration || "_"} min) →{" "}
+                                        {planDiscount.discount
+                                          ? planDiscount.discountType ===
+                                            "percentage"
+                                            ? `${planDiscount.discount}%`
+                                            : `₹${planDiscount.discount}`
+                                          : "___"}{" "}
+                                        off
+                                        {planDiscount.discountType ===
+                                          "percentage" &&
+                                          planDiscount.maxDiscountAmount &&
+                                          ` (max ₹${planDiscount.maxDiscountAmount})`}
+                                      </p>
+                                    </div>
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          )}
+
+                          {serviceDiscount.planDiscounts.length === 0 && (
+                            <div className="text-center py-4 text-gray-500 text-sm border border-dashed border-gray-300 rounded-lg">
+                              No plan-specific discounts added. The default
+                              service discount will apply to all plans.
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
-                )}
+                ))}
               </div>
             </div>
 
@@ -404,6 +889,60 @@ const CreateCoupon = () => {
               <h2 className="text-xl font-semibold text-gray-800 mb-6">
                 Validity Period
               </h2>
+
+              {/* Quick Date Selection */}
+              <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Quick Date Selection
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setQuickDate("today")}
+                    className="px-4 py-2 bg-white border-2 border-blue-300 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-100 transition-colors"
+                  >
+                    Today
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuickDate("week")}
+                    className="px-4 py-2 bg-white border-2 border-blue-300 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-100 transition-colors"
+                  >
+                    1 Week
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuickDate("month")}
+                    className="px-4 py-2 bg-white border-2 border-blue-300 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-100 transition-colors"
+                  >
+                    1 Month
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuickDate("3months")}
+                    className="px-4 py-2 bg-white border-2 border-blue-300 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-100 transition-colors"
+                  >
+                    3 Months
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuickDate("6months")}
+                    className="px-4 py-2 bg-white border-2 border-blue-300 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-100 transition-colors"
+                  >
+                    6 Months
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuickDate("year")}
+                    className="px-4 py-2 bg-white border-2 border-blue-300 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-100 transition-colors"
+                  >
+                    1 Year
+                  </button>
+                </div>
+                <p className="text-xs text-blue-600 mt-2">
+                  Click a button to quickly set the validity period from now
+                </p>
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Valid From */}
@@ -420,6 +959,7 @@ const CreateCoupon = () => {
                     name="validFrom"
                     value={formData.validFrom}
                     onChange={handleInputChange}
+                    min={getCurrentDateTime()}
                     className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
                       errors.validFrom
                         ? "border-red-300 focus:border-red-500"
@@ -431,6 +971,9 @@ const CreateCoupon = () => {
                       {errors.validFrom}
                     </p>
                   )}
+                  <p className="mt-1 text-xs text-gray-500">
+                    Select the start date and time for this coupon
+                  </p>
                 </div>
 
                 {/* Valid Till */}
@@ -447,6 +990,7 @@ const CreateCoupon = () => {
                     name="validTill"
                     value={formData.validTill}
                     onChange={handleInputChange}
+                    min={formData.validFrom || getCurrentDateTime()}
                     className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
                       errors.validTill
                         ? "border-red-300 focus:border-red-500"
@@ -458,62 +1002,10 @@ const CreateCoupon = () => {
                       {errors.validTill}
                     </p>
                   )}
+                  <p className="mt-1 text-xs text-gray-500">
+                    Select the end date and time for this coupon
+                  </p>
                 </div>
-              </div>
-            </div>
-
-            {/* Applicable Services */}
-            <div className="border-b border-gray-200 pb-8">
-              <h2 className="text-xl font-semibold text-gray-800 mb-6">
-                Applicable Services
-              </h2>
-              <p className="text-gray-600 mb-4">
-                Select which services this coupon can be applied to (leave empty
-                for all services)
-              </p>
-
-              <div className="space-y-4">
-                <label className="flex items-center cursor-pointer p-4 border-2 border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
-                  <input
-                    type="checkbox"
-                    name="applicableServices"
-                    value="mental_health"
-                    checked={(formData.applicableServices || []).includes(
-                      "mental_health"
-                    )}
-                    onChange={handleInputChange}
-                    className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <div className="ml-4">
-                    <span className="text-gray-700 font-medium text-lg">
-                      Mental Health Counselling
-                    </span>
-                    <p className="text-gray-500 text-sm">
-                      Apply coupon to mental health consultation services
-                    </p>
-                  </div>
-                </label>
-
-                <label className="flex items-center cursor-pointer p-4 border-2 border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
-                  <input
-                    type="checkbox"
-                    name="applicableServices"
-                    value="cosmetology"
-                    checked={(formData.applicableServices || []).includes(
-                      "cosmetology"
-                    )}
-                    onChange={handleInputChange}
-                    className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <div className="ml-4">
-                    <span className="text-gray-700 font-medium text-lg">
-                      Cosmetology Consultation
-                    </span>
-                    <p className="text-gray-500 text-sm">
-                      Apply coupon to cosmetology consultation services
-                    </p>
-                  </div>
-                </label>
               </div>
             </div>
 
@@ -675,32 +1167,48 @@ const CreateCoupon = () => {
         {/* Info Section */}
         <div className="bg-blue-50 rounded-xl p-6 mt-8 border border-blue-200">
           <h3 className="text-lg font-semibold text-blue-800 mb-3">
-            📝 Coupon Creation Guidelines
+            📝 Advanced Coupon System Guidelines
           </h3>
           <ul className="text-blue-700 space-y-2 text-sm">
             <li>
-              • Coupon codes should be unique and descriptive (e.g., NEWUSER20,
-              SUMMER50)
+              • <strong>Service-Specific Discounts:</strong> Set different
+              discount rates for each service with the same coupon code
             </li>
             <li>
-              • For percentage discounts, the value should be between 1-100
+              • <strong>Example:</strong> &quot;SAVE20&quot; can give 20% off
+              for mental health and 15% off for cosmetology
             </li>
-            <li>• For fixed discounts, enter the amount in rupees</li>
+            <li>
+              • <strong>Plan-Specific Overrides:</strong> Configure different
+              discounts for specific session plans (e.g., 30% off for &quot;5
+              sessions 45min&quot; plan)
+            </li>
+            <li>
+              • Each service can have its own minimum order amount and maximum
+              discount cap
+            </li>
+            <li>
+              • Plan-specific discounts override the default service discount
+              for matching plans
+            </li>
+            <li>
+              • Percentage discounts can be capped with a maximum discount
+              amount
+            </li>
+            <li>
+              • Fixed discounts apply a specific rupee amount regardless of
+              order value
+            </li>
+            <li>
+              • Enable &quot;New User Only&quot; to restrict coupon usage to
+              first-time customers
+            </li>
             <li>
               • Set validity period carefully - expired coupons cannot be used
             </li>
             <li>
-              • Select applicable services or leave empty to apply to all
-              services
+              • You must select at least one service to create a valid coupon
             </li>
-            <li>
-              • Maximum discount amount helps cap percentage-based discounts
-            </li>
-            <li>
-              • Enable &quot;New User Only&quot; to restrict coupon usage to
-              users who haven&apos;t booked any meetings
-            </li>
-            <li>• Coupons can be deactivated later if needed</li>
           </ul>
         </div>
       </div>

@@ -8,15 +8,60 @@ const couponSchema = new mongoose.Schema(
       unique: true,
       uppercase: true,
     },
-    discount: {
-      type: Number,
-      required: true,
-    },
-    discountType: {
-      type: String,
-      enum: ["percentage", "fixed"],
-      required: true,
-    },
+    // Service-specific discount configurations
+    serviceDiscounts: [
+      {
+        serviceType: {
+          type: String,
+          enum: ["mental_health", "cosmetology"],
+          required: true,
+        },
+        // General discount for this service (fallback if no plan-specific discount)
+        discount: {
+          type: Number,
+          required: true,
+        },
+        discountType: {
+          type: String,
+          enum: ["percentage", "fixed"],
+          required: true,
+        },
+        maxDiscountAmount: {
+          type: Number,
+          default: null,
+        },
+        minOrderAmount: {
+          type: Number,
+          default: 0,
+        },
+        // Plan-specific discounts for this service (optional)
+        planDiscounts: [
+          {
+            sessions: {
+              type: Number,
+              required: true,
+            },
+            duration: {
+              type: Number,
+              required: false, // optional: applies to specific duration
+            },
+            discount: {
+              type: Number,
+              required: true,
+            },
+            discountType: {
+              type: String,
+              enum: ["percentage", "fixed"],
+              required: true,
+            },
+            maxDiscountAmount: {
+              type: Number,
+              default: null,
+            },
+          },
+        ],
+      },
+    ],
     maxUses: {
       type: Number,
       default: null, // null means unlimited
@@ -24,14 +69,6 @@ const couponSchema = new mongoose.Schema(
     usedCount: {
       type: Number,
       default: 0,
-    },
-    minOrderAmount: {
-      type: Number,
-      default: 0,
-    },
-    maxDiscountAmount: {
-      type: Number,
-      default: null, // for percentage discounts
     },
     validFrom: {
       type: Date,
@@ -49,12 +86,6 @@ const couponSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    applicableServices: [
-      {
-        type: String,
-        enum: ["mental_health", "cosmetology"],
-      },
-    ],
     description: {
       type: String,
       required: false,

@@ -1,4 +1,4 @@
-import { Employee } from "../models/details.model.js";
+import { bhAssociateDetail } from "../models/bhAssociateDetail.model.js";
 import { User } from "../models/user.model.js";
 
 export const createEmployee = async (req, res) => {
@@ -489,7 +489,7 @@ export const createEmployee = async (req, res) => {
       : [];
 
     // Create and save employee
-    const newEmployee = new Employee({
+    const newEmployee = new bhAssociateDetail({
       personalInfo: cleanPersonalInfo,
       employmentDetails: cleanEmploymentDetails,
       salarySlip, // Include salary slip for last 3-6 months
@@ -675,7 +675,7 @@ export const getDoctorDetails = async (req, res) => {
     }
 
     // Find employee details
-    const employee = await Employee.findOne({ doctorId: user.email });
+    const employee = await bhAssociateDetail.findOne({ doctorId: user.email });
     if (!employee) {
       return res.status(404).json({
         success: false,
@@ -694,6 +694,119 @@ export const getDoctorDetails = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch doctor details",
+    });
+  }
+};
+
+// Get own employee details (for logged-in user)
+export const getMyEmployeeDetails = async (req, res) => {
+  try {
+    const userId = req.id;
+
+    // Find user
+    const user = await User.findById(userId).select(
+      "-password -otp -otpExpiry"
+    );
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Find employee details
+    const employee = await bhAssociateDetail.findOne({ doctorId: user.email });
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: "Employee details not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Employee details retrieved successfully",
+      employee,
+    });
+  } catch (error) {
+    console.error("Error fetching employee details:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch employee details",
+    });
+  }
+};
+
+// Update own employee details (for pending users only)
+export const updateMyEmployeeDetails = async (req, res) => {
+  try {
+    const userId = req.id;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Only allow updates if user is pending
+    if (user.isVerified !== "pending") {
+      return res.status(403).json({
+        success: false,
+        message: "You can only update details while verification is pending.",
+      });
+    }
+
+    const {
+      personalInfo,
+      employmentDetails,
+      salarySlip,
+      educationDetails,
+      bankAccount,
+    } = req.body;
+
+    // Find existing employee details
+    const existingEmployee = await bhAssociateDetail.findOne({
+      doctorId: user.email,
+    });
+
+    if (!existingEmployee) {
+      return res.status(404).json({
+        success: false,
+        message: "Employee details not found",
+      });
+    }
+
+    // Update the employee details
+    const updatedEmployee = await bhAssociateDetail.findOneAndUpdate(
+      { doctorId: user.email },
+      {
+        $set: {
+          personalInfo,
+          employmentDetails,
+          salarySlip,
+          educationDetails,
+          bankAccount,
+        },
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Employee details updated successfully",
+      employee: updatedEmployee,
+    });
+  } catch (error) {
+    console.error("Error updating employee details:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update employee details",
+      error: error.message,
     });
   }
 };

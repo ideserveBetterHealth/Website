@@ -4,14 +4,28 @@ import { Meeting } from "../models/meetings.model.js";
 
 export const validateCoupon = async (req, res) => {
   try {
-    const { code, serviceType, orderAmount, userId } = req.body;
+    const { code, serviceType, orderAmount, userId, sessions, duration } =
+      req.body;
 
-    console.log(code);
+    console.log("Validating coupon:", {
+      code,
+      serviceType,
+      orderAmount,
+      sessions,
+      duration,
+    });
 
     if (!code) {
       return res.status(400).json({
         success: false,
         message: "Coupon code is required.",
+      });
+    }
+
+    if (!serviceType) {
+      return res.status(400).json({
+        success: false,
+        message: "Service type is required.",
       });
     }
 
@@ -63,11 +77,12 @@ export const validateCoupon = async (req, res) => {
       });
     }
 
-    // Check if coupon is applicable for this service
-    if (
-      coupon.applicableServices.length > 0 &&
-      !coupon.applicableServices.includes(serviceType)
-    ) {
+    // Find service-specific discount configuration
+    const serviceDiscount = coupon.serviceDiscounts.find(
+      (sd) => sd.serviceType === serviceType
+    );
+
+    if (!serviceDiscount) {
       return res.status(400).json({
         success: false,
         message: "This coupon is not applicable for the selected service.",
@@ -93,24 +108,53 @@ export const validateCoupon = async (req, res) => {
       });
     }
 
-    // Check minimum order amount
-    if (orderAmount && orderAmount < coupon.minOrderAmount) {
+    // Check minimum order amount for this service
+    if (orderAmount && orderAmount < serviceDiscount.minOrderAmount) {
       return res.status(400).json({
         success: false,
-        message: `Minimum order amount for this coupon is ₹${coupon.minOrderAmount}.`,
+        message: `Minimum order amount for this coupon is ₹${serviceDiscount.minOrderAmount}.`,
       });
     }
 
-    // Calculate discount
+    // Calculate discount with plan-specific support
     let discountAmount = 0;
+    let applicableDiscount = serviceDiscount.discount;
+    let applicableDiscountType = serviceDiscount.discountType;
+    let applicableMaxDiscount = serviceDiscount.maxDiscountAmount;
+
+    // Check if there's a plan-specific discount for this service
+    if (
+      sessions &&
+      serviceDiscount.planDiscounts &&
+      serviceDiscount.planDiscounts.length > 0
+    ) {
+      const planDiscount = serviceDiscount.planDiscounts.find((pd) => {
+        // Match by sessions count and optionally by duration
+        if (duration) {
+          return (
+            pd.sessions === sessions &&
+            (!pd.duration || pd.duration === duration)
+          );
+        }
+        return pd.sessions === sessions;
+      });
+
+      if (planDiscount) {
+        applicableDiscount = planDiscount.discount;
+        applicableDiscountType = planDiscount.discountType;
+        applicableMaxDiscount = planDiscount.maxDiscountAmount;
+        console.log("Using plan-specific discount:", planDiscount);
+      }
+    }
+
     if (orderAmount) {
-      if (coupon.discountType === "percentage") {
-        discountAmount = (orderAmount * coupon.discount) / 100;
-        if (coupon.maxDiscountAmount) {
-          discountAmount = Math.min(discountAmount, coupon.maxDiscountAmount);
+      if (applicableDiscountType === "percentage") {
+        discountAmount = (orderAmount * applicableDiscount) / 100;
+        if (applicableMaxDiscount) {
+          discountAmount = Math.min(discountAmount, applicableMaxDiscount);
         }
       } else {
-        discountAmount = coupon.discount;
+        discountAmount = applicableDiscount;
       }
     }
 
@@ -119,8 +163,8 @@ export const validateCoupon = async (req, res) => {
       message: "Coupon is valid.",
       coupon: {
         code: coupon.code,
-        discount: coupon.discount,
-        discountType: coupon.discountType,
+        discount: applicableDiscount,
+        discountType: applicableDiscountType,
         discountAmount,
         description: coupon.description,
         isNewUserOnly: coupon.isNewUserOnly,
@@ -131,6 +175,200 @@ export const validateCoupon = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to validate coupon.",
+    });
+  }
+};
+
+// New endpoint to calculate discounts for all plans
+export const calculateAllPlansDiscounts = async (req, res) => {
+  try {
+    const { code, serviceType, plans, userId } = req.body;
+
+    console.log("Calculating discounts for all plans:", {
+      code,
+      serviceType,
+      plansCount: plans?.length,
+    });
+
+    if (!code) {
+      return res.status(400).json({
+        success: false,
+        message: "Coupon code is required.",
+      });
+    }
+
+    if (!serviceType) {
+      return res.status(400).json({
+        success: false,
+        message: "Service type is required.",
+      });
+    }
+
+    if (!plans || !Array.isArray(plans) || plans.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Plans array is required.",
+      });
+    }
+
+    // Find coupon by code and active status
+    const coupon = await Coupon.findOne({
+      code: code.toUpperCase(),
+      isActive: true,
+    });
+
+    if (!coupon) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid coupon code.",
+      });
+    }
+
+    // Get current IST time for comparison
+    const nowIST = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000);
+    const validFromIST = new Date(coupon.validFrom);
+    const validTillIST = new Date(coupon.validTill);
+
+    if (nowIST < validFromIST) {
+      return res.status(400).json({
+        success: false,
+        message: "Coupon is not yet active.",
+      });
+    }
+
+    if (nowIST > validTillIST) {
+      return res.status(400).json({
+        success: false,
+        message: "Coupon has expired.",
+      });
+    }
+
+    // Find service-specific discount configuration
+    const serviceDiscount = coupon.serviceDiscounts.find(
+      (sd) => sd.serviceType === serviceType
+    );
+
+    if (!serviceDiscount) {
+      return res.status(400).json({
+        success: false,
+        message: "This coupon is not applicable for the selected service.",
+      });
+    }
+
+    // Check if coupon is for new users only
+    if (coupon.isNewUserOnly && userId) {
+      const existingMeeting = await Meeting.findOne({ userId });
+      const user = await User.findOne({ _id: userId });
+      const existingCredits = user.credits;
+      console.log(existingCredits);
+      if (existingMeeting || existingCredits) {
+        return res.status(400).json({
+          success: false,
+          message: "This coupon is only valid for new users",
+        });
+      }
+    }
+
+    // Check usage limit
+    if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) {
+      return res.status(400).json({
+        success: false,
+        message: "Coupon usage limit exceeded.",
+      });
+    }
+
+    // Calculate discount for each plan
+    const plansWithDiscounts = plans.map((plan) => {
+      const { sellingPrice, sessions, duration, name, mrp } = plan;
+
+      // Check minimum order amount for this service
+      const meetsMinOrder = sellingPrice >= serviceDiscount.minOrderAmount;
+
+      if (!meetsMinOrder) {
+        return {
+          ...plan,
+          meetsMinOrder: false,
+          minOrderAmount: serviceDiscount.minOrderAmount,
+          discountAmount: 0,
+          finalPrice: sellingPrice,
+          discountApplied: false,
+        };
+      }
+
+      // Find plan-specific discount if exists
+      let applicableDiscount = serviceDiscount.discount;
+      let applicableDiscountType = serviceDiscount.discountType;
+      let applicableMaxDiscount = serviceDiscount.maxDiscountAmount;
+      let isPlanSpecific = false;
+
+      if (
+        sessions &&
+        serviceDiscount.planDiscounts &&
+        serviceDiscount.planDiscounts.length > 0
+      ) {
+        const planDiscount = serviceDiscount.planDiscounts.find((pd) => {
+          if (duration) {
+            return pd.sessions === sessions && pd.duration === duration;
+          }
+          return pd.sessions === sessions;
+        });
+
+        if (planDiscount) {
+          applicableDiscount = planDiscount.discount;
+          applicableDiscountType = planDiscount.discountType;
+          applicableMaxDiscount = planDiscount.maxDiscountAmount;
+          isPlanSpecific = true;
+          console.log(
+            `Using plan-specific discount for ${sessions} sessions ${duration}min:`,
+            planDiscount
+          );
+        }
+      }
+
+      // Calculate discount amount
+      let discountAmount = 0;
+      if (applicableDiscountType === "percentage") {
+        discountAmount = (sellingPrice * applicableDiscount) / 100;
+        if (applicableMaxDiscount) {
+          discountAmount = Math.min(discountAmount, applicableMaxDiscount);
+        }
+      } else {
+        discountAmount = applicableDiscount;
+      }
+
+      const finalPrice = Math.max(0, sellingPrice - discountAmount);
+
+      return {
+        name,
+        mrp,
+        sellingPrice,
+        sessions,
+        duration,
+        meetsMinOrder: true,
+        discountAmount,
+        finalPrice,
+        discountApplied: true,
+        isPlanSpecific,
+        discountType: applicableDiscountType,
+        discount: applicableDiscount,
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Discounts calculated successfully.",
+      coupon: {
+        code: coupon.code,
+        description: coupon.description,
+        isNewUserOnly: coupon.isNewUserOnly,
+      },
+      plansWithDiscounts,
+    });
+  } catch (error) {
+    console.log("Error in calculateAllPlansDiscounts:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to calculate discounts.",
     });
   }
 };
@@ -148,25 +386,38 @@ export const createCoupon = async (req, res) => {
 
     const {
       code,
-      discount,
-      discountType,
+      serviceDiscounts,
       maxUses,
-      minOrderAmount,
-      maxDiscountAmount,
       validFrom,
       validTill,
       isActive,
       isNewUserOnly,
-      applicableServices,
       description,
     } = req.body;
 
-    if (!code || !discount || !discountType || !validFrom || !validTill) {
+    if (
+      !code ||
+      !serviceDiscounts ||
+      serviceDiscounts.length === 0 ||
+      !validFrom ||
+      !validTill
+    ) {
       return res.status(400).json({
         success: false,
         message:
-          "Code, discount, discount type, valid from, and valid till are required.",
+          "Code, service discounts, valid from, and valid till are required.",
       });
+    }
+
+    // Validate serviceDiscounts structure
+    for (const sd of serviceDiscounts) {
+      if (!sd.serviceType || !sd.discount || !sd.discountType) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Each service discount must have serviceType, discount, and discountType.",
+        });
+      }
     }
 
     // Check if coupon already exists
@@ -203,16 +454,12 @@ export const createCoupon = async (req, res) => {
 
     const coupon = await Coupon.create({
       code: code.toUpperCase(),
-      discount,
-      discountType,
+      serviceDiscounts,
       maxUses,
-      minOrderAmount: minOrderAmount || 0,
-      maxDiscountAmount,
       validFrom: validFromIST,
       validTill: validTillIST,
       isActive: isActive !== undefined ? isActive : true,
       isNewUserOnly: isNewUserOnly || false,
-      applicableServices: applicableServices || [],
       description,
     });
 
@@ -245,7 +492,10 @@ export const getAllCoupons = async (req, res) => {
 
     let query = {};
     if (isActive !== undefined) query.isActive = isActive === "true";
-    if (serviceType) query.applicableServices = serviceType;
+    if (serviceType) {
+      // Filter coupons that have the specified serviceType in their serviceDiscounts
+      query["serviceDiscounts.serviceType"] = serviceType;
+    }
 
     const coupons = await Coupon.find(query).sort({ createdAt: -1 });
 
@@ -319,11 +569,8 @@ export const deleteCoupon = async (req, res) => {
 
     const { id } = req.params;
 
-    const coupon = await Coupon.findByIdAndUpdate(
-      id,
-      { isActive: false },
-      { new: true }
-    );
+    // Actually delete the coupon from database
+    const coupon = await Coupon.findByIdAndDelete(id);
 
     if (!coupon) {
       return res.status(404).json({
@@ -334,7 +581,7 @@ export const deleteCoupon = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Coupon deactivated successfully.",
+      message: "Coupon deleted successfully.",
     });
   } catch (error) {
     console.log("Error in deleteCoupon:", error);

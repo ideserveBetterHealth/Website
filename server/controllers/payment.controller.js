@@ -59,12 +59,9 @@ const processSuccessfulPayment = async (payment) => {
 
       // Determine credits to add based on payment type
       if (payment.isCreditsOnly || payment.sessionType === "credits") {
-        // For direct credit purchases, add the full amount without deducting
-        creditsToAdd =
-          payment.creditsCount || (payment.sessionType === "pack" ? 3 : 1);
+        creditsToAdd = payment.creditsCount;
       } else {
-        // For booking payments, add credits but deduct 1 for the current session
-        creditsToAdd = payment.sessionType === "pack" ? 3 : 1;
+        creditsToAdd = payment.sessionCount;
       }
 
       const existingCredit = user.credits.find(
@@ -196,7 +193,7 @@ export const createOrder = async (req, res) => {
     const {
       serviceType,
       duration,
-      sessionType,
+      sessions,
       couponCode,
       psychologistId,
       appointmentDate,
@@ -223,49 +220,58 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    // --- Business Logic: Calculate final amount based on duration and session type ---
-    if (!pricing.sessionCosts || !pricing.sessionCosts[duration]) {
+    // --- Business Logic: Find the matching plan ---
+    if (!pricing.plans || pricing.plans.length === 0) {
       return res.status(400).json({
         success: false,
-        message: `Pricing not available for ${duration}-minute sessions.`,
+        message: `No pricing plans available for the selected service.`,
       });
     }
-    const sessionPrice = pricing.sessionCosts[duration];
 
-    let finalAmount;
-    if (sessionType === "single") {
-      finalAmount = sessionPrice;
-    } else if (sessionType === "pack") {
-      finalAmount = sessionPrice * 3; // 3-session pack
-    } else {
+    // Find plan based on sessions count and duration
+    const selectedPlan = pricing.plans.find(
+      (plan) =>
+        plan.sessions === parseInt(sessions) &&
+        plan.duration === parseInt(duration)
+    );
+
+    if (!selectedPlan) {
       return res.status(400).json({
         success: false,
-        message: "Invalid session type. Must be 'single' or 'pack'.",
+        message: `Pricing not available for ${sessions} session(s) with ${duration} minutes duration.`,
       });
     }
+
+    let finalAmount = selectedPlan.sellingPrice;
 
     let appliedCoupon = null;
 
-    console.log(couponCode);
+    console.log("Selected plan:", selectedPlan);
+    console.log("Coupon code:", couponCode);
 
     // --- Business Logic: Apply coupon if provided ---
     if (couponCode) {
       const coupon = await Coupon.findOne({
-        code: couponCode.toUpperCase(),
+        code: couponCode.toUpperCase().toString(),
         isActive: true,
         validFrom: { $lte: new Date() },
         validTill: { $gte: new Date() },
       });
+
+      console.log(coupon);
 
       if (!coupon) {
         return res
           .status(400)
           .json({ success: false, message: "Invalid or expired coupon code." });
       }
-      if (
-        coupon.applicableServices.length > 0 &&
-        !coupon.applicableServices.includes(serviceType)
-      ) {
+
+      // Find service-specific discount configuration
+      const serviceDiscount = coupon.serviceDiscounts?.find(
+        (sd) => sd.serviceType === serviceType
+      );
+
+      if (!serviceDiscount) {
         return res.status(400).json({
           success: false,
           message: "This coupon is not applicable for the selected service.",
@@ -288,28 +294,68 @@ export const createOrder = async (req, res) => {
           .status(400)
           .json({ success: false, message: "Coupon usage limit exceeded." });
       }
-      if (finalAmount < coupon.minOrderAmount) {
-        return res.status(400).json({
-          success: false,
-          message: `Minimum order amount for this coupon is ₹${coupon.minOrderAmount}.`,
-        });
-      }
 
-      // Apply discount
-      if (coupon.discountType === "percentage") {
-        const discountAmount = (finalAmount * coupon.discount) / 100;
-        const maxDiscount = coupon.maxDiscountAmount || discountAmount;
-        finalAmount -= Math.min(discountAmount, maxDiscount);
+      // Check minimum order amount - if not met, proceed without discount
+      if (finalAmount < serviceDiscount.minOrderAmount) {
+        // Reset to original amount without discount
+        finalAmount = selectedPlan.sellingPrice;
+        appliedCoupon = null;
       } else {
-        finalAmount -= coupon.discount;
-      }
-      finalAmount = Math.max(0, finalAmount); // Ensure amount doesn't go negative
+        // Apply discount with plan-specific support
+        let applicableDiscount = serviceDiscount.discount;
+        let applicableDiscountType = serviceDiscount.discountType;
+        let applicableMaxDiscount = serviceDiscount.maxDiscountAmount;
 
-      appliedCoupon = {
-        code: coupon.code,
-        discount: coupon.discount,
-        discountType: coupon.discountType,
-      };
+        // Check if there's a plan-specific discount for this service
+        if (
+          selectedPlan &&
+          serviceDiscount.planDiscounts.length > 0 &&
+          serviceDiscount.planDiscounts
+        ) {
+          console.log("selectedPlan", selectedPlan);
+          console.log(
+            "serviceDiscount.planDiscounts",
+            serviceDiscount.planDiscounts
+          );
+          console.log(
+            "serviceDiscount.planDiscounts.length",
+            serviceDiscount.planDiscounts.length
+          );
+          const planDiscount = serviceDiscount.planDiscounts.find((pd) => {
+            // Match by sessions count and optionally by duration
+            if (pd.duration) {
+              return (
+                pd.sessions === selectedPlan.sessions &&
+                pd.duration === selectedPlan.duration
+              );
+            }
+            return pd.sessions === selectedPlan.sessions;
+          });
+
+          if (planDiscount) {
+            applicableDiscount = planDiscount.discount;
+            applicableDiscountType = planDiscount.discountType;
+            applicableMaxDiscount = planDiscount.maxDiscountAmount;
+            console.log("Using plan-specific discount:", planDiscount);
+          }
+        }
+
+        // Apply discount
+        if (applicableDiscountType === "percentage") {
+          const discountAmount = (finalAmount * applicableDiscount) / 100;
+          const maxDiscount = applicableMaxDiscount || discountAmount;
+          finalAmount -= Math.min(discountAmount, maxDiscount);
+        } else {
+          finalAmount -= applicableDiscount;
+        }
+        finalAmount = Math.max(0, finalAmount); // Ensure amount doesn't go negative
+
+        appliedCoupon = {
+          code: coupon.code,
+          discount: applicableDiscount,
+          discountType: applicableDiscountType,
+        };
+      }
     }
 
     // Generate unique order ID for your system
@@ -320,11 +366,12 @@ export const createOrder = async (req, res) => {
       userId,
       clientName: questionnaireResponses.personalDetails.fullName,
       orderId,
-      amount: sessionPrice * (sessionType === "pack" ? 3 : 1), // Original amount before discount
+      amount: selectedPlan.sellingPrice, // Original selling price
       finalAmount, // Amount after discount
       serviceType,
       duration,
-      sessionType,
+      sessionType: selectedPlan.name, // Store plan name
+      sessionCount: selectedPlan.sessions, // Store session count
       appliedCoupon,
       associateId: psychologistId,
       appointmentDate: new Date(appointmentDate),
@@ -341,8 +388,12 @@ export const createOrder = async (req, res) => {
         order_id: orderId,
         customer_details: {
           customer_id: `CUST_${userId}`,
-          customer_name: user.name || "Customer",
-          customer_email: user.email || `${user.phoneNumber}@betterhealth.com`,
+          customer_name:
+            questionnaireResponses.personalDetails.fullName ||
+            user.name ||
+            "Customer",
+          customer_email:
+            user.email || `${user.phoneNumber}@ideservebetterhealth.in`,
           customer_phone: user.phoneNumber,
         },
         order_meta: {
@@ -351,7 +402,7 @@ export const createOrder = async (req, res) => {
         order_expiry_time: new Date(
           Date.now() + 24 * 60 * 60 * 1000
         ).toISOString(),
-        order_note: `Better Health - ${serviceType} ${sessionType} session`,
+        order_note: `Better Health - ${serviceType} ${selectedPlan.name}`,
       };
 
       console.log("Creating Cashfree order with data:", request);
@@ -552,7 +603,12 @@ export const handleWebhook = async (req, res) => {
 export const createCreditsOrder = async (req, res) => {
   try {
     const userId = req.id;
-    const { serviceType, duration, creditsCount, promoCode } = req.body;
+    const {
+      serviceType,
+      duration,
+      creditsCount,
+      promoCode: couponCode,
+    } = req.body;
 
     console.log("createCreditsOrder req.body", req?.body);
 
@@ -581,78 +637,142 @@ export const createCreditsOrder = async (req, res) => {
       });
     }
 
-    console.log(duration);
-    console.log(pricing.sessionCosts);
-    console.log(pricing.sessionCosts[duration]);
+    console.log("Duration:", duration);
+    console.log("Credits count:", creditsCount);
 
-    // Calculate final amount based on duration and credits count
-    if (!pricing.sessionCosts || !pricing.sessionCosts[duration]) {
+    // Find single session plan for the duration to calculate credit price
+    if (!pricing.plans || pricing.plans.length === 0) {
       return res.status(400).json({
         success: false,
-        message: `Pricing not available for ${duration}-minute sessions.`,
+        message: `No pricing plans available for the selected service.`,
       });
     }
 
-    const sessionPrice = pricing.sessionCosts[duration];
-    let finalAmount = sessionPrice * creditsCount;
+    const selectedPlan = pricing.plans.find(
+      (plan) =>
+        plan.sessions === parseInt(creditsCount) &&
+        plan.duration === parseInt(duration)
+    );
+
+    if (!selectedPlan) {
+      return res.status(400).json({
+        success: false,
+        message: `Pricing not available for ${creditsCount} credits with ${duration} minutes duration.`,
+      });
+    }
+
+    let finalAmount = selectedPlan.sellingPrice;
+
+    console.log("finalAmount:", finalAmount);
 
     let appliedCoupon = null;
 
-    // Apply coupon if provided
-    if (promoCode) {
+    if (couponCode) {
       const coupon = await Coupon.findOne({
-        code: promoCode.toUpperCase(),
+        code: couponCode.toUpperCase().toString(),
         isActive: true,
         validFrom: { $lte: new Date() },
         validTill: { $gte: new Date() },
       });
 
+      console.log(coupon);
+
       if (!coupon) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid or expired coupon code.",
-        });
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid or expired coupon code." });
       }
 
-      if (
-        coupon.applicableServices.length > 0 &&
-        !coupon.applicableServices.includes(serviceType)
-      ) {
+      // Find service-specific discount configuration
+      const serviceDiscount = coupon.serviceDiscounts?.find(
+        (sd) => sd.serviceType === serviceType
+      );
+
+      if (!serviceDiscount) {
         return res.status(400).json({
           success: false,
           message: "This coupon is not applicable for the selected service.",
         });
       }
 
+      // Check if coupon is for new users only
+      if (coupon.isNewUserOnly) {
+        const existingMeeting = await Meeting.findOne({ userId });
+        if (existingMeeting) {
+          return res.status(400).json({
+            success: false,
+            message: "This coupon is only valid for new users",
+          });
+        }
+      }
+
       if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) {
-        return res.status(400).json({
-          success: false,
-          message: "Coupon usage limit exceeded.",
-        });
+        return res
+          .status(400)
+          .json({ success: false, message: "Coupon usage limit exceeded." });
       }
 
-      if (finalAmount < coupon.minOrderAmount) {
-        return res.status(400).json({
-          success: false,
-          message: `Minimum order amount for this coupon is ₹${coupon.minOrderAmount}.`,
-        });
-      }
-
-      // Apply discount
-      if (coupon.discountType === "percentage") {
-        const discountAmount = (finalAmount * coupon.discount) / 100;
-        const maxDiscount = coupon.maxDiscountAmount || discountAmount;
-        finalAmount -= Math.min(discountAmount, maxDiscount);
+      // Check minimum order amount - if not met, proceed without discount
+      if (finalAmount < serviceDiscount.minOrderAmount) {
+        // Reset to original amount without discount
+        finalAmount = selectedPlan.sellingPrice;
+        appliedCoupon = null;
       } else {
-        finalAmount -= coupon.discount;
-      }
-      finalAmount = Math.max(0, finalAmount);
+        // Apply discount with plan-specific support
+        let applicableDiscount = serviceDiscount.discount;
+        let applicableDiscountType = serviceDiscount.discountType;
+        let applicableMaxDiscount = serviceDiscount.maxDiscountAmount;
 
-      appliedCoupon = {
-        code: coupon.code,
-        discount: coupon.discount,
-        discountType: coupon.discountType,
-      };
+        // Check if there's a plan-specific discount for this service
+        if (
+          selectedPlan &&
+          serviceDiscount.planDiscounts.length > 0 &&
+          serviceDiscount.planDiscounts
+        ) {
+          console.log("selectedPlan", selectedPlan);
+          console.log(
+            "serviceDiscount.planDiscounts",
+            serviceDiscount.planDiscounts
+          );
+          console.log(
+            "serviceDiscount.planDiscounts.length",
+            serviceDiscount.planDiscounts.length
+          );
+          const planDiscount = serviceDiscount.planDiscounts.find((pd) => {
+            // Match by sessions count and optionally by duration
+            if (pd.duration) {
+              return (
+                pd.sessions === selectedPlan.sessions &&
+                pd.duration === selectedPlan.duration
+              );
+            }
+            return pd.sessions === selectedPlan.sessions;
+          });
+
+          if (planDiscount) {
+            applicableDiscount = planDiscount.discount;
+            applicableDiscountType = planDiscount.discountType;
+            applicableMaxDiscount = planDiscount.maxDiscountAmount;
+            console.log("Using plan-specific discount:", planDiscount);
+          }
+        }
+
+        // Apply discount
+        if (applicableDiscountType === "percentage") {
+          const discountAmount = (finalAmount * applicableDiscount) / 100;
+          const maxDiscount = applicableMaxDiscount || discountAmount;
+          finalAmount -= Math.min(discountAmount, maxDiscount);
+        } else {
+          finalAmount -= applicableDiscount;
+        }
+        finalAmount = Math.max(0, finalAmount); // Ensure amount doesn't go negative
+
+        appliedCoupon = {
+          code: coupon.code,
+          discount: applicableDiscount,
+          discountType: applicableDiscountType,
+        };
+      }
     }
 
     // Generate unique order ID
@@ -663,11 +783,11 @@ export const createCreditsOrder = async (req, res) => {
       userId,
       clientName: user.name,
       orderId,
-      amount: sessionPrice * creditsCount, // Original amount before discount
+      amount: selectedPlan.sellingPrice, // Original amount before discount (SP, NOT MRP)
       finalAmount, // Amount after discount
       serviceType,
       duration,
-      sessionType: "credits", // Mark as credits purchase
+      sessionType: `${creditsCount} credits`, // Mark as credits purchase
       appliedCoupon,
       creditsCount, // Store the number of credits being purchased
       status: "pending",
@@ -683,7 +803,8 @@ export const createCreditsOrder = async (req, res) => {
         customer_details: {
           customer_id: `CUST_${userId}`,
           customer_name: user.name || "Customer",
-          customer_email: user.email || `${user.phoneNumber}@betterhealth.com`,
+          customer_email:
+            user.email || `${user.phoneNumber}@ideservebetterhealth.in`,
           customer_phone: user.phoneNumber,
         },
         order_meta: {

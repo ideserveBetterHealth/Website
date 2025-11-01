@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const employeeSchema = new mongoose.Schema(
+const bhAssociateDetailSchema = new mongoose.Schema(
   {
     personalInfo: {
       firstName: {
@@ -228,4 +228,7 @@ const employeeSchema = new mongoose.Schema(
   }
 );
 
-export const Employee = mongoose.model("Employee", employeeSchema);
+export const bhAssociateDetail = mongoose.model(
+  "bhAssociateDetail",
+  bhAssociateDetailSchema
+);

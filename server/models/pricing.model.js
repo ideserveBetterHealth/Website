@@ -8,20 +8,30 @@ const PricingSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    sessionCosts: {
-      30: {
-        type: Number,
-        required: true,
+    plans: [
+      {
+        name: {
+          type: String,
+          required: true,
+        },
+        sessions: {
+          type: Number,
+          required: true,
+        },
+        duration: {
+          type: Number,
+          required: true, // in minutes
+        },
+        mrp: {
+          type: Number,
+          required: true,
+        },
+        sellingPrice: {
+          type: Number,
+          required: true,
+        },
       },
-      50: {
-        type: Number,
-        required: true,
-      },
-      80: {
-        type: Number,
-        required: true,
-      },
-    },
+    ],
   },
   { timestamps: true }
 );

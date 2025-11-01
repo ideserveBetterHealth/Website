@@ -36,22 +36,37 @@ export const createPricing = async (req, res) => {
       });
     }
 
-    const { serviceType, sessionCosts } = req.body;
+    const { serviceType, plans } = req.body;
 
-    if (!serviceType || !sessionCosts) {
+    if (!serviceType || !plans) {
       return res.status(400).json({
         success: false,
-        message: "Service type and session costs are required.",
+        message: "Service type and plans are required.",
       });
     }
 
-    // Validate sessionCosts structure
-    if (!sessionCosts["50"] || !sessionCosts["80"]) {
+    // Validate plans structure
+    if (!Array.isArray(plans) || plans.length === 0) {
       return res.status(400).json({
         success: false,
-        message:
-          "Session costs must include pricing for both 50 and 80 minute sessions.",
+        message: "Plans must be a non-empty array.",
       });
+    }
+
+    for (const plan of plans) {
+      if (
+        !plan.name ||
+        !plan.sessions ||
+        !plan.duration ||
+        !plan.mrp ||
+        !plan.sellingPrice
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Each plan must include name, sessions, duration, mrp, and sellingPrice.",
+        });
+      }
     }
 
     // Check if pricing already exists for this service type
@@ -66,7 +81,7 @@ export const createPricing = async (req, res) => {
 
     const pricing = await Pricing.create({
       serviceType,
-      sessionCosts,
+      plans,
     });
 
     return res.status(201).json({
@@ -95,20 +110,36 @@ export const updatePricing = async (req, res) => {
     }
 
     const { id } = req.params;
-    const { serviceType, sessionCosts } = req.body;
+    const { serviceType, plans } = req.body;
 
-    // Validate sessionCosts structure if provided
-    if (sessionCosts && (!sessionCosts["50"] || !sessionCosts["80"])) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Session costs must include pricing for both 50 and 80 minute sessions.",
-      });
+    // Validate plans structure if provided
+    if (plans) {
+      if (!Array.isArray(plans) || plans.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Plans must be a non-empty array.",
+        });
+      }
+      for (const plan of plans) {
+        if (
+          !plan.name ||
+          !plan.sessions ||
+          !plan.duration ||
+          !plan.mrp ||
+          !plan.sellingPrice
+        ) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "Each plan must include name, sessions, duration, mrp, and sellingPrice.",
+          });
+        }
+      }
     }
 
     const updateData = {};
     if (serviceType) updateData.serviceType = serviceType;
-    if (sessionCosts) updateData.sessionCosts = sessionCosts;
+    if (plans) updateData.plans = plans;
 
     const pricing = await Pricing.findByIdAndUpdate(id, updateData, {
       new: true,

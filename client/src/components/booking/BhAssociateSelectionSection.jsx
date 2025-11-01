@@ -1,4 +1,4 @@
-import { Languages, Calendar } from "lucide-react";
+import { Languages, Calendar, Phone, MessageCircle } from "lucide-react";
 import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
 
@@ -215,6 +215,75 @@ const BhAssociateSelectionSection = ({
                 </div>
               </div>
             ))}
+
+            {/* Special Card - Let Better Health Choose */}
+            <div className="group w-full max-w-lg bg-white border border-gray-100 rounded-3xl shadow-lg shadow-gray-200/50 overflow-hidden cursor-pointer hover:shadow-2xl hover:shadow-orange-100/50 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] h-full flex flex-col">
+              {/* Header with Background */}
+              <div className="bg-gradient-to-br from-orange-50 via-orange-100 to-orange-50 p-7 relative flex flex-col items-center justify-center">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-400/10 to-pink-400/10 rounded-t-3xl"></div>
+
+                {/* Icon */}
+                <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-white shadow-xl shadow-orange-200/50 group-hover:shadow-2xl group-hover:shadow-orange-300/50 transition-all duration-300 mb-4 flex items-center justify-center">
+                  <span className="text-5xl">🤔</span>
+                </div>
+
+                {/* Title */}
+                <div className="relative text-center">
+                  <h2 className="text-xl font-bold text-gray-800 group-hover:text-orange-800 transition-colors duration-300">
+                    Can&apos;t Decide?
+                  </h2>
+                  <p className="text-base font-medium text-slate-600 mt-1 group-hover:text-slate-700 transition-colors duration-300">
+                    Let Better Health choose for you!
+                  </p>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-5 flex flex-col">
+                {/* Description */}
+                <div className="text-center mb-6">
+                  <p className="text-gray-700 leading-relaxed">
+                    Our team will carefully match you with the most appropriate{" "}
+                    {serviceType === "psychologist"
+                      ? "psychologist"
+                      : "cosmetologist"}{" "}
+                    based on your needs and preferences.
+                  </p>
+                </div>
+
+                {/* Divider */}
+                <div className="my-4 border-t border-gray-200"></div>
+
+                {/* Contact Options */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider text-center mb-4">
+                    Contact Us
+                  </h3>
+
+                  {/* WhatsApp Button */}
+                  <a
+                    href="https://api.whatsapp.com/send/?phone=919981652533&text&type=phone_number&app_absent=0"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group/btn w-full py-3.5 text-sm font-bold text-white bg-gradient-to-r from-green-500 to-green-600 rounded-2xl hover:from-green-600 hover:to-green-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg shadow-green-500/30 focus:outline-none focus:ring-4 focus:ring-green-300 flex items-center justify-center space-x-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                    <span>Chat on WhatsApp</span>
+                  </a>
+
+                  {/* Phone Button */}
+                  <a
+                    href="tel:9799161609"
+                    className="group/btn w-full py-3.5 text-sm font-bold text-white bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl hover:from-orange-600 hover:to-orange-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg shadow-orange-500/30 focus:outline-none focus:ring-4 focus:ring-orange-300 flex items-center justify-center space-x-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Phone className="w-5 h-5" />
+                    <span>Call: 9799161609</span>
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Show booking section below doctor cards */}

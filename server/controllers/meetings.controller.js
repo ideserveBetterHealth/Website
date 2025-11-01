@@ -129,7 +129,6 @@ const createMeeting = async (
 
     // Find the availability for the specific date
     const dateAvailability = associateToUpdate.availability.find((avail) => {
-      console.log(appointmentDate);
       const availDate = new Date(avail.date);
       return availDate.toDateString() === appointmentDate.toDateString();
     });

@@ -12,7 +12,7 @@ import { formatDateForAPI } from "@/utils/dateUtils";
 
 const PaymentGateway = ({
   duration,
-  sessionType,
+  sessions,
   serviceType,
   couponCode,
   onPaymentSuccess,
@@ -70,7 +70,7 @@ const PaymentGateway = ({
       const orderData = {
         serviceType,
         duration: parseInt(duration),
-        sessionType,
+        sessions: parseInt(sessions),
         psychologistId: practitioner._id,
         appointmentDate: formatDateForAPI(appointmentDetails.date),
         appointmentTime: appointmentDetails.time,
@@ -105,7 +105,7 @@ const PaymentGateway = ({
     isAuthenticated,
     serviceType,
     duration,
-    sessionType,
+    sessions,
     couponCode,
     createOrder,
   ]);
@@ -370,7 +370,7 @@ const PaymentGateway = ({
 
 PaymentGateway.propTypes = {
   duration: PropTypes.number.isRequired,
-  sessionType: PropTypes.string.isRequired,
+  sessions: PropTypes.number.isRequired,
   serviceType: PropTypes.string.isRequired,
   couponCode: PropTypes.string,
   onPaymentSuccess: PropTypes.func,

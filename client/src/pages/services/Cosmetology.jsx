@@ -1,14 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import ReactDOM from "react-dom";
 import { toast } from "react-hot-toast";
 import { Clipboard } from "lucide-react";
 import { Link } from "react-router-dom";
 import PropTypes from "prop-types";
 import BhAssociateSelectionSection from "@/components/booking/BhAssociateSelectionSection";
+import BookingSection from "@/components/booking/BookingSection";
 import PaymentGateway from "@/components/booking/PaymentGateway";
 import { useLazyGetPricingQuery } from "@/features/api/pricingApi";
 import { useGetCosmetologistsQuery } from "@/features/api/bhAssociateApi";
 import { useGetQuestionnaireQuery } from "@/features/api/questionnaireApi";
-import { useValidateCouponMutation } from "@/features/api/couponApi";
+import {
+  useValidateCouponMutation,
+  useCalculateAllPlansDiscountsMutation,
+} from "@/features/api/couponApi";
 import {
   useSendOTPMutation,
   useVerifyOTPMutation,
@@ -66,8 +71,10 @@ const PricingSection = ({
   const [couponError, setCouponError] = useState("");
   const [isApplying, setIsApplying] = useState(false);
   const [isCouponVisible, setIsCouponVisible] = useState(false);
+  const [plansWithDiscounts, setPlansWithDiscounts] = useState([]);
 
   const [validateCoupon] = useValidateCouponMutation();
+  const [calculateAllPlansDiscounts] = useCalculateAllPlansDiscountsMutation();
   const { data: userData } = useLoadUserQuery();
   const [
     getPricing,
@@ -90,34 +97,20 @@ const PricingSection = ({
   }, [pricingData, pricingError]);
 
   // Convert API pricing data to usable format
-  const PRICING = {};
-  if (pricingData?.pricing) {
-    pricingData.pricing.forEach((item) => {
-      if (item.sessionCosts && item.serviceType === "cosmetology") {
-        // For cosmetology, we'll use a default duration (could be 50 or 80)
-        // Since cosmetology doesn't have duration options, we'll use the first available price
-        const sessionPrice =
-          item.sessionCosts["50"] || item.sessionCosts["80"] || 250; // fallback to 250
-        PRICING.single = sessionPrice;
-        PRICING.pack = sessionPrice * 3; // Calculate 3-session pack price
-      }
-    });
-  }
-
-  // Fallback pricing if API data is not available
-  if (!PRICING.single) {
-    PRICING.single = 250;
-    PRICING.pack = 750;
-  }
+  const PLANS = useMemo(() => {
+    const plans = [];
+    if (pricingData?.pricing) {
+      pricingData.pricing.forEach((item) => {
+        if (item.plans && item.serviceType === "cosmetology") {
+          // For cosmetology, we don't filter by duration as it might have only one duration
+          plans.push(...item.plans);
+        }
+      });
+    }
+    return plans;
+  }, [pricingData]);
 
   const handleApplyCoupon = async () => {
-    // Require package selection before applying coupon
-    if (selectedPack === null || selectedPack === undefined) {
-      setCouponError("Please select a package first");
-      toast.error("Please select a package first");
-      return;
-    }
-
     if (!couponCode.trim()) {
       setCouponError("Please enter a coupon code");
       return;
@@ -127,21 +120,30 @@ const PricingSection = ({
     setCouponError("");
 
     try {
-      const result = await validateCoupon({
+      // Calculate discounts for ALL plans
+      const result = await calculateAllPlansDiscounts({
         code: couponCode,
         serviceType: "cosmetology",
-        duration: 30,
-        sessionType: selectedPack ? "pack" : "single",
+        plans: PLANS,
         ...(userData?.user?._id && { userId: userData.user._id }),
       }).unwrap();
 
-      console.log("💰 Coupon applied successfully:", result.coupon);
-      setAppliedCoupon(result.coupon);
+      console.log("💰 Discounts calculated for all plans:", result);
+
+      // Store the coupon info and all plans with discounts
+      setAppliedCoupon({
+        ...result.coupon,
+        plansWithDiscounts: result.plansWithDiscounts,
+      });
+      setPlansWithDiscounts(result.plansWithDiscounts);
       setCouponCode("");
       setIsCouponVisible(false);
-      toast.success("Coupon applied successfully!");
+      setCouponError("");
+      toast.success("Coupon applied successfully to all plans!");
     } catch (error) {
       console.error("Coupon validation error:", error);
+      setAppliedCoupon(null);
+      setPlansWithDiscounts([]);
       setCouponError(error.data?.message || "Invalid coupon code");
       toast.error(error.data?.message || "Invalid coupon code");
     } finally {
@@ -151,6 +153,7 @@ const PricingSection = ({
 
   const removeCoupon = () => {
     setAppliedCoupon(null);
+    setPlansWithDiscounts([]);
     setCouponCode("");
     setCouponError("");
   };
@@ -178,29 +181,56 @@ const PricingSection = ({
     <>
       <div
         className={`mx-auto mt-4 mb-4 transition-all duration-300 ${
-          isCouponVisible ? "max-w-md" : "max-w-[200px]"
+          appliedCoupon || isCouponVisible ? "max-w-md" : "max-w-[200px]"
         }`}
       >
         {appliedCoupon ? (
-          <div className="bg-[#fffae3] rounded-lg shadow-sm p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-600">Applied:</p>
-                <p className="text-sm font-semibold text-[#000080]">
-                  {appliedCoupon.code}
-                </p>
-                <p className="text-xs text-[#ec5228]">
-                  {appliedCoupon.type === "percentage"
-                    ? `${appliedCoupon.discount}% off`
-                    : `₹${appliedCoupon.discount} off`}
-                </p>
+          <div className="bg-[#fffae3] border border-green-300 text-green-900 rounded-lg shadow-sm p-4 w-full">
+            <div className="flex items-start justify-between gap-4">
+              {/* Left side: Icon + Text */}
+              <div className="flex items-start gap-3">
+                {/* Success Icon */}
+                <svg
+                  className="w-6 h-6 text-green-600 flex-shrink-0"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+
+                {/* Text Block */}
+                <div>
+                  <p className="text-sm font-semibold">
+                    Coupon Applied: {appliedCoupon.code}
+                  </p>
+                  <p className="text-sm text-green-700 mt-1">
+                    Extra savings up to
+                    <span className="font-bold">
+                      {" "}
+                      ₹
+                      {Math.max(
+                        ...(appliedCoupon.plansWithDiscounts?.map(
+                          (p) => p.discountAmount
+                        ) || [0])
+                      ).toLocaleString("en-IN")}
+                    </span>
+                  </p>
+                </div>
               </div>
+
+              {/* Right side: Remove Button */}
               <button
                 onClick={removeCoupon}
-                className="text-gray-500 hover:text-[#ec5228] transition-colors"
+                className="text-gray-500 hover:text-red-600 hover:bg-[#fef9c3] rounded-full p-1 -m-1 transition-colors"
+                aria-label="Remove coupon"
               >
                 <svg
-                  className="w-4 h-4"
+                  className="w-5 h-5"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -307,66 +337,195 @@ const PricingSection = ({
       </div>
 
       <div className="text-center mb-4">
-        <p className="text-gray-600 font-semibold">
-          Select the consultation package
-        </p>
+        <p className="text-gray-600 font-semibold">Select a pricing plan</p>
       </div>
-      <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-        <div
-          onClick={() => setSelectedPack(false)}
-          className={`bg-white rounded-xl shadow-lg p-6 text-center flex flex-col items-center justify-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 cursor-pointer border-4 ${
-            selectedPack === false ? "border-[#ec5228]" : "border-transparent"
-          } min-h-[18rem]`}
-        >
-          <h3 className="text-xl font-bold text-[#000080] mb-2">
-            Single Consultation
-          </h3>
-          <div className="mb-3">
-            <p className="text-4xl font-bold text-[#000080]">
-              ₹{PRICING.single}
-            </p>
-            {appliedCoupon && selectedPack === false && (
-              <div className="mt-1 flex flex-col items-center">
-                <p className="text-xl text-[#ec5228] font-bold">
-                  ₹{calculateDiscountedPrice(PRICING.single)}
-                </p>
-                <p className="text-xs text-gray-500">After discount</p>
-              </div>
-            )}
-          </div>
-          <p className="text-gray-600 text-sm max-w-xs mx-auto">
-            One comprehensive 30-minute consultation with skin analysis,
-            personalized routine planning, and product recommendations.
-          </p>
-        </div>
-        <div
-          onClick={() => setSelectedPack(true)}
-          className={`bg-white rounded-xl shadow-lg p-6 text-center flex flex-col items-center justify-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 cursor-pointer border-4 ${
-            selectedPack === true ? "border-[#ec5228]" : "border-transparent"
-          } relative min-h-[18rem]`}
-        >
-          <div className="absolute -top-3 bg-[#ec5228] text-white text-xs font-semibold px-3 py-1 rounded-full">
-            Best Value
-          </div>
-          <h3 className="text-xl font-bold text-[#000080] mb-2">
-            3 Sessions Pack
-          </h3>
-          <div className="mb-3">
-            <p className="text-4xl font-bold text-[#000080]">₹{PRICING.pack}</p>
-            {appliedCoupon && selectedPack === true && (
-              <div className="mt-1 flex flex-col items-center">
-                <p className="text-xl text-[#ec5228] font-bold">
-                  ₹{calculateDiscountedPrice(PRICING.pack)}
-                </p>
-                <p className="text-xs text-gray-500">After discount</p>
-              </div>
-            )}
-          </div>
-          <p className="text-gray-600 text-sm max-w-xs mx-auto">
-            Initial consultation plus two follow-up sessions to track progress
-            and adjust your skincare routine for optimal results.
-          </p>
-        </div>
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        {(() => {
+          // Calculate discount percentages for all plans to find the best value
+          const plansWithDiscounts = PLANS.map((plan, index) => {
+            const planDiscount = appliedCoupon?.plansWithDiscounts?.find(
+              (p) =>
+                p.sessions === plan.sessions && p.duration === plan.duration
+            );
+
+            let discountPercentage = 0;
+            if (
+              planDiscount &&
+              planDiscount.discountApplied &&
+              planDiscount.discountAmount > 0
+            ) {
+              discountPercentage = Math.round(
+                ((plan.mrp - planDiscount.finalPrice) / plan.mrp) * 100
+              );
+            } else if (plan.mrp !== plan.sellingPrice) {
+              discountPercentage = Math.round(
+                ((plan.mrp - plan.sellingPrice) / plan.mrp) * 100
+              );
+            }
+
+            return { plan, index, discountPercentage };
+          });
+
+          // Find the plan with the highest discount percentage
+          const bestValueIndex = plansWithDiscounts.reduce(
+            (bestIndex, current, currentIndex) => {
+              return current.discountPercentage >
+                plansWithDiscounts[bestIndex].discountPercentage
+                ? currentIndex
+                : bestIndex;
+            },
+            0
+          );
+
+          return plansWithDiscounts.map(
+            ({ plan, index, discountPercentage }) => {
+              // Find discount for this specific plan
+              const planDiscount = appliedCoupon?.plansWithDiscounts?.find(
+                (p) =>
+                  p.sessions === plan.sessions && p.duration === plan.duration
+              );
+
+              return (
+                <div
+                  key={index}
+                  onClick={() => setSelectedPack(index)}
+                  className={`bg-white rounded-xl shadow-lg p-6 text-center flex flex-col items-center justify-center cursor-pointer border-4 relative ${
+                    selectedPack === index
+                      ? "border-[#ec5228] bg-[#fff9f9]"
+                      : "border-transparent hover:border-gray-200"
+                  } min-h-[18rem]`}
+                >
+                  {/* Best Value Badge */}
+                  {index === bestValueIndex && discountPercentage > 0 && (
+                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                      <span className="bg-[#ec5228] text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                        Best Value
+                      </span>
+                    </div>
+                  )}
+
+                  <h3 className="text-xl font-bold text-[#000080] mb-4">
+                    {plan.name}
+                  </h3>
+                  <div className="mb-4">
+                    {planDiscount &&
+                    planDiscount.discountApplied &&
+                    planDiscount.discountAmount > 0 ? (
+                      // Show discounted pricing
+                      <div className="flex flex-col items-center space-y-1">
+                        <div className="flex items-center gap-3">
+                          <p className="text-lg text-gray-500 line-through">
+                            ₹{plan.mrp.toLocaleString("en-IN")}
+                          </p>
+                          <div className="w-px h-6 bg-gray-300"></div>
+                          <p className="text-3xl font-bold text-[#ec5228]">
+                            ₹{planDiscount.finalPrice.toLocaleString("en-IN")}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-sm font-semibold text-[#000080] bg-[#ededff] px-2 py-1 rounded-full">
+                            💰 Coupon Discount: ₹{planDiscount.discountAmount}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-sm font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                            💸 You save ₹{plan.mrp - planDiscount.finalPrice} (
+                            {Math.round(
+                              ((plan.mrp - planDiscount.finalPrice) /
+                                plan.mrp) *
+                                100
+                            )}
+                            % off)
+                          </span>
+                        </div>
+                      </div>
+                    ) : plan.mrp !== plan.sellingPrice ? (
+                      // Show MRP and SP when different, with savings
+                      <div className="flex flex-col items-center space-y-1">
+                        <div className="flex items-center gap-3">
+                          <p className="text-lg text-gray-500 line-through">
+                            ₹{plan.mrp.toLocaleString("en-IN")}
+                          </p>
+                          <div className="w-px h-6 bg-gray-300"></div>
+                          <p className="text-3xl font-bold text-[#000080]">
+                            ₹{plan.sellingPrice.toLocaleString("en-IN")}
+                          </p>
+                        </div>
+                        <div className="flex items-center mt-2">
+                          <span className="text-sm font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                            💸 You save ₹
+                            {(plan.mrp - plan.sellingPrice).toLocaleString(
+                              "en-IN"
+                            )}{" "}
+                            (
+                            {Math.round(
+                              ((plan.mrp - plan.sellingPrice) / plan.mrp) * 100
+                            )}
+                            % off)
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      // Show only SP when MRP equals SP
+                      <p className="text-3xl font-bold text-[#000080]">
+                        ₹{plan.sellingPrice.toLocaleString("en-IN")}
+                      </p>
+                    )}
+                    {planDiscount && !planDiscount.meetsMinOrder && (
+                      <div className="mt-3">
+                        <p className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded-full">
+                          Coupon Not Applicable<br></br>Min order: ₹
+                          {planDiscount.minOrderAmount}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    <div className="flex items-center gap-2 text-gray-600 text-sm">
+                      <div className="w-5 h-5 bg-[#ec5228] rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg
+                          className="w-3 h-3 text-white"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={3}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                      </div>
+                      <span>
+                        {plan.sessions} session{plan.sessions > 1 ? "s" : ""} of{" "}
+                        {plan.duration} minutes each
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600 text-sm">
+                      <div className="w-5 h-5 bg-[#ec5228] rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg
+                          className="w-3 h-3 text-white"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={3}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                      </div>
+                      <span>Flexible scheduling</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+          );
+        })()}
       </div>
 
       <div className="flex justify-center mt-12">
@@ -386,16 +545,68 @@ const PricingSection = ({
   );
 };
 
-// Cosmetologist selection component to match psychologist card layout
+PricingSection.propTypes = {
+  selectedPack: PropTypes.number,
+  setSelectedPack: PropTypes.func.isRequired,
+  appliedCoupon: PropTypes.object,
+  setAppliedCoupon: PropTypes.func.isRequired,
+  onContinue: PropTypes.func.isRequired,
+};
+
+// Cosmetologist selection component to match psychologist card layout with booking modal
 const StepCards = ({
   onContinue,
   cosmetologistsList,
   isCosmetologistsLoading,
-  scrollToPricing,
+  duration,
+  selectedPack,
+  PLANS,
 }) => {
-  const handleBookSession = () => {
-    // Scroll to pricing section instead of showing booking
-    scrollToPricing();
+  const [selectedDoc, setSelectedDoc] = useState(null);
+  const [showBooking, setShowBooking] = useState(false);
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (showBooking) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [showBooking]);
+
+  const handleBookSession = (cosmetologist) => {
+    if (selectedDoc?._id === cosmetologist._id) {
+      setShowBooking(false);
+      setSelectedDoc(null);
+    } else {
+      setSelectedDoc(cosmetologist);
+      setShowBooking(true);
+    }
+  };
+
+  const handleClose = () => {
+    setShowBooking(false);
+    setSelectedDoc(null);
+  };
+
+  const handleSelectDateTime = (date, time) => {
+    // Store the selected cosmetologist and appointment details in local storage
+    const appointmentDetails = {
+      cosmetologist: selectedDoc,
+      date: date,
+      time: time,
+    };
+    localStorage.setItem(
+      "appointmentDetails",
+      JSON.stringify(appointmentDetails)
+    );
+    // Move to the next step
+    onContinue();
   };
 
   return (
@@ -404,10 +615,148 @@ const StepCards = ({
         doctors={cosmetologistsList}
         isLoading={isCosmetologistsLoading}
         onBookSession={handleBookSession}
-        showBooking={false}
-        selectedDoc={null}
+        showBooking={showBooking}
+        selectedDoc={selectedDoc}
         serviceType="cosmetologist"
       />
+
+      {/* Show booking section as overlay */}
+      {showBooking &&
+        selectedDoc &&
+        ReactDOM.createPortal(
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 animate-fade-in pt-20 sm:pt-4"
+            onClick={handleClose}
+          >
+            <div
+              className="relative w-full max-w-6xl max-h-[calc(100vh-5rem)] sm:max-h-[90vh] overflow-y-auto bg-[#fffae3] rounded-2xl shadow-2xl animate-scale-in mt-2 sm:mt-0"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close button - More accessible on mobile */}
+              <button
+                onClick={handleClose}
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors duration-200"
+                aria-label="Close booking"
+              >
+                <svg
+                  className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+
+              {/* Cosmetologist Info Header - Mobile optimized */}
+              <div className="px-4 sm:px-6 pt-12 sm:pt-6 pb-3 sm:pb-4">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 mb-3 sm:mb-4">
+                  {selectedDoc.photoUrl ? (
+                    <img
+                      src={selectedDoc.photoUrl}
+                      alt={selectedDoc.name}
+                      className="w-16 h-16 sm:w-16 sm:h-16 rounded-full object-cover border-4 border-white shadow-md"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center border-4 border-white shadow-md">
+                      <span className="text-lg sm:text-xl font-bold text-white">
+                        {selectedDoc.name
+                          ?.split(" ")
+                          .map((n) => n[0])
+                          .join("") || "C"}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex-1 text-center sm:text-left">
+                    <h3 className="text-xl sm:text-2xl font-bold text-[#000080] leading-tight">
+                      {selectedDoc.name}&apos;s Schedule
+                    </h3>
+                    <p className="text-gray-600 font-medium text-sm sm:text-base mt-1">
+                      {selectedDoc.designation}
+                    </p>
+
+                    {/* Service Details - Mobile optimized */}
+                    <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2 mt-3 text-xs sm:text-sm">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 bg-[#000080] text-white rounded-full font-medium">
+                        <svg
+                          className="w-3 h-3 sm:w-4 sm:h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        Cosmetology
+                      </span>
+                      <span className="text-gray-400 hidden sm:inline">•</span>
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 bg-[#ec5228] text-white rounded-full font-medium">
+                        <svg
+                          className="w-3 h-3 sm:w-4 sm:h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        {duration} min
+                      </span>
+                      {selectedPack !== null && PLANS[selectedPack] && (
+                        <>
+                          <span className="text-gray-400 hidden sm:inline">
+                            •
+                          </span>
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-medium">
+                            <svg
+                              className="w-3 h-3 sm:w-4 sm:h-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                            {PLANS[selectedPack].name.charAt(0).toUpperCase() +
+                              PLANS[selectedPack].name.slice(1)}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Booking Section - Mobile optimized */}
+              <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                <BookingSection
+                  psychologistId={selectedDoc._id}
+                  onSelectDateTime={handleSelectDateTime}
+                  onClose={handleClose}
+                  selectedDuration={duration}
+                />
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </>
   );
 };
@@ -416,11 +765,19 @@ StepCards.propTypes = {
   onContinue: PropTypes.func.isRequired,
   cosmetologistsList: PropTypes.array,
   isCosmetologistsLoading: PropTypes.bool,
-  scrollToPricing: PropTypes.func.isRequired,
+  duration: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+    .isRequired,
+  selectedPack: PropTypes.number,
+  PLANS: PropTypes.array.isRequired,
 };
 
 // Contact Form Component - exact same as Mental Health page
-const ContactForm = ({ onContinue, appliedCoupon, setAppliedCoupon }) => {
+const ContactForm = ({
+  onContinue,
+  appliedCoupon,
+  setAppliedCoupon,
+  selectedPack,
+}) => {
   const [formData, setFormData] = useState({
     fullName: "",
     whatsapp: "",
@@ -439,10 +796,22 @@ const ContactForm = ({ onContinue, appliedCoupon, setAppliedCoupon }) => {
   const [verifyOTP] = useVerifyOTPMutation();
   const { data: userData } = useLoadUserQuery();
   const [validateCoupon] = useValidateCouponMutation();
+  const [getPricing, { data: pricingData }] = useLazyGetPricingQuery();
 
   // Get questionnaire data from API
   const { data: questionnaireData, isLoading: isQuestionnaireLoading } =
     useGetQuestionnaireQuery("cosmetology");
+
+  // Fetch pricing data on component mount
+  useEffect(() => {
+    getPricing({ serviceType: "cosmetology" });
+  }, [getPricing]);
+
+  // Compute PLANS array
+  const PLANS = useMemo(() => {
+    if (!pricingData?.pricing?.plans) return [];
+    return pricingData.pricing.plans;
+  }, [pricingData]);
 
   // Countdown effect for resend button
   useEffect(() => {
@@ -474,11 +843,14 @@ const ContactForm = ({ onContinue, appliedCoupon, setAppliedCoupon }) => {
       setIsAutoFilled(true);
 
       // Re-validate applied coupon with user ID for logged-in user
-      if (appliedCoupon) {
+      if (appliedCoupon && PLANS.length > 0 && selectedPack !== null) {
+        const selectedPlanData = PLANS[selectedPack];
         validateCoupon({
           code: appliedCoupon.code,
           serviceType: "cosmetology",
-          orderAmount: 1000, // Dummy amount for validation
+          orderAmount: selectedPlanData.sellingPrice,
+          sessions: selectedPlanData.sessions,
+          duration: selectedPlanData.duration,
           userId: user._id,
         })
           .unwrap()
@@ -497,7 +869,15 @@ const ContactForm = ({ onContinue, appliedCoupon, setAppliedCoupon }) => {
           });
       }
     }
-  }, [userData, isAutoFilled, appliedCoupon, validateCoupon, setAppliedCoupon]);
+  }, [
+    userData,
+    isAutoFilled,
+    appliedCoupon,
+    validateCoupon,
+    setAppliedCoupon,
+    PLANS,
+    selectedPack,
+  ]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -1087,6 +1467,13 @@ const ContactForm = ({ onContinue, appliedCoupon, setAppliedCoupon }) => {
   );
 };
 
+ContactForm.propTypes = {
+  onContinue: PropTypes.func.isRequired,
+  appliedCoupon: PropTypes.object,
+  setAppliedCoupon: PropTypes.func.isRequired,
+  selectedPack: PropTypes.number,
+};
+
 function ConfirmationStep({ bookingDetails }) {
   return (
     <div className="max-w-4xl mx-auto px-4">
@@ -1389,6 +1776,20 @@ export default function Cosmetology() {
 
   const cosmetologistsList = cosmetologistsData?.cosmetologists || [];
 
+  // Get pricing data for payment step
+  const [getPricing, { data: pricingData }] = useLazyGetPricingQuery();
+
+  // Fetch pricing data on component mount
+  useEffect(() => {
+    getPricing({ serviceType: "cosmetology" });
+  }, [getPricing]);
+
+  // Compute PLANS array
+  const PLANS = useMemo(() => {
+    if (!pricingData?.pricing?.plans) return [];
+    return pricingData.pricing.plans;
+  }, [pricingData]);
+
   // Scroll state for floating step indicator
   const [showFloatingSteps, setShowFloatingSteps] = useState(false);
 
@@ -1466,7 +1867,7 @@ export default function Cosmetology() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#fffae3] via-white to-[#fffae3]">
+    <div className="min-h-screen bg-gradient-to-br from-[#fffae3] via-white to-[#fffae3] relative">
       {/* Floating Step Indicator */}
       <div
         className={`fixed top-17 md:top-[80px] left-0 right-0 z-50 transition-all duration-500 ease-in-out transform ${
@@ -1594,7 +1995,7 @@ export default function Cosmetology() {
             </div>
           )}
 
-          <div className="text-center mb-12 sectison-heading">
+          <div className="text-center mb-12 section-heading">
             <h2 className="text-3xl sm:text-4xl font-bold text-[#000080] mb-4 bg-white px-4 py-2 rounded-lg inline-block">
               {currentStepData.heading}
             </h2>
@@ -1622,7 +2023,9 @@ export default function Cosmetology() {
                 onContinue={nextStep}
                 cosmetologistsList={cosmetologistsList}
                 isCosmetologistsLoading={isCosmetologistsLoading}
-                scrollToPricing={scrollToPricing}
+                duration={PLANS[selectedPack]?.duration || 30}
+                selectedPack={selectedPack}
+                PLANS={PLANS}
               />
             )}
             {currentStepData.type === "concerns" && (
@@ -1630,12 +2033,13 @@ export default function Cosmetology() {
                 onContinue={nextStep}
                 appliedCoupon={appliedCoupon}
                 setAppliedCoupon={setAppliedCoupon}
+                selectedPack={selectedPack}
               />
             )}
             {currentStepData.type === "payment" && (
               <PaymentGateway
-                duration={30}
-                sessionType={selectedPack ? "pack" : "single"}
+                duration={PLANS[selectedPack]?.duration || 30}
+                sessions={PLANS[selectedPack]?.sessions || 1}
                 serviceType="cosmetology"
                 couponCode={appliedCoupon?.code}
                 onPaymentSuccess={(paymentResult) => {
@@ -1652,8 +2056,11 @@ export default function Cosmetology() {
                     appointment: appointmentDetails,
                     form: formData,
                     serviceType: "cosmetology",
-                    selectedPack: selectedPack ? "pack" : "single",
-                    duration: 30,
+                    session: {
+                      duration: PLANS[selectedPack]?.duration || 30,
+                      type: PLANS[selectedPack]?.name || "single",
+                      sessions: PLANS[selectedPack]?.sessions || 1,
+                    },
                   });
 
                   nextStep();

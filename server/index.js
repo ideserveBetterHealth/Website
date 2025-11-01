@@ -4,7 +4,7 @@ import connectDB from "./database/db.js";
 import { userRouter } from "./routes/user.route.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import { employeeRouter } from "./routes/employee.route.js";
+import { bhAssociateDetailRouter } from "./routes/bhAssociateDetail.route.js";
 import { mediaRouter } from "./routes/media.route.js";
 import { meetingRouter } from "./routes/meetings.route.js";
 import { paymentRouter } from "./routes/payment.route.js";
@@ -57,7 +57,7 @@ app.use((err, req, res, next) => {
 
 //apis
 app.use("/api/v1/user", userRouter);
-app.use("/api/v1/register", employeeRouter);
+app.use("/api/v1/register", bhAssociateDetailRouter);
 app.use("/api/v1/media", mediaRouter);
 app.use("/api/v1/meeting", meetingRouter);
 app.use("/api/v1/payments", paymentRouter);

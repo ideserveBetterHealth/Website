@@ -17,6 +17,13 @@ export const couponApi = createApi({
         body: inputData,
       }),
     }),
+    calculateAllPlansDiscounts: builder.mutation({
+      query: (inputData) => ({
+        url: "calculate-all-plans",
+        method: "POST",
+        body: inputData,
+      }),
+    }),
     getAllCoupons: builder.query({
       query: (params) => {
         const searchParams = new URLSearchParams(params).toString();
@@ -52,6 +59,7 @@ export const couponApi = createApi({
 
 export const {
   useValidateCouponMutation,
+  useCalculateAllPlansDiscountsMutation,
   useGetAllCouponsQuery,
   useCreateCouponMutation,
   useUpdateCouponMutation,

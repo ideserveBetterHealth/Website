@@ -1,11 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Calendar } from "primereact/calendar";
 import "primereact/resources/themes/lara-light-indigo/theme.css";
 import "primereact/resources/primereact.min.css";
 import { format } from "date-fns";
 import axios from "axios";
 import { toast } from "sonner";
-import { useSubmitEmployeeFormMutation } from "@/features/api/detailsApi";
+import {
+  useSubmitEmployeeFormMutation,
+  useGetMyEmployeeDetailsQuery,
+  useUpdateMyEmployeeDetailsMutation,
+} from "@/features/api/detailsApi";
 import { useLoadUserQuery } from "@/features/api/authApi";
 import { useSelector } from "react-redux";
 import { Loader } from "lucide-react";
@@ -44,6 +48,20 @@ const ErrorMessage = ({ error }) => {
 
 export default function DynamicForm() {
   const [submitEmployeeForm, { isLoading }] = useSubmitEmployeeFormMutation();
+  const [updateMyEmployeeDetails, { isLoading: isUpdating }] =
+    useUpdateMyEmployeeDetailsMutation();
+
+  const user = useSelector((state) => state.auth.user);
+  const isEditMode = user?.isVerified === "pending";
+
+  // State to control whether to show edit form
+  const [showEditForm, setShowEditForm] = useState(false);
+
+  // Fetch existing data only when user clicks "Edit Submission"
+  const { data: employeeData, isLoading: isLoadingData } =
+    useGetMyEmployeeDetailsQuery(undefined, {
+      skip: !isEditMode || !showEditForm,
+    });
 
   // Existing states
   const [employmentDetails, setEmploymentDetails] = useState([
@@ -174,8 +192,6 @@ export default function DynamicForm() {
   };
 
   const { isLoading: userIsLoading, refetch } = useLoadUserQuery();
-
-  const user = useSelector((state) => state.auth.user);
 
   // Helper function to truncate file names
   const truncateFileName = (fileName, maxLength = 25) => {
@@ -439,8 +455,15 @@ export default function DynamicForm() {
     };
 
     try {
-      const response = await submitEmployeeForm(formData).unwrap();
-      toast.success("Form submitted successfully!");
+      if (isEditMode) {
+        // Update existing submission
+        await updateMyEmployeeDetails(formData).unwrap();
+        toast.success("Details updated successfully!");
+      } else {
+        // Create new submission
+        await submitEmployeeForm(formData).unwrap();
+        toast.success("Form submitted successfully!");
+      }
       // Reset form or redirect here
     } catch (error) {
       console.error("Form submission error:", error);
@@ -504,6 +527,136 @@ export default function DynamicForm() {
   const [mediaProgress, setMediaProgress] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [btnDisable, setBtnDisable] = useState(false);
+
+  // Populate form when employee data is loaded (for edit mode)
+  useEffect(() => {
+    if (employeeData?.employee && isEditMode) {
+      const emp = employeeData.employee;
+
+      // Personal Info
+      if (emp.personalInfo) {
+        setFirstName(emp.personalInfo.firstName || "");
+        setMiddleName(emp.personalInfo.middleName || "");
+        setLastName(emp.personalInfo.lastName || "");
+        setDob(emp.personalInfo.dob ? new Date(emp.personalInfo.dob) : null);
+        setGender(emp.personalInfo.gender || "");
+        setCurrentAddress(emp.personalInfo.currentAddress || "");
+        setPermanentAddress(emp.personalInfo.permanentAddress || "");
+        setCity(emp.personalInfo.city || "");
+        setState(emp.personalInfo.state || "");
+        setPostalCode(emp.personalInfo.postalCode || "");
+        setCountry(emp.personalInfo.country || "");
+        setEmail(emp.personalInfo.email || "");
+        setPhone(emp.personalInfo.phone || "");
+        setBloodGroup(emp.personalInfo.bloodGroup || "");
+        setResumeUrl(emp.personalInfo.resumeUrl || "");
+        setLinkedin(emp.personalInfo.linkedin || "");
+
+        // Extract file name from URL for display
+        if (emp.personalInfo.resumeUrl) {
+          const urlParts = emp.personalInfo.resumeUrl.split("/");
+          setResumeName(urlParts[urlParts.length - 1] || "resume");
+        }
+
+        // Emergency Contact
+        if (emp.personalInfo.emergencyContact) {
+          setEmergencyContactName(emp.personalInfo.emergencyContact.name || "");
+          setEmergencyContactRelationship(
+            emp.personalInfo.emergencyContact.relationship || ""
+          );
+          setEmergencyContactPhone(
+            emp.personalInfo.emergencyContact.phone || ""
+          );
+        }
+
+        // Documents
+        if (emp.personalInfo.Doc && emp.personalInfo.Doc.length > 0) {
+          if (emp.personalInfo.Doc[0]) {
+            setDocument1Type(emp.personalInfo.Doc[0].documentType || "");
+            setDocumentId1(emp.personalInfo.Doc[0].documentId || "");
+            setFrontImage1(emp.personalInfo.Doc[0].frontImage || null);
+            setBackImage1(emp.personalInfo.Doc[0].backImage || null);
+
+            // Extract file names from URLs
+            if (emp.personalInfo.Doc[0].frontImage) {
+              const urlParts = emp.personalInfo.Doc[0].frontImage.split("/");
+              setFrontImage1Name(urlParts[urlParts.length - 1] || "front");
+            }
+            if (emp.personalInfo.Doc[0].backImage) {
+              const urlParts = emp.personalInfo.Doc[0].backImage.split("/");
+              setBackImage1Name(urlParts[urlParts.length - 1] || "back");
+            }
+          }
+          if (emp.personalInfo.Doc[1]) {
+            setDocument2Type(emp.personalInfo.Doc[1].documentType || "");
+            setDocumentId2(emp.personalInfo.Doc[1].documentId || "");
+            setFrontImage2(emp.personalInfo.Doc[1].frontImage || null);
+            setBackImage2(emp.personalInfo.Doc[1].backImage || null);
+
+            // Extract file names from URLs
+            if (emp.personalInfo.Doc[1].frontImage) {
+              const urlParts = emp.personalInfo.Doc[1].frontImage.split("/");
+              setFrontImage2Name(urlParts[urlParts.length - 1] || "front");
+            }
+            if (emp.personalInfo.Doc[1].backImage) {
+              const urlParts = emp.personalInfo.Doc[1].backImage.split("/");
+              setBackImage2Name(urlParts[urlParts.length - 1] || "back");
+            }
+          }
+        }
+      }
+
+      // Employment Details
+      if (emp.employmentDetails && emp.employmentDetails.length > 0) {
+        setEmploymentDetails(
+          emp.employmentDetails.map((ed) => ({
+            ...ed,
+            id: Date.now() + Math.random(),
+            startDate: ed.startDate ? new Date(ed.startDate) : null,
+            endDate: ed.endDate ? new Date(ed.endDate) : null,
+            isCurrentJob: !ed.endDate,
+          }))
+        );
+      }
+
+      // Salary Slip
+      if (emp.salarySlip) {
+        setSalarySlip(emp.salarySlip);
+        const urlParts = emp.salarySlip.split("/");
+        setSalarySlipName(urlParts[urlParts.length - 1] || "salary_slip");
+      }
+
+      // Education Details
+      if (emp.educationDetails && emp.educationDetails.length > 0) {
+        setEducationDetails(
+          emp.educationDetails.map((ed) => ({
+            ...ed,
+            id: Date.now() + Math.random(),
+            graduationYear: ed.graduationYear
+              ? ed.graduationYear.toString()
+              : "",
+          }))
+        );
+      }
+
+      // Bank Account
+      if (emp.bankAccount) {
+        setAccountHolder(emp.bankAccount.accountHolder || "");
+        setBankName(emp.bankAccount.bankName || "");
+        setBranchName(emp.bankAccount.branchName || "");
+        setAccountNumber(emp.bankAccount.accountNumber || "");
+        setIfsc(emp.bankAccount.ifsc || "");
+        setUpi(emp.bankAccount.upi || "");
+      }
+
+      // Check if same address
+      if (
+        emp.personalInfo?.currentAddress === emp.personalInfo?.permanentAddress
+      ) {
+        setSameAddress(true);
+      }
+    }
+  }, [employeeData, isEditMode]);
 
   // Cloudinary configuration - you can get these from your Cloudinary dashboard
   const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
@@ -632,7 +785,7 @@ export default function DynamicForm() {
     }
   };
 
-  if (userIsLoading) {
+  if (userIsLoading || (isEditMode && showEditForm && isLoadingData)) {
     return (
       <div className="h-screen w-screen flex items-center justify-center">
         <Loader className="h-16 w-16 animate-spin text-orange-200" />
@@ -644,14 +797,64 @@ export default function DynamicForm() {
     navigate("/dashboard");
   }
 
-  if (user?.isVerified === "pending") {
+  // Show message for pending users with option to edit
+  if (user?.isVerified === "pending" && !showEditForm) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center">
-        <h1 className="text-5xl">Hey {user.name} ☺️</h1>
-        <br />
-        <h1 className="text-5xl">Your verification request is submitted</h1>
-        <br />
-        <h1 className="text-5xl">Please give us some time to verify.</h1>
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#fffae3] via-white to-[#fffae3] px-4">
+        <div className="max-w-2xl mx-auto text-center">
+          {/* Success Icon */}
+          <div className="inline-flex items-center justify-center w-24 h-24 bg-yellow-100 rounded-full mb-6">
+            <svg
+              className="w-12 h-12 text-yellow-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+
+          <h1 className="text-5xl font-bold text-[#000080] mb-4">
+            Hey, {user.name} ☺️
+          </h1>
+          <h2 className="text-3xl text-gray-700 mb-4">
+            Your verification request is submitted
+          </h2>
+          <p className="text-xl text-gray-600 mb-8">
+            Please give us some time to verify.
+          </p>
+
+          {/* Edit Submission Button */}
+          <button
+            onClick={() => setShowEditForm(true)}
+            className="inline-flex items-center gap-3 bg-gradient-to-r from-[#ec5228] to-[#d14a22] hover:from-[#d14a22] hover:to-[#ec5228] text-white font-bold py-4 px-8 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 text-lg"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              />
+            </svg>
+            Edit Submission
+          </button>
+
+          <p className="mt-6 text-sm text-gray-500">
+            Need to update your information? Click the button above to edit your
+            submission.
+          </p>
+        </div>
       </div>
     );
   }
@@ -669,8 +872,47 @@ export default function DynamicForm() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fffae3] via-white to-[#fffae3] py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
+        {/* Go Back Button for Edit Mode */}
+        {isEditMode && showEditForm && (
+          <div className="mb-4 pt-16">
+            <button
+              onClick={() => setShowEditForm(false)}
+              className="inline-flex items-center gap-2 text-gray-600 hover:text-[#ec5228] transition-colors"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
+              </svg>
+              Back to Status
+            </button>
+          </div>
+        )}
+
         {/* Header Section */}
-        <div className="text-center mb-12 pt-16">
+        <div
+          className={`text-center mb-12 ${
+            !isEditMode || !showEditForm ? "pt-16" : ""
+          }`}
+        >
+          {isEditMode && showEditForm && (
+            <div className="mb-4 inline-block bg-yellow-100 border border-yellow-300 text-yellow-800 px-4 py-2 rounded-lg">
+              <p className="font-semibold">
+                📝 Edit Mode - Your verification is pending
+              </p>
+              <p className="text-sm">
+                You can update your submission while we review it
+              </p>
+            </div>
+          )}
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-[#ec5228] to-[#d14a22] rounded-full mb-6 shadow-lg">
             <svg
               className="w-8 h-8 text-white"
@@ -687,11 +929,12 @@ export default function DynamicForm() {
             </svg>
           </div>
           <h1 className="text-4xl font-bold text-[#000080] mb-4">
-            Submit Documents
+            {isEditMode ? "Update Your Documents" : "Submit Documents"}
           </h1>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
-            Complete your verification process by providing the required
-            information and documents. All fields marked with * are mandatory.
+            {isEditMode
+              ? "Review and update your verification information and documents. All fields marked with * are mandatory."
+              : "Complete your verification process by providing the required information and documents. All fields marked with * are mandatory."}
           </p>
         </div>
 
@@ -2712,10 +2955,10 @@ export default function DynamicForm() {
           <div className="text-center pt-4">
             <button
               type="submit"
-              disabled={isLoading || btnDisable || mediaProgress}
+              disabled={isLoading || isUpdating || btnDisable || mediaProgress}
               className="inline-flex items-center gap-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 disabled:from-gray-300 disabled:to-gray-400 text-white font-bold py-4 px-8 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none disabled:opacity-50 disabled:cursor-not-allowed text-lg"
             >
-              {isLoading ? (
+              {isLoading || isUpdating ? (
                 <>
                   <svg
                     className="w-5 h-5 animate-spin"
@@ -2730,7 +2973,9 @@ export default function DynamicForm() {
                       d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                     />
                   </svg>
-                  Submitting Application...
+                  {isEditMode
+                    ? "Updating Application..."
+                    : "Submitting Application..."}
                 </>
               ) : (
                 <>
@@ -2747,14 +2992,14 @@ export default function DynamicForm() {
                       d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  Submit Application
+                  {isEditMode ? "Update Application" : "Submit Application"}
                 </>
               )}
             </button>
 
             <p className="mt-4 text-sm text-gray-600 max-w-md mx-auto">
-              By submitting this application, you confirm that all information
-              provided is accurate and complete.
+              By {isEditMode ? "updating" : "submitting"} this application, you
+              confirm that all information provided is accurate and complete.
             </p>
           </div>
         </form>

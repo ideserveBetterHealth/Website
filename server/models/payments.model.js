@@ -27,7 +27,6 @@ const paymentSchema = new mongoose.Schema(
     },
     sessions: {
       type: Number,
-      default: 1,
     },
     amount: {
       type: Number,
@@ -76,8 +75,10 @@ const paymentSchema = new mongoose.Schema(
     },
     sessionType: {
       type: String,
-      enum: ["single", "pack", "custom", "credits"],
-      default: null,
+      default: null, // Now stores plan name like "Single Session", "3 Sessions Pack"
+    },
+    sessionCount: {
+      type: Number,
     },
     creditsCount: {
       type: Number,

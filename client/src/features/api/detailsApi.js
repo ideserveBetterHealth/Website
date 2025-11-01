@@ -8,6 +8,7 @@ export const detailsApi = createApi({
     baseUrl: DETAILS_API,
     credentials: "include",
   }),
+  tagTypes: ["EmployeeDetails"],
   endpoints: (builder) => ({
     submitEmployeeForm: builder.mutation({
       query: (formData) => ({
@@ -15,6 +16,7 @@ export const detailsApi = createApi({
         method: "POST",
         body: formData,
       }),
+      invalidatesTags: ["EmployeeDetails"],
     }),
     isVerified: builder.query({
       query: () => ({
@@ -22,7 +24,27 @@ export const detailsApi = createApi({
         method: "GET",
       }),
     }),
+    getMyEmployeeDetails: builder.query({
+      query: () => ({
+        url: "/my-details",
+        method: "GET",
+      }),
+      providesTags: ["EmployeeDetails"],
+    }),
+    updateMyEmployeeDetails: builder.mutation({
+      query: (formData) => ({
+        url: "/my-details",
+        method: "PUT",
+        body: formData,
+      }),
+      invalidatesTags: ["EmployeeDetails"],
+    }),
   }),
 });
 
-export const { useSubmitEmployeeFormMutation, useIsVerifiedQuery } = detailsApi;
+export const {
+  useSubmitEmployeeFormMutation,
+  useIsVerifiedQuery,
+  useGetMyEmployeeDetailsQuery,
+  useUpdateMyEmployeeDetailsMutation,
+} = detailsApi;

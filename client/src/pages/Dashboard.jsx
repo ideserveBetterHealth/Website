@@ -46,8 +46,8 @@ import {
   useGetPsychologistsQuery,
   psychologistApi,
 } from "@/features/api/psychologistApi";
-import { useGetPricingQuery } from "@/features/api/pricingApi";
-import { useValidateCouponMutation } from "@/features/api/couponApi";
+import { useLazyGetPricingQuery } from "@/features/api/pricingApi";
+import { useCalculateAllPlansDiscountsMutation } from "@/features/api/couponApi";
 import { useGetQuestionnaireQuery } from "@/features/api/questionnaireApi";
 import { useSelector, useDispatch } from "react-redux";
 import BhAssociateSelectionSection from "@/components/booking/BhAssociateSelectionSection";
@@ -635,9 +635,8 @@ const Dashboard = () => {
   const [showBuyCredits, setShowBuyCredits] = useState(false);
   const [buyServiceType, setBuyServiceType] = useState("mental_health");
   const [buyDuration, setBuyDuration] = useState(50); // 50, 80, or 30
-  const [buyCreditsCount, setBuyCreditsCount] = useState(3); // 3 or custom
+  const [buyCreditsCount, setBuyCreditsCount] = useState(3); // 1, 3, or 5
   const [isCustomCredits, setIsCustomCredits] = useState(false);
-  const [customCreditsAmount, setCustomCreditsAmount] = useState("");
   const [promoCode, setPromoCode] = useState("");
   const [promoCodeApplied, setPromoCodeApplied] = useState(false);
   const [promoCodeData, setPromoCodeData] = useState(null);
@@ -661,14 +660,14 @@ const Dashboard = () => {
   const { data: cosmetologistsData, isLoading: cosmetologistsLoading } =
     useGetCosmetologistsQuery();
 
-  // Fetch pricing data for both services
-  const { data: mentalHealthPricing, isLoading: mentalHealthPricingLoading } =
-    useGetPricingQuery({ serviceType: "mental_health" });
-  const { data: cosmetologyPricing, isLoading: cosmetologyPricingLoading } =
-    useGetPricingQuery({ serviceType: "cosmetology" });
+  // Fetch pricing data for both services using lazy query
+  const [
+    triggerGetPricing,
+    { data: pricingData, isLoading: isPricingLoading },
+  ] = useLazyGetPricingQuery();
 
-  // Coupon validation hook
-  const [validateCoupon] = useValidateCouponMutation();
+  // Coupon validation hook (using calculateAllPlansDiscounts for plan-based discounts)
+  const [calculateAllPlansDiscounts] = useCalculateAllPlansDiscountsMutation();
 
   // Credit purchase hooks
   const [createCreditsOrder] = useCreateCreditsOrderMutation();
@@ -852,16 +851,18 @@ const Dashboard = () => {
     }
   }, [user]);
 
-  // Set default duration when service type changes
+  // Set default duration when service type changes and fetch pricing
   useEffect(() => {
     if (buyServiceType === "mental_health") {
       setBuyDuration(50);
       setBuyCreditsCount(3);
+      triggerGetPricing({ serviceType: "mental_health" });
     } else if (buyServiceType === "cosmetology") {
       setBuyDuration(30);
       setBuyCreditsCount(3);
+      triggerGetPricing({ serviceType: "cosmetology" });
     }
-  }, [buyServiceType]);
+  }, [buyServiceType, triggerGetPricing]);
 
   // Check if user can join meeting (5 minutes before start, up to meeting duration after start)
   const canJoinMeeting = (meetingDate, meetingTime, duration = 60) => {
@@ -1143,23 +1144,26 @@ const Dashboard = () => {
     setContactFormData(null);
   };
 
-  // Calculate total price for selected credits
+  // Calculate total price for selected credits (plan-based pricing)
   const calculateTotalPrice = useCallback(() => {
-    if (!buyCreditsCount || !buyDuration) return 0;
+    if (!buyCreditsCount || !buyDuration || !pricingData?.pricing) return 0;
 
-    let pricingData;
-    if (buyServiceType === "mental_health") {
-      pricingData = mentalHealthPricing?.pricing?.[0];
-    } else if (buyServiceType === "cosmetology") {
-      pricingData = cosmetologyPricing?.pricing?.[0];
-    }
+    // Find the plan that matches sessions count and duration
+    const selectedPlanData = pricingData.pricing.find(
+      (item) => item.serviceType === buyServiceType
+    );
 
-    if (!pricingData?.sessionCosts) return 0;
+    if (!selectedPlanData?.plans) return 0;
 
-    const sessionPrice = pricingData.sessionCosts[buyDuration.toString()];
-    if (!sessionPrice) return 0;
+    const matchingPlan = selectedPlanData.plans.find(
+      (plan) =>
+        plan.sessions === parseInt(buyCreditsCount) &&
+        plan.duration === parseInt(buyDuration)
+    );
 
-    let totalPrice = buyCreditsCount * sessionPrice;
+    if (!matchingPlan) return 0;
+
+    let totalPrice = matchingPlan.sellingPrice;
 
     // Apply promocode discount if applied
     if (promoCodeApplied && promoCodeData) {
@@ -1172,36 +1176,32 @@ const Dashboard = () => {
     buyCreditsCount,
     buyDuration,
     buyServiceType,
-    mentalHealthPricing,
-    cosmetologyPricing,
+    pricingData,
     promoCodeApplied,
     promoCodeData,
   ]);
 
-  // Calculate original price without discount
+  // Calculate original price without discount (plan-based pricing)
   const calculateOriginalPrice = useCallback(() => {
-    if (!buyCreditsCount || !buyDuration) return 0;
+    if (!buyCreditsCount || !buyDuration || !pricingData?.pricing) return 0;
 
-    let pricingData;
-    if (buyServiceType === "mental_health") {
-      pricingData = mentalHealthPricing?.pricing?.[0];
-    } else if (buyServiceType === "cosmetology") {
-      pricingData = cosmetologyPricing?.pricing?.[0];
-    }
+    // Find the plan that matches sessions count and duration
+    const selectedPlanData = pricingData.pricing.find(
+      (item) => item.serviceType === buyServiceType
+    );
 
-    if (!pricingData?.sessionCosts) return 0;
+    if (!selectedPlanData?.plans) return 0;
 
-    const sessionPrice = pricingData.sessionCosts[buyDuration.toString()];
-    if (!sessionPrice) return 0;
+    const matchingPlan = selectedPlanData.plans.find(
+      (plan) =>
+        plan.sessions === parseInt(buyCreditsCount) &&
+        plan.duration === parseInt(buyDuration)
+    );
 
-    return buyCreditsCount * sessionPrice;
-  }, [
-    buyCreditsCount,
-    buyDuration,
-    buyServiceType,
-    mentalHealthPricing,
-    cosmetologyPricing,
-  ]);
+    if (!matchingPlan) return 0;
+
+    return matchingPlan.sellingPrice;
+  }, [buyCreditsCount, buyDuration, buyServiceType, pricingData]);
 
   // Buy Credits helpers
   const openBuyCredits = (serviceType = "mental_health", duration) => {
@@ -1231,7 +1231,7 @@ const Dashboard = () => {
       setBuyDuration(defaultDuration);
     }
 
-    setBuyCreditsCount(1);
+    setBuyCreditsCount(3); // Default to 3 credits
     setShowBuyCredits(true);
   };
 
@@ -1242,7 +1242,6 @@ const Dashboard = () => {
     setBuyDuration(50);
     setBuyCreditsCount(3);
     setIsCustomCredits(false);
-    setCustomCreditsAmount("");
     setPromoCode("");
     setPromoCodeApplied(false);
     setPromoCodeData(null);
@@ -1250,30 +1249,67 @@ const Dashboard = () => {
     setPurchaseLoading(false);
   };
 
-  // Promocode validation function
+  // Promocode validation function with plan-based discounts
   const handleValidatePromoCode = async () => {
     if (!promoCode.trim()) {
       toast.error("Please enter a promo code");
       return;
     }
 
-    const orderAmount = calculateOriginalPrice();
-    if (!orderAmount || orderAmount <= 0) {
-      toast.error("Please select a valid service and duration first");
+    if (!pricingData?.pricing) {
+      toast.error("Please wait for pricing data to load");
+      return;
+    }
+
+    if (!buyCreditsCount || !buyDuration) {
+      toast.error("Please select credits and duration first");
       return;
     }
 
     setPromoCodeLoading(true);
     try {
-      const result = await validateCoupon({
+      // Get the selected plan
+      const selectedPlanData = pricingData.pricing.find(
+        (item) => item.serviceType === buyServiceType
+      );
+
+      if (!selectedPlanData?.plans) {
+        toast.error("Pricing data not available");
+        setPromoCodeLoading(false);
+        return;
+      }
+
+      const matchingPlan = selectedPlanData.plans.find(
+        (plan) =>
+          plan.sessions === parseInt(buyCreditsCount) &&
+          plan.duration === parseInt(buyDuration)
+      );
+
+      if (!matchingPlan) {
+        toast.error("Selected plan not found");
+        setPromoCodeLoading(false);
+        return;
+      }
+
+      // Calculate discount for the selected plan
+      const result = await calculateAllPlansDiscounts({
         code: promoCode.trim(),
         serviceType: buyServiceType,
-        orderAmount: orderAmount,
+        plans: [matchingPlan],
         ...(user?._id && { userId: user._id }),
       }).unwrap();
 
+      console.log("💰 Discount calculated for plan:", result);
+
+      // Get the discount for the selected plan
+      const planWithDiscount = result.plansWithDiscounts[0];
+
       setPromoCodeApplied(true);
-      setPromoCodeData(result.coupon);
+      setPromoCodeData({
+        ...result.coupon,
+        discountAmount: planWithDiscount.discountAmount,
+        finalPrice: planWithDiscount.finalPrice,
+      });
       toast.success("Promo code applied successfully!");
     } catch (error) {
       console.error("Promo code validation error:", error);
@@ -1287,27 +1323,50 @@ const Dashboard = () => {
 
   // Function to revalidate promo code silently when parameters change
   const revalidatePromoCode = useCallback(async () => {
-    if (!promoCode.trim() || !promoCodeApplied) return;
+    if (!promoCode.trim() || !promoCodeApplied || !pricingData?.pricing) return;
 
     try {
-      const orderAmount = calculateOriginalPrice();
-      if (!orderAmount || orderAmount <= 0) {
-        // If order amount is invalid, reset promo code
+      // Get the selected plan
+      const selectedPlanData = pricingData.pricing.find(
+        (item) => item.serviceType === buyServiceType
+      );
+
+      if (!selectedPlanData?.plans) {
         setPromoCodeApplied(false);
         setPromoCodeData(null);
         return;
       }
 
-      const result = await validateCoupon({
+      const matchingPlan = selectedPlanData.plans.find(
+        (plan) =>
+          plan.sessions === parseInt(buyCreditsCount) &&
+          plan.duration === parseInt(buyDuration)
+      );
+
+      if (!matchingPlan) {
+        setPromoCodeApplied(false);
+        setPromoCodeData(null);
+        return;
+      }
+
+      // Calculate discount for the selected plan
+      const result = await calculateAllPlansDiscounts({
         code: promoCode.trim(),
         serviceType: buyServiceType,
-        orderAmount: orderAmount,
+        plans: [matchingPlan],
         ...(user?._id && { userId: user._id }),
       }).unwrap();
 
+      // Get the discount for the selected plan
+      const planWithDiscount = result.plansWithDiscounts[0];
+
       // Update promo code data if still valid
-      setPromoCodeData(result.coupon);
-    } catch (error) {
+      setPromoCodeData({
+        ...result.coupon,
+        discountAmount: planWithDiscount.discountAmount,
+        finalPrice: planWithDiscount.finalPrice,
+      });
+    } catch {
       // If promo code is no longer valid, reset it
       setPromoCodeApplied(false);
       setPromoCodeData(null);
@@ -1317,8 +1376,10 @@ const Dashboard = () => {
     promoCode,
     promoCodeApplied,
     buyServiceType,
-    validateCoupon,
-    calculateOriginalPrice,
+    buyCreditsCount,
+    buyDuration,
+    pricingData,
+    calculateAllPlansDiscounts,
     user?._id,
   ]);
 
@@ -2299,7 +2360,20 @@ const Dashboard = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Credits to Purchase
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => {
+                      setBuyCreditsCount(1);
+                      setIsCustomCredits(false);
+                    }}
+                    className={`px-4 py-2 rounded-lg border text-sm ${
+                      !isCustomCredits && buyCreditsCount === 1
+                        ? "bg-green-50 border-green-300 text-[#000080]"
+                        : "bg-white border-gray-200 text-gray-700"
+                    }`}
+                  >
+                    1 Credit
+                  </button>
                   <button
                     onClick={() => {
                       setBuyCreditsCount(3);
@@ -2315,43 +2389,18 @@ const Dashboard = () => {
                   </button>
                   <button
                     onClick={() => {
-                      setIsCustomCredits(true);
-                      setBuyCreditsCount(null);
-                      setCustomCreditsAmount("");
+                      setBuyCreditsCount(5);
+                      setIsCustomCredits(false);
                     }}
                     className={`px-4 py-2 rounded-lg border text-sm ${
-                      isCustomCredits
+                      !isCustomCredits && buyCreditsCount === 5
                         ? "bg-green-50 border-green-300 text-[#000080]"
                         : "bg-white border-gray-200 text-gray-700"
                     }`}
                   >
-                    Custom
+                    5 Credits
                   </button>
                 </div>
-                {isCustomCredits && (
-                  <div className="mt-2">
-                    <input
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={customCreditsAmount}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (
-                          value === "" ||
-                          (parseInt(value) >= 1 && parseInt(value) <= 100)
-                        ) {
-                          setCustomCreditsAmount(value);
-                          setBuyCreditsCount(
-                            value === "" ? 0 : parseInt(value)
-                          );
-                        }
-                      }}
-                      placeholder="Enter number of credits"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ec5228] focus:border-[#ec5228] outline-none"
-                    />
-                  </div>
-                )}
               </div>
 
               {/* Promo Code */}
@@ -2432,36 +2481,26 @@ const Dashboard = () => {
                     <div className="flex items-center justify-between">
                       <div className="text-right text-xs text-gray-500">
                         <p>
-                          {buyCreditsCount} credits × ₹
-                          {(() => {
-                            if (
-                              mentalHealthPricingLoading ||
-                              cosmetologyPricingLoading
-                            ) {
-                              return "...";
-                            }
-                            let pricingData;
-                            if (buyServiceType === "mental_health") {
-                              pricingData = mentalHealthPricing?.pricing?.[0];
-                            } else if (buyServiceType === "cosmetology") {
-                              pricingData = cosmetologyPricing?.pricing?.[0];
-                            }
-                            const price =
-                              pricingData?.sessionCosts?.[
-                                buyDuration.toString()
-                              ] || 0;
-                            return price > 0 ? price.toLocaleString() : "N/A";
-                          })()}{" "}
-                          per session
+                          {isPricingLoading
+                            ? "Loading pricing..."
+                            : `${buyCreditsCount} ${
+                                buyCreditsCount === 1 ? "credit" : "credits"
+                              } × ${buyDuration} min`}
                         </p>
                       </div>
                     </div>
 
-                    {/* Show original price if promo code is applied */}
+                    {/* Show original price if promo code is applied and discount > 0 */}
                     {promoCodeApplied && promoCodeData && (
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-500">Original Price:</span>
-                        <span className="line-through text-gray-500">
+                        <span
+                          className={`${
+                            promoCodeData.discountAmount > 0
+                              ? "line-through"
+                              : ""
+                          } text-gray-500`}
+                        >
                           ₹{calculateOriginalPrice().toLocaleString()}
                         </span>
                       </div>
@@ -2470,12 +2509,27 @@ const Dashboard = () => {
                     {/* Show discount if promo code is applied */}
                     {promoCodeApplied && promoCodeData && (
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-green-600">
-                          Discount ({promoCodeData.code}):
+                        <span
+                          className={
+                            promoCodeData.discountAmount > 0
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }
+                        >
+                          {promoCodeData.discountAmount > 0
+                            ? `Discount (${promoCodeData.code}):`
+                            : `Discount (${promoCodeData.code}):`}
                         </span>
-                        <span className="text-green-600 font-medium">
-                          -₹
-                          {(promoCodeData.discountAmount || 0).toLocaleString()}
+                        <span
+                          className={
+                            promoCodeData.discountAmount > 0
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }
+                        >
+                          {promoCodeData.discountAmount > 0
+                            ? `-₹${promoCodeData.discountAmount.toLocaleString()}`
+                            : `Not applicable on this pricing`}
                         </span>
                       </div>
                     )}
@@ -2488,13 +2542,13 @@ const Dashboard = () => {
                         <p className="text-sm text-gray-600">Total Price</p>
                         <p
                           className={`text-lg font-bold ${
-                            promoCodeApplied
+                            promoCodeApplied &&
+                            promoCodeData?.discountAmount > 0
                               ? "text-green-600"
                               : "text-[#000080]"
                           }`}
                         >
-                          {mentalHealthPricingLoading ||
-                          cosmetologyPricingLoading ? (
+                          {isPricingLoading ? (
                             <span className="text-gray-400">Loading...</span>
                           ) : calculateTotalPrice() > 0 ? (
                             `₹${calculateTotalPrice().toLocaleString()}`
@@ -2505,13 +2559,14 @@ const Dashboard = () => {
                           )}
                         </p>
                       </div>
-                      {promoCodeApplied && (
-                        <div className="text-right">
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Promo Applied
-                          </span>
-                        </div>
-                      )}
+                      {promoCodeApplied &&
+                        promoCodeData?.discountAmount > 0 && (
+                          <div className="text-right">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              Promo Applied
+                            </span>
+                          </div>
+                        )}
                     </div>
                   </div>
                 </div>
@@ -2531,11 +2586,9 @@ const Dashboard = () => {
                     purchaseLoading ||
                     !buyServiceType ||
                     !buyDuration ||
-                    (!isCustomCredits && buyCreditsCount !== 3) ||
-                    (isCustomCredits &&
-                      (!buyCreditsCount || buyCreditsCount < 1)) ||
-                    mentalHealthPricingLoading ||
-                    cosmetologyPricingLoading
+                    !buyCreditsCount ||
+                    ![1, 3, 5].includes(buyCreditsCount) ||
+                    isPricingLoading
                   }
                   className="bg-[#ec5228] hover:bg-[#d14a22] text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >

@@ -10,7 +10,10 @@ import BhAssociateSelectionSection from "@/components/booking/BhAssociateSelecti
 import { useGetPricingQuery } from "@/features/api/pricingApi";
 import { useGetPsychologistsQuery } from "@/features/api/psychologistApi";
 import { useGetQuestionnaireQuery } from "@/features/api/questionnaireApi";
-import { useValidateCouponMutation } from "@/features/api/couponApi";
+import {
+  useValidateCouponMutation,
+  useCalculateAllPlansDiscountsMutation,
+} from "@/features/api/couponApi";
 import {
   useSendOTPMutation,
   useVerifyOTPMutation,
@@ -60,8 +63,8 @@ const stepsData = [
 const PricingSection = ({
   duration,
   setDuration,
-  selectedPack,
-  setSelectedPack,
+  selectedPlan,
+  setSelectedPlan,
   appliedCoupon,
   setAppliedCoupon,
   onContinue,
@@ -70,6 +73,7 @@ const PricingSection = ({
   const [couponError, setCouponError] = useState("");
   const [isApplying, setIsApplying] = useState(false);
   const [isCouponVisible, setIsCouponVisible] = useState(false);
+  const [plansWithDiscounts, setPlansWithDiscounts] = useState([]);
 
   // Get pricing data from API
   const {
@@ -92,41 +96,30 @@ const PricingSection = ({
   }, [pricingData, pricingError]);
 
   const [validateCoupon] = useValidateCouponMutation();
+  const [calculateAllPlansDiscounts] = useCalculateAllPlansDiscountsMutation();
   const { data: userData } = useLoadUserQuery();
 
-  // Convert API pricing data to usable format
-  const PRICING = {};
-  if (pricingData?.pricing) {
-    pricingData.pricing.forEach((item) => {
-      // New schema: sessionCosts.50 and sessionCosts.80 contain single session prices
-      if (item.sessionCosts && item.serviceType === "mental_health") {
-        PRICING["50"] = {
-          single: item.sessionCosts["50"],
-          pack: item.sessionCosts["50"] * 3, // Calculate 3-session pack price
-        };
-        PRICING["80"] = {
-          single: item.sessionCosts["80"],
-          pack: item.sessionCosts["80"] * 3, // Calculate 3-session pack price
-        };
-      }
-    });
-  }
+  // Convert API pricing data to usable format and filter by duration
+  const PLANS = useMemo(() => {
+    const plans = [];
+    if (pricingData?.pricing) {
+      pricingData.pricing.forEach((item) => {
+        if (item.plans && item.serviceType === "mental_health") {
+          // Filter plans by selected duration
+          const filteredPlans = item.plans.filter(
+            (plan) => plan.duration === parseInt(duration)
+          );
+          plans.push(...filteredPlans);
+        }
+      });
+    }
+    return plans;
+  }, [pricingData, duration]);
 
   // Validate that pricing data is available and complete
-  const isPricingDataValid =
-    PRICING["50"]?.single &&
-    PRICING["50"]?.pack &&
-    PRICING["80"]?.single &&
-    PRICING["80"]?.pack;
+  const isPricingDataValid = PLANS.length > 0;
 
   const handleApplyCoupon = async () => {
-    // Require package selection before applying coupon
-    if (selectedPack === null || selectedPack === undefined) {
-      setCouponError("Please select a package first");
-      toast.error("Please select a package first");
-      return;
-    }
-
     if (!couponCode.trim()) {
       setCouponError("Please enter a coupon code");
       return;
@@ -134,77 +127,78 @@ const PricingSection = ({
 
     setIsApplying(true);
     try {
-      const currentPrice = selectedPack
-        ? PRICING[duration]?.pack
-        : PRICING[duration]?.single;
-      const result = await validateCoupon({
+      // Calculate discounts for ALL plans
+      const result = await calculateAllPlansDiscounts({
         code: couponCode,
         serviceType: "mental_health",
-        orderAmount: currentPrice,
+        plans: PLANS,
         ...(userData?.user?._id && { userId: userData.user._id }),
       }).unwrap();
 
-      console.log("💰 Coupon applied successfully:", result.coupon);
-      setAppliedCoupon(result.coupon); // Use the passed setAppliedCoupon
+      console.log("💰 Discounts calculated for all plans:", result);
+
+      // Store the coupon info and all plans with discounts
+      setAppliedCoupon({
+        ...result.coupon,
+        plansWithDiscounts: result.plansWithDiscounts,
+      });
+      setPlansWithDiscounts(result.plansWithDiscounts);
       setCouponError("");
-      toast.success("Coupon applied successfully!");
+      toast.success("Coupon applied successfully to all plans!");
     } catch (error) {
       setAppliedCoupon(null);
+      setPlansWithDiscounts([]);
       setCouponError(error.data?.message || "Invalid coupon code");
+      toast.error(error.data?.message || "Invalid coupon code");
     } finally {
       setIsApplying(false);
     }
   };
 
-  // Revalidate coupon when duration or package selection changes
+  // Revalidate coupon when duration changes (plans change)
   useEffect(() => {
-    if (!appliedCoupon) return;
+    if (!appliedCoupon || !couponCode) return;
 
-    // Re-check the coupon against new amount
+    // Re-calculate discounts for new set of plans
     const revalidate = async () => {
       try {
-        const currentPrice = selectedPack
-          ? PRICING[duration]?.pack
-          : PRICING[duration]?.single;
-        const result = await validateCoupon({
-          code: appliedCoupon.code,
+        const result = await calculateAllPlansDiscounts({
+          code: couponCode,
           serviceType: "mental_health",
-          orderAmount: currentPrice,
+          plans: PLANS,
           ...(userData?.user?._id && { userId: userData.user._id }),
         }).unwrap();
 
-        // If server returns coupon, update it; otherwise clear and show error
-        if (result?.coupon) {
-          setAppliedCoupon(result.coupon);
-          setCouponError("");
-        } else {
-          setAppliedCoupon(null);
-          setCouponError("Coupon is no longer valid for the selected package");
-          toast.error("Coupon is no longer valid for the selected package");
-        }
+        setAppliedCoupon({
+          ...result.coupon,
+          plansWithDiscounts: result.plansWithDiscounts,
+        });
+        setPlansWithDiscounts(result.plansWithDiscounts);
+        setCouponError("");
       } catch (err) {
         setAppliedCoupon(null);
+        setPlansWithDiscounts([]);
         setCouponError(
-          err?.data?.message || "Coupon invalid for selected package"
+          err?.data?.message || "Coupon invalid for current plans"
         );
-        toast.error(
-          err?.data?.message || "Coupon invalid for selected package"
-        );
+        toast.error(err?.data?.message || "Coupon invalid for current plans");
       }
     };
 
     revalidate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [duration, selectedPack]);
+  }, [PLANS, duration]);
 
   const removeCoupon = () => {
     setAppliedCoupon(null);
+    setPlansWithDiscounts([]);
     setCouponCode("");
     setCouponError("");
   };
 
   const calculateDiscountedPrice = (originalPrice) => {
     if (!appliedCoupon) return originalPrice;
+    console.log(originalPrice.discountAmount);
     return Math.max(0, originalPrice - appliedCoupon.discountAmount);
   };
 
@@ -332,29 +326,55 @@ const PricingSection = ({
       {/* Coupon Section */}
       <div
         className={`mx-auto mt-4 mb-4 transition-all duration-300 ${
-          isCouponVisible ? "max-w-md" : "max-w-[200px]"
+          appliedCoupon || isCouponVisible ? "max-w-md" : "max-w-[200px]"
         }`}
       >
         {appliedCoupon ? (
-          <div className="bg-[#fffae3] rounded-lg shadow-sm p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-600">Applied:</p>
-                <p className="text-sm font-semibold text-[#000080]">
-                  {appliedCoupon.code}
-                </p>
-                <p className="text-xs text-[#ec5228]">
-                  {appliedCoupon.discountType === "percentage"
-                    ? `${appliedCoupon.discount}% off`
-                    : `₹${appliedCoupon.discount} off`}
-                </p>
+          <div className="bg-[#fffae3] border border-green-300 text-green-900 rounded-lg shadow-sm p-4 w-full">
+            <div className="flex items-start justify-between gap-4">
+              {/* Left side: Icon + Text */}
+              <div className="flex items-start gap-3">
+                {/* Success Icon */}
+                <svg
+                  className="w-6 h-6 text-green-600 flex-shrink-0"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+
+                {/* Text Block */}
+                <div>
+                  <p className="text-sm font-semibold">
+                    Coupon Applied: {appliedCoupon.code}
+                  </p>
+                  <p className="text-sm text-green-700 mt-1">
+                    Extra savings up to{" "}
+                    <span className="font-bold">
+                      ₹
+                      {Math.max(
+                        ...(appliedCoupon.plansWithDiscounts?.map(
+                          (p) => p.discountAmount
+                        ) || [0])
+                      ).toLocaleString("en-IN")}
+                    </span>
+                  </p>
+                </div>
               </div>
+
+              {/* Right side: Remove Button */}
               <button
                 onClick={removeCoupon}
-                className="text-gray-500 hover:text-[#ec5228] transition-colors"
+                className="text-gray-500 hover:text-red-600 hover:bg-[#fef9c3] rounded-full p-1 -m-1 transition-colors"
+                aria-label="Remove coupon"
               >
                 <svg
-                  className="w-4 h-4"
+                  className="w-5 h-5"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -461,85 +481,202 @@ const PricingSection = ({
       </div>
 
       <div className="text-center mb-4">
-        <p className="text-gray-600 font-semibold">
-          Select the number of sessions
-        </p>
+        <p className="text-gray-600 font-semibold">Select a pricing plan</p>
       </div>
-      <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-        <div
-          onClick={() => setSelectedPack(false)}
-          className={`bg-white rounded-xl shadow-lg p-6 text-center flex flex-col items-center justify-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 cursor-pointer border-4 ${
-            selectedPack === false ? "border-[#ec5228]" : "border-transparent"
-          } min-h-[18rem]`}
-        >
-          <h3 className="text-xl font-bold text-[#000080] mb-2">
-            Single Session
-          </h3>
-          <div className="mb-3">
-            <p className="text-4xl font-bold text-[#000080]">
-              ₹{PRICING[duration].single.toLocaleString("en-IN")}
-            </p>
-            {appliedCoupon && selectedPack === false && (
-              <div className="mt-1 flex flex-col items-center">
-                <p className="text-xl text-[#ec5228] font-bold">
-                  ₹
-                  {calculateDiscountedPrice(
-                    PRICING[duration].single
-                  ).toLocaleString("en-IN")}
-                </p>
-                <p className="text-xs text-gray-500">After discount</p>
-              </div>
-            )}
-          </div>
-          <p className="text-gray-600 text-sm max-w-xs mx-auto">
-            One personalized counselling session with a professional therapist.
-            Ideal for focused support, guidance, and mental clarity.
-          </p>
-        </div>
-        <div
-          onClick={() => setSelectedPack(true)}
-          className={`bg-white rounded-xl shadow-lg p-6 text-center flex flex-col items-center justify-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 cursor-pointer border-4 ${
-            selectedPack === true ? "border-[#ec5228]" : "border-transparent"
-          } relative min-h-[18rem]`}
-        >
-          <div className="absolute -top-3 bg-[#ec5228] text-white text-xs font-semibold px-3 py-1 rounded-full">
-            Best Value
-          </div>
-          <h3 className="text-xl font-bold text-[#000080] mb-2">
-            3 Sessions Pack
-          </h3>
-          <div className="mb-3">
-            <p className="text-4xl font-bold text-[#000080]">
-              ₹{PRICING[duration].pack.toLocaleString("en-IN")}
-            </p>
-            {appliedCoupon && selectedPack === true && (
-              <div className="mt-1 flex flex-col items-center">
-                <p className="text-xl text-[#ec5228] font-bold">
-                  ₹
-                  {calculateDiscountedPrice(
-                    PRICING[duration].pack
-                  ).toLocaleString("en-IN")}
-                </p>
-                <p className="text-xs text-gray-500">After discount</p>
-              </div>
-            )}
-          </div>
-          <p className="text-gray-600 text-sm max-w-xs mx-auto">
-            Three personalized counselling sessions with a professional
-            therapist. Perfect for long-term support and deeper progress.
-          </p>
-        </div>
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        {(() => {
+          // Calculate discount percentages for all plans to find the best value
+          const plansWithDiscounts = PLANS.map((plan, index) => {
+            const planDiscount = appliedCoupon?.plansWithDiscounts?.find(
+              (p) =>
+                p.sessions === plan.sessions && p.duration === plan.duration
+            );
+
+            let discountPercentage = 0;
+            if (
+              planDiscount &&
+              planDiscount.discountApplied &&
+              planDiscount.discountAmount > 0
+            ) {
+              discountPercentage = Math.round(
+                ((plan.mrp - planDiscount.finalPrice) / plan.mrp) * 100
+              );
+            } else if (plan.mrp !== plan.sellingPrice) {
+              discountPercentage = Math.round(
+                ((plan.mrp - plan.sellingPrice) / plan.mrp) * 100
+              );
+            }
+
+            return { plan, index, discountPercentage };
+          });
+
+          // Find the plan with the highest discount percentage
+          const bestValueIndex = plansWithDiscounts.reduce(
+            (bestIndex, current, currentIndex) => {
+              return current.discountPercentage >
+                plansWithDiscounts[bestIndex].discountPercentage
+                ? currentIndex
+                : bestIndex;
+            },
+            0
+          );
+
+          return plansWithDiscounts.map(
+            ({ plan, index, discountPercentage }) => {
+              // Find discount for this specific plan
+              const planDiscount = appliedCoupon?.plansWithDiscounts?.find(
+                (p) =>
+                  p.sessions === plan.sessions && p.duration === plan.duration
+              );
+
+              return (
+                <div
+                  key={index}
+                  onClick={() => setSelectedPlan(index)}
+                  className={`bg-white rounded-xl shadow-lg p-6 text-center flex flex-col items-center justify-center cursor-pointer border-4 relative ${
+                    selectedPlan === index
+                      ? "border-[#ec5228] bg-[#fff9f9]"
+                      : "border-transparent hover:border-gray-200"
+                  } min-h-[18rem]`}
+                >
+                  {/* Best Value Badge */}
+                  {index === bestValueIndex && discountPercentage > 0 && (
+                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                      <span className="bg-[#ec5228] text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                        Best Value
+                      </span>
+                    </div>
+                  )}
+
+                  <h3 className="text-xl font-bold text-[#000080] mb-4">
+                    {plan.name}
+                  </h3>
+                  <div className="mb-4">
+                    {planDiscount &&
+                    planDiscount.discountApplied &&
+                    planDiscount.discountAmount > 0 ? (
+                      // Show discounted pricing
+                      <div className="flex flex-col items-center space-y-1">
+                        <div className="flex items-center gap-3">
+                          <p className="text-lg text-gray-500 line-through">
+                            ₹{plan.mrp.toLocaleString("en-IN")}
+                          </p>
+                          <div className="w-px h-6 bg-gray-300"></div>
+                          <p className="text-3xl font-bold text-[#ec5228]">
+                            ₹{planDiscount.finalPrice.toLocaleString("en-IN")}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-sm font-semibold text-[#000080] bg-[#ededff] px-2 py-1 rounded-full">
+                            💰 Coupon Discount: ₹{planDiscount.discountAmount}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-sm font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                            💸 You save ₹{plan.mrp - planDiscount.finalPrice} (
+                            {Math.round(
+                              ((plan.mrp - planDiscount.finalPrice) /
+                                plan.mrp) *
+                                100
+                            )}
+                            % off)
+                          </span>
+                        </div>
+                      </div>
+                    ) : plan.mrp !== plan.sellingPrice ? (
+                      // Show MRP and SP when different, with savings
+                      <div className="flex flex-col items-center space-y-1">
+                        <div className="flex items-center gap-3">
+                          <p className="text-lg text-gray-500 line-through">
+                            ₹{plan.mrp.toLocaleString("en-IN")}
+                          </p>
+                          <div className="w-px h-6 bg-gray-300"></div>
+                          <p className="text-3xl font-bold text-[#000080]">
+                            ₹{plan.sellingPrice.toLocaleString("en-IN")}
+                          </p>
+                        </div>
+                        <div className="flex items-center mt-2">
+                          <span className="text-sm font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                            💸 You save ₹{plan.mrp - plan.sellingPrice}(
+                            {Math.round(
+                              ((plan.mrp - plan.sellingPrice) / plan.mrp) * 100
+                            )}
+                            % off)
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      // Show only SP when MRP equals SP
+                      <p className="text-3xl font-bold text-[#000080]">
+                        ₹{plan.sellingPrice.toLocaleString("en-IN")}
+                      </p>
+                    )}
+                    {planDiscount && !planDiscount.meetsMinOrder && (
+                      <div className="mt-3">
+                        <p className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded-full">
+                          Coupon Not Applicable<br></br>Min order: ₹
+                          {planDiscount.minOrderAmount}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    <div className="flex items-center gap-2 text-gray-600 text-sm">
+                      <div className="w-5 h-5 bg-[#ec5228] rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg
+                          className="w-3 h-3 text-white"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={3}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                      </div>
+                      <span>
+                        {plan.sessions} session{plan.sessions > 1 ? "s" : ""} of{" "}
+                        {plan.duration} minutes each
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600 text-sm">
+                      <div className="w-5 h-5 bg-[#ec5228] rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg
+                          className="w-3 h-3 text-white"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={3}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                      </div>
+                      <span>Flexible scheduling</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+          );
+        })()}
       </div>
 
       <div className="flex justify-center mt-12">
         <button
           onClick={onContinue}
           className={`px-12 py-4 rounded-lg font-semibold text-lg transition-all ${
-            selectedPack !== null
+            selectedPlan !== null
               ? "bg-[#ec5228] text-white hover:bg-[#d94720]"
               : "bg-gray-200 text-gray-500 cursor-not-allowed"
           }`}
-          disabled={selectedPack === null}
+          disabled={selectedPlan === null}
         >
           Continue to Next Step
         </button>
@@ -551,8 +688,8 @@ const PricingSection = ({
 PricingSection.propTypes = {
   duration: PropTypes.string.isRequired,
   setDuration: PropTypes.func.isRequired,
-  selectedPack: PropTypes.string,
-  setSelectedPack: PropTypes.func.isRequired,
+  selectedPlan: PropTypes.number,
+  setSelectedPlan: PropTypes.func.isRequired,
   onContinue: PropTypes.func.isRequired,
 };
 
@@ -562,7 +699,7 @@ const ContactForm = ({
   appliedCoupon,
   setAppliedCoupon,
   duration,
-  selectedPack,
+  selectedPlan,
 }) => {
   const [formData, setFormData] = useState({
     fullName: "",
@@ -593,40 +730,51 @@ const ContactForm = ({
   });
 
   // Convert API pricing data to usable format (same logic as PricingSection)
-  const PRICING = useMemo(() => {
-    const pricing = {};
+  const PLANS = useMemo(() => {
+    const plans = [];
     if (pricingData?.pricing) {
       pricingData.pricing.forEach((item) => {
-        if (item.sessionCosts && item.serviceType === "mental_health") {
-          pricing["50"] = {
-            single: item.sessionCosts["50"],
-            pack: item.sessionCosts["50"] * 3,
-          };
-          pricing["80"] = {
-            single: item.sessionCosts["80"],
-            pack: item.sessionCosts["80"] * 3,
-          };
+        if (item.plans && item.serviceType === "mental_health") {
+          // Filter plans by selected duration
+          const filteredPlans = item.plans.filter(
+            (plan) => plan.duration === parseInt(duration)
+          );
+          plans.push(...filteredPlans);
         }
       });
     }
+    return plans;
+  }, [pricingData, duration]);
 
-    return pricing;
-  }, [pricingData]);
-
-  // Calculate current order amount based on selected package and duration
+  // Calculate current order amount based on selected plan
   const getCurrentOrderAmount = useCallback(() => {
-    if (selectedPack === null || selectedPack === undefined || !duration) {
+    if (selectedPlan === null || selectedPlan === undefined) {
       return null; // Return null if selection is not yet made
     }
 
     // Check if pricing data is available
-    if (!PRICING[duration]?.single || !PRICING[duration]?.pack) {
-      console.error("Pricing data not available for duration:", duration);
+    if (!PLANS[selectedPlan]) {
+      console.error("Plan not available for index:", selectedPlan);
       return null;
     }
 
-    return selectedPack ? PRICING[duration].pack : PRICING[duration].single;
-  }, [selectedPack, duration, PRICING]);
+    const selectedPlanData = PLANS[selectedPlan];
+
+    // If coupon is applied, find the discounted price for this specific plan
+    if (appliedCoupon?.plansWithDiscounts) {
+      const planDiscount = appliedCoupon.plansWithDiscounts.find(
+        (p) =>
+          p.sessions === selectedPlanData.sessions &&
+          p.duration === selectedPlanData.duration
+      );
+
+      if (planDiscount && planDiscount.discountApplied) {
+        return planDiscount.finalPrice;
+      }
+    }
+
+    return selectedPlanData.sellingPrice;
+  }, [selectedPlan, PLANS, appliedCoupon]);
 
   // Countdown effect for resend button
   useEffect(() => {
@@ -837,11 +985,7 @@ const ContactForm = ({
   };
 
   // Check if pricing data is available
-  const isPricingDataValid =
-    PRICING["50"]?.single &&
-    PRICING["50"]?.pack &&
-    PRICING["80"]?.single &&
-    PRICING["80"]?.pack;
+  const isPricingDataValid = PLANS.length > 0;
 
   if (!isPricingDataValid && pricingData) {
     return (
@@ -1386,11 +1530,11 @@ ContactForm.propTypes = {
   appliedCoupon: PropTypes.object,
   setAppliedCoupon: PropTypes.func.isRequired,
   duration: PropTypes.string.isRequired,
-  selectedPack: PropTypes.bool,
+  selectedPlan: PropTypes.number,
 };
 
 // Psychologist selection component
-const StepCards = ({ onContinue, duration }) => {
+const StepCards = ({ onContinue, duration, selectedPlan, PLANS }) => {
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [showBooking, setShowBooking] = useState(false);
 
@@ -1400,6 +1544,20 @@ const StepCards = ({ onContinue, duration }) => {
 
   const psychologistsList = psychologistsData?.psychologists || [];
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (showBooking) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [showBooking]);
+
   const handleBookSession = (psych) => {
     if (selectedDoc?._id === psych._id) {
       setShowBooking(false);
@@ -1407,43 +1565,11 @@ const StepCards = ({ onContinue, duration }) => {
     } else {
       setSelectedDoc(psych);
       setShowBooking(true);
-      setTimeout(() => {
-        const bookingSection = document.getElementById(
-          `booking-section-${psych._id}`
-        );
-        if (bookingSection) {
-          const offset = 200;
-          const elementPosition =
-            bookingSection.getBoundingClientRect().top + window.pageYOffset;
-          const offsetPosition = elementPosition - offset;
-
-          window.scrollTo({
-            top: offsetPosition,
-            behavior: "smooth",
-          });
-        }
-      }, 100);
     }
   };
 
   const handleClose = () => {
     setShowBooking(false);
-    if (selectedDoc) {
-      const psychCard = document.getElementById(
-        `psych-card-${selectedDoc._id}`
-      );
-      if (psychCard) {
-        const offset = 200;
-        const elementPosition =
-          psychCard.getBoundingClientRect().top + window.pageYOffset;
-        const offsetPosition = elementPosition - offset;
-
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: "smooth",
-        });
-      }
-    }
     setSelectedDoc(null);
   };
 
@@ -1473,19 +1599,137 @@ const StepCards = ({ onContinue, duration }) => {
         serviceType="psychologist"
       />
 
-      {/* Show booking section below psychologist cards */}
+      {/* Show booking section as overlay */}
       {showBooking && selectedDoc && (
-        <div className="w-full max-w-4xl mx-auto mt-8">
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 animate-fade-in pt-20 sm:pt-4 mt-16"
+          onClick={handleClose}
+        >
           <div
-            id={`booking-section-${selectedDoc._id}`}
-            className="animate-slideDown"
+            className="relative w-full max-w-6xl max-h-[calc(100vh-5rem)] sm:max-h-[90vh] overflow-y-auto bg-[#fffae3] rounded-2xl shadow-2xl animate-scale-in mt-2 sm:mt-0"
+            onClick={(e) => e.stopPropagation()}
           >
-            <BookingSection
-              psychologistId={selectedDoc._id}
-              onSelectDateTime={handleSelectDateTime}
-              onClose={handleClose}
-              selectedDuration={duration}
-            />
+            {/* Close button - More accessible on mobile */}
+            <button
+              onClick={handleClose}
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors duration-200"
+              aria-label="Close booking"
+            >
+              <svg
+                className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+
+            {/* Psychologist Info Header - Mobile optimized */}
+            <div className="px-4 sm:px-6 pt-12 sm:pt-6 pb-3 sm:pb-4">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 mb-3 sm:mb-4">
+                {selectedDoc.photoUrl ? (
+                  <img
+                    src={selectedDoc.photoUrl}
+                    alt={selectedDoc.name}
+                    className="w-16 h-16 sm:w-16 sm:h-16 rounded-full object-cover border-4 border-white shadow-md"
+                  />
+                ) : (
+                  <div className="w-16 h-16 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center border-4 border-white shadow-md">
+                    <span className="text-lg sm:text-xl font-bold text-white">
+                      {selectedDoc.name
+                        ?.split(" ")
+                        .map((n) => n[0])
+                        .join("") || "P"}
+                    </span>
+                  </div>
+                )}
+                <div className="flex-1 text-center sm:text-left">
+                  <h3 className="text-xl sm:text-2xl font-bold text-[#000080] leading-tight">
+                    {selectedDoc.name}'s Schedule
+                  </h3>
+                  <p className="text-gray-600 font-medium text-sm sm:text-base mt-1">
+                    {selectedDoc.designation}
+                  </p>
+
+                  {/* Service Details - Mobile optimized */}
+                  <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2 mt-3 text-xs sm:text-sm">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 bg-[#000080] text-white rounded-full font-medium">
+                      <svg
+                        className="w-3 h-3 sm:w-4 sm:h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      Mental Health
+                    </span>
+                    <span className="text-gray-400 hidden sm:inline">•</span>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 bg-[#ec5228] text-white rounded-full font-medium">
+                      <svg
+                        className="w-3 h-3 sm:w-4 sm:h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      {duration} min
+                    </span>
+                    {selectedPlan !== null && PLANS[selectedPlan] && (
+                      <>
+                        <span className="text-gray-400 hidden sm:inline">
+                          •
+                        </span>
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-medium">
+                          <svg
+                            className="w-3 h-3 sm:w-4 sm:h-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                          {PLANS[selectedPlan].name.charAt(0).toUpperCase() +
+                            PLANS[selectedPlan].name.slice(1)}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Booking Section - Mobile optimized */}
+            <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+              <BookingSection
+                psychologistId={selectedDoc._id}
+                onSelectDateTime={handleSelectDateTime}
+                onClose={handleClose}
+                selectedDuration={duration}
+              />
+            </div>
           </div>
         </div>
       )}
@@ -1497,14 +1741,35 @@ StepCards.propTypes = {
   onContinue: PropTypes.func.isRequired,
   duration: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
     .isRequired,
+  selectedPlan: PropTypes.number,
+  PLANS: PropTypes.array.isRequired,
 };
 
 export default function MentalHealth() {
   const [currentStep, setCurrentStep] = useState(0);
   const [duration, setDuration] = useState("50");
-  const [selectedPack, setSelectedPack] = useState(null);
+  const [selectedPlan, setSelectedPlan] = useState(null);
   const [bookingDetails, setBookingDetails] = useState(null);
   const [appliedCoupon, setAppliedCoupon] = useState(null); // New state for applied coupon
+
+  // Get pricing data from API
+  const {
+    data: pricingData,
+    isLoading: isPricingLoading,
+    error: pricingError,
+  } = useGetPricingQuery({
+    serviceType: "mental_health",
+  });
+
+  // Convert API pricing data to usable format
+  const PLANS = [];
+  if (pricingData?.pricing) {
+    pricingData.pricing.forEach((item) => {
+      if (item.plans && item.serviceType === "mental_health") {
+        PLANS.push(...item.plans);
+      }
+    });
+  }
 
   // Scroll state for floating step indicator
   const [showFloatingSteps, setShowFloatingSteps] = useState(false);
@@ -1715,8 +1980,8 @@ export default function MentalHealth() {
             <PricingSection
               duration={duration}
               setDuration={setDuration}
-              selectedPack={selectedPack}
-              setSelectedPack={setSelectedPack}
+              selectedPlan={selectedPlan}
+              setSelectedPlan={setSelectedPlan}
               appliedCoupon={appliedCoupon}
               setAppliedCoupon={setAppliedCoupon}
               onContinue={() => handleStepChange(currentStep + 1)}
@@ -1728,7 +1993,7 @@ export default function MentalHealth() {
               appliedCoupon={appliedCoupon}
               setAppliedCoupon={setAppliedCoupon}
               duration={duration}
-              selectedPack={selectedPack}
+              selectedPlan={selectedPlan}
             />
           )}
           {/* Render psychologist cards for step 2 */}
@@ -1736,13 +2001,15 @@ export default function MentalHealth() {
             <StepCards
               onContinue={() => handleStepChange(currentStep + 1)}
               duration={duration}
+              selectedPlan={selectedPlan}
+              PLANS={PLANS}
             />
           )}
           {/* Payment step */}
           {stepsData[currentStep].type === "payment" && (
             <PaymentGateway
               duration={parseInt(duration)}
-              sessionType={selectedPack ? "pack" : "single"}
+              sessions={PLANS[selectedPlan]?.sessions || 1}
               serviceType="mental_health"
               couponCode={appliedCoupon?.code} // Pass the coupon code
               onPaymentSuccess={(paymentResult) => {
@@ -1760,7 +2027,7 @@ export default function MentalHealth() {
                   personal: formData,
                   session: {
                     duration: parseInt(duration),
-                    type: selectedPack ? "pack" : "single",
+                    type: PLANS[selectedPlan]?.name || "single",
                     serviceType: "mental_health",
                   },
                 });

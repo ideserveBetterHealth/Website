@@ -1,6 +1,7 @@
 import express from "express";
 import {
   validateCoupon,
+  calculateAllPlansDiscounts,
   createCoupon,
   getAllCoupons,
   updateCoupon,
@@ -11,6 +12,7 @@ import { isAuthenticated } from "../middlewares/isAuthenticated.js";
 const router = express.Router();
 
 router.route("/validate").post(validateCoupon);
+router.route("/calculate-all-plans").post(calculateAllPlansDiscounts);
 router.route("/").post(isAuthenticated, createCoupon);
 router.route("/").get(isAuthenticated, getAllCoupons);
 router.route("/:id").put(isAuthenticated, updateCoupon);

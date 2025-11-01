@@ -260,8 +260,7 @@ export const calculateAllPlansDiscounts = async (req, res) => {
       const existingMeeting = await Meeting.findOne({ userId });
       const user = await User.findOne({ _id: userId });
       const existingCredits = user.credits;
-      console.log(existingCredits);
-      if (existingMeeting || existingCredits) {
+      if (existingMeeting || existingCredits.length > 0) {
         return res.status(400).json({
           success: false,
           message: "This coupon is only valid for new users",

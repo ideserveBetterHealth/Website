@@ -760,21 +760,8 @@ const ContactForm = ({
 
     const selectedPlanData = PLANS[selectedPlan];
 
-    // If coupon is applied, find the discounted price for this specific plan
-    if (appliedCoupon?.plansWithDiscounts) {
-      const planDiscount = appliedCoupon.plansWithDiscounts.find(
-        (p) =>
-          p.sessions === selectedPlanData.sessions &&
-          p.duration === selectedPlanData.duration
-      );
-
-      if (planDiscount && planDiscount.discountApplied) {
-        return planDiscount.finalPrice;
-      }
-    }
-
     return selectedPlanData.sellingPrice;
-  }, [selectedPlan, PLANS, appliedCoupon]);
+  }, [selectedPlan, PLANS]);
 
   // Countdown effect for resend button
   useEffect(() => {

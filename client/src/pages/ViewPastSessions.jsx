@@ -5,7 +5,15 @@ import {
   useDeleteMeetingMutation,
 } from "../features/api/meetingsApi";
 
-import { Calendar, Clock, User, Users, Trash2, FileText } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  User,
+  Users,
+  Trash2,
+  FileText,
+  ChevronDown,
+} from "lucide-react";
 import PropTypes from "prop-types";
 
 const ViewPastSessions = () => {
@@ -41,7 +49,7 @@ const ViewPastSessions = () => {
       canSeeAllInfo: role === "admin",
       canDeleteMeeting: () => role === "admin",
     }),
-    [role]
+    [role],
   );
 
   const {
@@ -59,12 +67,12 @@ const ViewPastSessions = () => {
       console.log("API Data:", meetingsDataFromApi);
       console.log(
         "API Data length:",
-        meetingsDataFromApi?.meetings?.length || 0
+        meetingsDataFromApi?.meetings?.length || 0,
       );
       console.log("API Data type:", typeof meetingsDataFromApi);
       console.log(
         "First meeting structure:",
-        meetingsDataFromApi?.meetings?.[0] || meetingsDataFromApi?.[0]
+        meetingsDataFromApi?.meetings?.[0] || meetingsDataFromApi?.[0],
       );
 
       // Handle both response formats - direct array or object with meetings property
@@ -120,8 +128,8 @@ const ViewPastSessions = () => {
             ampm.toLowerCase() === "pm" && hours !== 12
               ? hours + 12
               : ampm.toLowerCase() === "am" && hours === 12
-              ? 0
-              : hours;
+                ? 0
+                : hours;
 
           meetingDateTime.setHours(adjustedHours, minutes, 0, 0);
         } else {
@@ -158,7 +166,7 @@ const ViewPastSessions = () => {
 
           // Add meeting duration only (no grace period)
           meetingEndTime.setMinutes(
-            meetingEndTime.getMinutes() + durationInMinutes
+            meetingEndTime.getMinutes() + durationInMinutes,
           );
 
           const isPast = now.getTime() >= meetingEndTime.getTime();
@@ -307,7 +315,7 @@ const ViewPastSessions = () => {
     try {
       await deleteMeeting(meetingToDelete).unwrap();
       setMeetingData((prev) =>
-        prev.filter((meeting) => meeting._id !== meetingToDelete)
+        prev.filter((meeting) => meeting._id !== meetingToDelete),
       );
       setShowDeleteDialog(false);
       setMeetingToDelete(null);
@@ -331,7 +339,7 @@ const ViewPastSessions = () => {
     console.log("Questionnaire responses:", meeting?.questionnaireResponses);
     console.log(
       "Type of questionnaire responses:",
-      typeof meeting?.questionnaireResponses
+      typeof meeting?.questionnaireResponses,
     );
 
     if (meeting && meeting.questionnaireResponses) {
@@ -345,7 +353,7 @@ const ViewPastSessions = () => {
           }`,
           {
             credentials: "include",
-          }
+          },
         );
         const questionnaireData = await response.json();
         console.log("Fetched questionnaire data:", questionnaireData);
@@ -384,7 +392,7 @@ const ViewPastSessions = () => {
       questionnaireData.questionnaire.questions
     ) {
       const question = questionnaireData.questionnaire.questions.find(
-        (q) => q.id === questionId
+        (q) => q.id === questionId,
       );
       if (question) {
         return question.question;
@@ -457,12 +465,22 @@ const ViewPastSessions = () => {
                 <>
                   <div className="flex items-center text-gray-600">
                     <User className="w-4 h-4 mr-2" />
-                    <span>User: {formatIndianTime(meeting.userJoinedAt)}</span>
+                    <span>
+                      User Joined At:{" "}
+                      {meeting.serviceType === "homeopathy" &&
+                      !meeting.userJoinedAt
+                        ? "N/A"
+                        : formatIndianTime(meeting.userJoinedAt)}
+                    </span>
                   </div>
                   <div className="flex items-center text-gray-600">
                     <Users className="w-4 h-4 mr-2" />
                     <span>
-                      BH Associate: {formatIndianTime(meeting.docJoinedAt)}
+                      Associate Joined At:{" "}
+                      {meeting.serviceType === "homeopathy" &&
+                      !meeting.docJoinedAt
+                        ? "N/A"
+                        : formatIndianTime(meeting.docJoinedAt)}
                     </span>
                   </div>
                 </>
@@ -522,8 +540,8 @@ const ViewPastSessions = () => {
             {isAdmin
               ? "View and manage all past counseling sessions"
               : isDoctor
-              ? "Review your completed sessions"
-              : "Your session history"}
+                ? "Review your completed sessions"
+                : "Your session history"}
           </p>
         </div>
 
@@ -562,8 +580,8 @@ const ViewPastSessions = () => {
               {isAdmin
                 ? "No past sessions found in the system."
                 : isDoctor
-                ? "You haven't completed any sessions yet."
-                : "You don't have any completed sessions yet."}
+                  ? "You haven't completed any sessions yet."
+                  : "You don't have any completed sessions yet."}
             </p>
           </div>
         ) : (
@@ -625,26 +643,130 @@ const ViewPastSessions = () => {
               {(() => {
                 const responses =
                   selectedMeetingQuestionnaire.questionnaireResponses;
-                console.log("Rendering questionnaire responses:", responses);
+                const isHomeopathyQuestionnaire =
+                  selectedMeetingQuestionnaire.serviceType === "homeopathy";
+                const canViewClientMobile =
+                  (isDoctor || isAdmin) && isHomeopathyQuestionnaire;
+
+                const rawAddress =
+                  selectedMeetingQuestionnaire?.address ||
+                  responses?.address ||
+                  responses?.personalDetails?.address ||
+                  null;
+
+                const normalizedAddress =
+                  rawAddress && typeof rawAddress === "object"
+                    ? {
+                        fullName: String(rawAddress.fullName || "").trim(),
+                        mobileNumber: String(
+                          rawAddress.mobileNumber || "",
+                        ).trim(),
+                        flatHouseBuilding: String(
+                          rawAddress.flatHouseBuilding || "",
+                        ).trim(),
+                        areaStreetSectorVillage: String(
+                          rawAddress.areaStreetSectorVillage || "",
+                        ).trim(),
+                        landmark: String(rawAddress.landmark || "").trim(),
+                        city: String(rawAddress.city || "").trim(),
+                        state: String(rawAddress.state || "").trim(),
+                        pincode: String(rawAddress.pincode || "").trim(),
+                      }
+                    : null;
+
+                const hasAddressToShow = Boolean(
+                  canViewClientMobile &&
+                  normalizedAddress &&
+                  (normalizedAddress.fullName ||
+                    normalizedAddress.mobileNumber ||
+                    normalizedAddress.flatHouseBuilding ||
+                    normalizedAddress.areaStreetSectorVillage ||
+                    normalizedAddress.landmark ||
+                    normalizedAddress.city ||
+                    normalizedAddress.state ||
+                    normalizedAddress.pincode),
+                );
+
+                const detailedAddressFields = hasAddressToShow
+                  ? [
+                      {
+                        label: "Full Name",
+                        value: normalizedAddress.fullName,
+                      },
+                      {
+                        label: "Mobile Number",
+                        value: normalizedAddress.mobileNumber,
+                      },
+                      {
+                        label: "Flat / House / Building",
+                        value: normalizedAddress.flatHouseBuilding,
+                      },
+                      {
+                        label: "Area / Street / Sector / Village",
+                        value: normalizedAddress.areaStreetSectorVillage,
+                      },
+                      {
+                        label: "Landmark",
+                        value: normalizedAddress.landmark,
+                      },
+                      {
+                        label: "City",
+                        value: normalizedAddress.city,
+                      },
+                      {
+                        label: "State",
+                        value: normalizedAddress.state,
+                      },
+                      {
+                        label: "Pincode",
+                        value: normalizedAddress.pincode,
+                      },
+                    ]
+                  : [];
+
+                const clientMobileNumber =
+                  selectedMeetingQuestionnaire?.userId?.phoneNumber ||
+                  responses?.personalDetails?.whatsapp ||
+                  responses?.personalDetails?.phoneNumber ||
+                  responses?.whatsapp ||
+                  responses?.phoneNumber ||
+                  null;
 
                 // Handle both Map and Object structures, excluding personalDetails
                 let responseEntries = [];
                 if (responses) {
                   if (responses instanceof Map) {
                     responseEntries = Array.from(responses.entries()).filter(
-                      ([key]) => key !== "personalDetails"
+                      ([key]) => key !== "personalDetails" && key !== "address",
                     );
                   } else if (typeof responses === "object") {
                     responseEntries = Object.entries(responses).filter(
-                      ([key]) => key !== "personalDetails"
+                      ([key]) => key !== "personalDetails" && key !== "address",
                     );
                   }
                 }
 
-                console.log("Filtered response entries:", responseEntries);
+                const hasQuestionnaireAnswers = responseEntries.length > 0;
+                const hasMobileToShow =
+                  canViewClientMobile && Boolean(clientMobileNumber);
+                const hasAnythingToShow =
+                  hasQuestionnaireAnswers ||
+                  hasMobileToShow ||
+                  hasAddressToShow;
 
-                return responseEntries.length > 0 ? (
+                return hasAnythingToShow ? (
                   <div className="space-y-4">
+                    {canViewClientMobile && clientMobileNumber && (
+                      <div className="bg-[#fffae3] p-4 rounded-lg border border-[#ec5228]/20">
+                        <div className="text-sm font-medium text-[#000080] mb-2">
+                          Client Mobile Number
+                        </div>
+                        <div className="text-gray-700 pl-2 border-l-3 border-[#ec5228]">
+                          {clientMobileNumber}
+                        </div>
+                      </div>
+                    )}
+
                     {responseEntries.map(([questionId, answer], index) => {
                       // Skip if answer is an object (like personalDetails)
                       if (typeof answer === "object" && answer !== null) {
@@ -654,7 +776,7 @@ const ViewPastSessions = () => {
                       const questionText = getQuestionText(
                         questionId,
                         selectedMeetingQuestionnaire.serviceType,
-                        questionnaireDataForViewing
+                        questionnaireDataForViewing,
                       );
 
                       return (
@@ -673,6 +795,64 @@ const ViewPastSessions = () => {
                         </div>
                       );
                     })}
+
+                    {hasAddressToShow && (
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="text-sm font-medium text-[#000080] mb-3">
+                          Client&apos;s Address
+                        </div>
+
+                        <div className="bg-white rounded-lg border border-gray-100 p-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-sm font-semibold text-[#000080]">
+                              {normalizedAddress.fullName}
+                            </p>
+                          </div>
+                          <p className="text-sm text-gray-600 leading-snug">
+                            {normalizedAddress.flatHouseBuilding}
+                            {normalizedAddress.flatHouseBuilding ? ", " : ""}
+                            {normalizedAddress.areaStreetSectorVillage}
+                            {normalizedAddress.landmark
+                              ? `, near ${normalizedAddress.landmark}`
+                              : ""}
+                            {normalizedAddress.city
+                              ? `, ${normalizedAddress.city}`
+                              : ""}
+                            {normalizedAddress.state
+                              ? `, ${normalizedAddress.state}`
+                              : ""}
+                            {normalizedAddress.pincode
+                              ? ` - ${normalizedAddress.pincode}`
+                              : ""}
+                          </p>
+                          <p className="text-sm text-gray-500 mt-1">
+                            Contact no: {normalizedAddress.mobileNumber}
+                          </p>
+                        </div>
+
+                        <details className="mt-3 group">
+                          <summary className="cursor-pointer text-xs font-medium text-[#000080] list-none flex items-center justify-between">
+                            <span>View full address details</span>
+                            <ChevronDown className="w-4 h-4 transition-transform duration-200 group-open:rotate-180" />
+                          </summary>
+                          <div className="mt-3 bg-white rounded-lg border border-gray-100 divide-y divide-gray-100">
+                            {detailedAddressFields.map((item) => (
+                              <div
+                                key={item.label}
+                                className="flex items-start justify-between gap-3 px-3 py-2"
+                              >
+                                <p className="text-xs font-medium text-gray-500">
+                                  {item.label}
+                                </p>
+                                <p className="text-sm text-gray-700 text-right">
+                                  {item.value || "—"}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8">

@@ -10,11 +10,44 @@ import {
 import { toast } from "react-hot-toast";
 import { formatDateForAPI } from "@/utils/dateUtils";
 
+const buildMeetingAddressSnapshot = (address = {}) => {
+  if (!address || typeof address !== "object") return null;
+
+  const snapshot = {
+    country: (address.country || "India").toString().trim() || "India",
+    fullName: (address.fullName || "").toString().trim(),
+    mobileNumber: (address.mobileNumber || "").toString().trim(),
+    pincode: (address.pincode || "").toString().trim(),
+    flatHouseBuilding: (address.flatHouseBuilding || "").toString().trim(),
+    areaStreetSectorVillage: (address.areaStreetSectorVillage || "")
+      .toString()
+      .trim(),
+    landmark: (address.landmark || "").toString().trim(),
+    city: (address.city || "").toString().trim(),
+    state: (address.state || "").toString().trim(),
+  };
+
+  if (
+    !snapshot.fullName ||
+    !snapshot.mobileNumber ||
+    !snapshot.pincode ||
+    !snapshot.flatHouseBuilding ||
+    !snapshot.city ||
+    !snapshot.state
+  ) {
+    return null;
+  }
+
+  return snapshot;
+};
+
 const PaymentGateway = ({
   duration,
   sessions,
   serviceType,
   couponCode,
+  appointmentDetailsOverride,
+  formDataOverride,
   onPaymentSuccess,
   onPaymentFailure,
   onPaymentCancel,
@@ -38,20 +71,31 @@ const PaymentGateway = ({
 
     try {
       // Get data from localStorage
-      const appointmentDetails = JSON.parse(
-        localStorage.getItem("appointmentDetails") || "{}"
+      const storedAppointmentDetails = JSON.parse(
+        localStorage.getItem("appointmentDetails") || "{}",
       );
+      const appointmentDetails =
+        appointmentDetailsOverride || storedAppointmentDetails;
 
       // Determine form data key based on service type
       const formDataKey =
         serviceType === "mental_health"
           ? "mentalHealthFormData"
-          : "cosmetologyFormData";
-      const formData = JSON.parse(localStorage.getItem(formDataKey) || "{}");
+          : serviceType === "homeopathy"
+            ? "homeopathyFormData"
+            : "cosmetologyFormData";
+      const storedFormData = JSON.parse(
+        localStorage.getItem(formDataKey) || "{}",
+      );
+      const formData = formDataOverride || storedFormData;
 
       // Determine practitioner field based on service type
       const practitionerField =
-        serviceType === "mental_health" ? "psychologist" : "cosmetologist";
+        serviceType === "mental_health"
+          ? "psychologist"
+          : serviceType === "homeopathy"
+            ? "homeopathyDoctor"
+            : "cosmetologist";
       const practitioner = appointmentDetails[practitionerField];
 
       if (
@@ -60,12 +104,44 @@ const PaymentGateway = ({
         !appointmentDetails.time
       ) {
         const practitionerName =
-          serviceType === "mental_health" ? "psychologist" : "cosmetologist";
+          serviceType === "mental_health"
+            ? "psychologist"
+            : serviceType === "homeopathy"
+              ? "homeopathy doctor"
+              : "cosmetologist";
         setError(`Please select a ${practitionerName} and appointment time`);
         setIsLoading(false);
         toast.error(`Please select a ${practitionerName} and appointment time`);
         return;
       }
+
+      const questionnaireResponses =
+        serviceType === "homeopathy"
+          ? {
+              personalDetails: {
+                fullName: formData.fullName,
+                city: formData.city,
+                phoneNumber: formData.whatsapp,
+                address: null,
+              },
+              consultationType:
+                formData.questionnaireResponses?.consultationType,
+              healthConcerns:
+                formData.questionnaireResponses?.healthConcerns ||
+                formData.concerns ||
+                "",
+              address: null,
+            }
+          : {
+              personalDetails: {
+                fullName: formData.fullName,
+                city: formData.city,
+                phoneNumber: formData.whatsapp,
+                email: formData.email,
+                concerns: formData.concerns,
+              },
+              ...formData.questionnaireResponses,
+            };
 
       const orderData = {
         serviceType,
@@ -75,19 +151,20 @@ const PaymentGateway = ({
         appointmentDate: formatDateForAPI(appointmentDetails.date),
         appointmentTime: appointmentDetails.time,
         couponCode: couponCode || undefined, // Include coupon code if available
-        questionnaireResponses: {
-          // Include personal details in questionnaire responses
-          personalDetails: {
-            fullName: formData.fullName,
-            city: formData.city,
-            phoneNumber: formData.whatsapp,
-            email: formData.email,
-            concerns: formData.concerns,
-          },
-          // Include any additional questionnaire responses
-          ...formData.questionnaireResponses,
-        },
+        questionnaireResponses,
       };
+
+      if (serviceType === "homeopathy") {
+        const addressSnapshot = buildMeetingAddressSnapshot(
+          formData.address || formData.questionnaireResponses?.address,
+        );
+
+        if (addressSnapshot) {
+          orderData.questionnaireResponses.address = addressSnapshot;
+          orderData.questionnaireResponses.personalDetails.address =
+            addressSnapshot;
+        }
+      }
 
       console.log("Creating order with data:", orderData);
       const result = await createOrder(orderData).unwrap();
@@ -107,6 +184,8 @@ const PaymentGateway = ({
     duration,
     sessions,
     couponCode,
+    appointmentDetailsOverride,
+    formDataOverride,
     createOrder,
   ]);
 
@@ -161,7 +240,7 @@ const PaymentGateway = ({
             "Payment status:",
             paymentStatus,
             "Order status:",
-            orderStatus
+            orderStatus,
           );
           toast.info("Payment is being processed. Please wait...");
 
@@ -172,7 +251,7 @@ const PaymentGateway = ({
         }
       } else {
         throw new Error(
-          verificationResult.message || "Payment verification failed"
+          verificationResult.message || "Payment verification failed",
         );
       }
     } catch (error) {
@@ -221,7 +300,7 @@ const PaymentGateway = ({
 
       console.log(
         "Initializing Cashfree checkout with options:",
-        checkoutOptions
+        checkoutOptions,
       );
 
       // Open Cashfree checkout
@@ -373,6 +452,8 @@ PaymentGateway.propTypes = {
   sessions: PropTypes.number.isRequired,
   serviceType: PropTypes.string.isRequired,
   couponCode: PropTypes.string,
+  appointmentDetailsOverride: PropTypes.object,
+  formDataOverride: PropTypes.object,
   onPaymentSuccess: PropTypes.func,
   onPaymentFailure: PropTypes.func,
   onPaymentCancel: PropTypes.func,

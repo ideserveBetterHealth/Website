@@ -69,11 +69,10 @@ const Services = () => {
         </div>
       </section>
 
-      {/* Cosmetologist Consultancy Section */}
+      {/*
       <section className="section section-bg-1 animate-fade-in-up animation-delay-1800">
         <div className="container px-6 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:gap-12 gap-6">
-            {/* Content on left for desktop */}
             <div className="service-content text-center lg:text-left lg:w-1/2 order-2 lg:order-1 animate-fade-in-left animation-delay-2000 px-4 sm:px-0">
               <h2 className="section-title hover:text-[#ec5228] transition-colors duration-300 text-xl sm:text-2xl lg:text-3xl">
                 Cosmetologist Consultancy
@@ -106,11 +105,61 @@ const Services = () => {
                 Book an Appointment
               </button>
             </div>
-            {/* Image on right for desktop */}
             <div className="service-image mb-6 lg:mb-0 lg:w-1/2 order-1 lg:order-2 animate-fade-in-right animation-delay-2800 px-4 sm:px-0">
               <img
                 src="/cosmetologist-consultancy.png"
                 alt="Cosmetologist Consultancy"
+                className="w-full h-auto rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-500 max-w-xl sm:max-w-2xl mx-auto lg:max-w-none"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+      */}
+
+      {/* Homeopathy Consultation Section */}
+      <section className="section section-bg-1 animate-fade-in-up animation-delay-1800">
+        <div className="container px-6 sm:px-6 lg:px-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:gap-12 gap-6">
+            {/* Content on left for desktop */}
+            <div className="service-content text-center lg:text-left lg:w-1/2 order-2 lg:order-1 animate-fade-in-left animation-delay-2000 px-4 sm:px-0">
+              <h2 className="section-title hover:text-[#ec5228] transition-colors duration-300 text-xl sm:text-2xl lg:text-3xl">
+                Homeopathy Consultation
+              </h2>
+              <p className="body-text animate-fade-in-up animation-delay-2200 text-sm sm:text-base">
+                Our homeopathy consultation service offers holistic support for
+                chronic and lifestyle concerns with personalized treatment
+                guidance. Our consultation includes:
+              </p>
+              <ul className="list-none p-0 my-6 text-left max-w-xl sm:max-w-2xl mx-auto lg:mx-0 lg:max-w-none animate-fade-in-up animation-delay-2400 text-sm sm:text-base">
+                <li className="my-3 pl-6 relative hover:text-[#ec5228] transition-colors duration-300 hover:translate-x-2 transform before:content-['•'] before:text-[#ec5228] before:absolute before:left-0">
+                  In-depth expert consultation
+                </li>
+                <li className="my-3 pl-6 relative hover:text-[#ec5228] transition-colors duration-300 hover:translate-x-2 transform before:content-['•'] before:text-[#ec5228] before:absolute before:left-0">
+                  Best-in-class natural medicines
+                </li>
+                <li className="my-3 pl-6 relative hover:text-[#ec5228] transition-colors duration-300 hover:translate-x-2 transform before:content-['•'] before:text-[#ec5228] before:absolute before:left-0">
+                  Personalized holistic healing
+                </li>
+                <li className="my-3 pl-6 relative hover:text-[#ec5228] transition-colors duration-300 hover:translate-x-2 transform before:content-['•'] before:text-[#ec5228] before:absolute before:left-0">
+                  Safe for all age groups
+                </li>
+                <li className="my-3 pl-6 relative hover:text-[#ec5228] transition-colors duration-300 hover:translate-x-2 transform before:content-['•'] before:text-[#ec5228] before:absolute before:left-0">
+                  Root-cause focused treatment
+                </li>
+              </ul>
+              <button
+                className="bg-[#ec5228] text-white font-semibold px-8 py-4 rounded-lg text-base transition-all duration-300 hover:bg-[#d94516] hover:shadow-xl hover:scale-105 hover:-translate-y-1 transform focus:outline-none focus:ring-4 focus:ring-[#ec5228]/30 active:scale-95"
+                onClick={() => navigate("/homeopathy")}
+              >
+                Book an Appointment
+              </button>
+            </div>
+            {/* Image on right for desktop */}
+            <div className="service-image mb-6 lg:mb-0 lg:w-1/2 order-1 lg:order-2 animate-fade-in-right animation-delay-2800 px-4 sm:px-0">
+              <img
+                src="/Homeopathy.png"
+                alt="Homeopathy Consultation"
                 className="w-full h-auto rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-500 max-w-xl sm:max-w-2xl mx-auto lg:max-w-none"
               />
             </div>

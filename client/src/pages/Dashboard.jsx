@@ -8,6 +8,7 @@ import {
   User,
   Video,
   ChevronLeft,
+  ChevronDown,
   Phone,
   Mail,
   MapPin,
@@ -93,6 +94,8 @@ const ContactForm = ({
         return "Mental Health";
       case "cosmetology":
         return "Cosmetology";
+      case "homeopathy":
+        return "Homeopathy";
       default:
         return serviceType;
     }
@@ -123,7 +126,7 @@ const ContactForm = ({
     // Prevent changing WhatsApp number if it's already verified from user account
     if (name === "whatsapp" && isVerified && userData?.user?.phoneNumber) {
       toast.info(
-        "Phone number is verified from your account and cannot be changed"
+        "Phone number is verified from your account and cannot be changed",
       );
       return;
     }
@@ -202,7 +205,7 @@ const ContactForm = ({
       const requiredQuestions =
         questionnaireData.questionnaire.questions.filter((q) => q.required);
       const requiredAnswered = requiredQuestions.every(
-        (q) => questionnaireResponses[q.id]
+        (q) => questionnaireResponses[q.id],
       );
       return basicFieldsValid && requiredAnswered;
     }
@@ -213,7 +216,7 @@ const ContactForm = ({
   const handleSubmit = () => {
     if (!isFormValid()) {
       toast.error(
-        "Please fill all required fields and verify your phone number"
+        "Please fill all required fields and verify your phone number",
       );
       return;
     }
@@ -378,7 +381,7 @@ const ContactForm = ({
                               onChange={(e) =>
                                 handleQuestionnaireChange(
                                   question.id,
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               className="h-4 w-4 text-[#ec5228] border-gray-300 focus:ring-[#ec5228]"
@@ -410,12 +413,12 @@ const ContactForm = ({
                                   newValues = [...currentValues, option];
                                 } else {
                                   newValues = currentValues.filter(
-                                    (v) => v !== option
+                                    (v) => v !== option,
                                   );
                                 }
                                 handleQuestionnaireChange(
                                   question.id,
-                                  newValues
+                                  newValues,
                                 );
                               }}
                               className="h-4 w-4 text-[#ec5228] border-gray-300 rounded focus:ring-[#ec5228]"
@@ -447,12 +450,12 @@ const ContactForm = ({
                                   newValues = [...currentValues, option];
                                 } else {
                                   newValues = currentValues.filter(
-                                    (v) => v !== option
+                                    (v) => v !== option,
                                   );
                                 }
                                 handleQuestionnaireChange(
                                   question.id,
-                                  newValues
+                                  newValues,
                                 );
                               }}
                               className="h-4 w-4 text-[#ec5228] border-gray-300 rounded focus:ring-[#ec5228]"
@@ -479,7 +482,7 @@ const ContactForm = ({
                           onChange={(e) =>
                             handleQuestionnaireChange(
                               question.id,
-                              parseInt(e.target.value)
+                              parseInt(e.target.value),
                             )
                           }
                           className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
@@ -544,31 +547,6 @@ const Dashboard = () => {
     refetch: refetchCredits,
   } = useGetUserCreditsQuery();
 
-  // Debug logging
-  console.log("Credits Data:", creditsData);
-  console.log("Credits Loading:", creditsLoading);
-  console.log("Credits Error:", creditsError);
-
-  // Enhanced debug logging for credits
-  useEffect(() => {
-    if (creditsData) {
-      console.log("Credits data structure:", {
-        success: creditsData.success,
-        credits: creditsData.credits,
-        creditsLength: creditsData.credits?.length,
-        fullResponse: creditsData,
-      });
-
-      creditsData.credits?.forEach((credit, idx) => {
-        console.log(`Credit ${idx}:`, {
-          serviceType: credit.serviceType,
-          duration: credit.duration,
-          count: credit.count,
-        });
-      });
-    }
-  }, [creditsData]);
-
   // Function to format service type for display
   const formatServiceType = (serviceType) => {
     switch (serviceType) {
@@ -605,6 +583,9 @@ const Dashboard = () => {
     skip:
       (user?.role === "admin" || user?.role === "doctor") &&
       user?.isVerified !== "verified",
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
   });
 
   const [deleteMeeting] = useDeleteMeetingMutation();
@@ -620,6 +601,8 @@ const Dashboard = () => {
   const [showNamePopup, setShowNamePopup] = useState(false);
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [userEmergencyContact, setUserEmergencyContact] = useState("");
+  const [userEmergencyRelation, setUserEmergencyRelation] = useState("");
 
   // Booking system state
   const [showContactForm, setShowContactForm] = useState(false);
@@ -691,12 +674,28 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const hasRequiredProfileFields = useCallback((profileUser) => {
+    if (!profileUser) return false;
+
+    const emergencyContact = profileUser?.aboutUser?.emergencyContact || {};
+
+    return Boolean(
+      profileUser?.name?.trim() &&
+      profileUser?.email?.trim() &&
+      emergencyContact?.phoneNumber?.toString().trim() &&
+      emergencyContact?.relation?.trim(),
+    );
+  }, []);
+
   useEffect(() => {
-    if (user && (!user.name || !user.email)) {
+    if (user && !hasRequiredProfileFields(user)) {
+      const emergencyContact = user?.aboutUser?.emergencyContact || {};
       setUserName(user.name || "");
       setUserEmail(user.email || "");
+      setUserEmergencyContact(emergencyContact.phoneNumber || "");
+      setUserEmergencyRelation(emergencyContact.relation || "");
     }
-  }, [user]);
+  }, [user, hasRequiredProfileFields]);
 
   // User role checks for conditional rendering
   const isDoctor = role === "doctor";
@@ -706,7 +705,6 @@ const Dashboard = () => {
   // Helper function to combine meeting date and time into a single DateTime object
   const getMeetingDateTime = useCallback((meeting) => {
     if (!meeting || !meeting.meetingDate || !meeting.meetingTime) {
-      console.warn("Invalid meeting data:", meeting);
       return new Date(); // Return current date as fallback
     }
 
@@ -718,11 +716,7 @@ const Dashboard = () => {
 
       if (!isNaN(hours) && !isNaN(minutes)) {
         meetingDateTime.setHours(hours, minutes, 0, 0);
-      } else {
-        console.warn("Invalid time format:", meeting.meetingTime);
       }
-    } else {
-      console.warn("Unrecognized time format:", meeting.meetingTime);
     }
 
     return meetingDateTime;
@@ -778,6 +772,7 @@ const Dashboard = () => {
 
   // Get the next upcoming meeting for the highlight card
   const nextMeeting = upcomingMeetings[0];
+  const hasUpcomingMeeting = role === "user" && upcomingMeetings.length > 0;
 
   // Date formatting helper functions
   const formatDay = (dateStr) => {
@@ -807,7 +802,7 @@ const Dashboard = () => {
 
       return `${days}d ${hours}h ${minutes}m ${seconds}s`;
     },
-    [currentTime, getMeetingDateTime]
+    [currentTime, getMeetingDateTime],
   ); // Dependencies: currentTime, getMeetingDateTime
 
   // State for countdown display with real-time updates
@@ -835,21 +830,18 @@ const Dashboard = () => {
   // Update meeting data when API data changes
   useEffect(() => {
     if (!isMeetingsDataLoading && meetingsDataFromApi) {
-      console.log("API Data:", meetingsDataFromApi);
       if (meetingsDataFromApi.success && meetingsDataFromApi.meetings) {
         setMeetingData(meetingsDataFromApi.meetings);
-        console.log("Meetings loaded:", meetingsDataFromApi.meetings.length);
-        console.log("Sample meeting data:", meetingsDataFromApi.meetings[0]);
       }
     }
   }, [meetingsDataFromApi, isMeetingsDataLoading]);
 
-  // Check if user name or email is not defined and show popup
+  // Check if required profile fields are missing and show popup
   useEffect(() => {
-    if (user && (!user.name || !user.email)) {
+    if (user && !hasRequiredProfileFields(user)) {
       setShowNamePopup(true);
     }
-  }, [user]);
+  }, [user, hasRequiredProfileFields]);
 
   // Set default duration when service type changes and fetch pricing
   useEffect(() => {
@@ -861,6 +853,9 @@ const Dashboard = () => {
       setBuyDuration(30);
       setBuyCreditsCount(3);
       triggerGetPricing({ serviceType: "cosmetology" });
+    } else if (buyServiceType === "homeopathy") {
+      setBuyDuration(50);
+      setBuyCreditsCount(1);
     }
   }, [buyServiceType, triggerGetPricing]);
 
@@ -879,12 +874,8 @@ const Dashboard = () => {
 
       if (!isNaN(hours) && !isNaN(minutes)) {
         meetingDateTime.setHours(hours, minutes, 0, 0);
-      } else {
-        console.warn("Invalid time format in canJoinMeeting:", meetingTime);
-        return false;
       }
     } else {
-      console.warn("Unrecognized time format in canJoinMeeting:", meetingTime);
       return false;
     }
 
@@ -897,6 +888,9 @@ const Dashboard = () => {
 
     return now >= fiveMinutesBefore && now <= meetingEndTime;
   };
+
+  const isHomeopathyMeeting = (meeting) =>
+    meeting?.serviceType === "homeopathy";
 
   // Handle meeting deletion with confirmation
   const handleDeleteMeeting = async (meetingId) => {
@@ -930,8 +924,6 @@ const Dashboard = () => {
   // Handle joining meeting and record join time
   const handleJoinMeeting = async (meetingId, meetingLink) => {
     try {
-      console.log("Attempting to join meeting:", { meetingId, meetingLink });
-
       if (!meetingLink) {
         console.error("No meeting link provided");
         toast.error("Meeting link not available");
@@ -968,26 +960,28 @@ const Dashboard = () => {
       questionnaireData.questionnaire.questions
     ) {
       const question = questionnaireData.questionnaire.questions.find(
-        (q) => q.id === questionId
+        (q) => q.id === questionId,
       );
       if (question) {
         return question.question;
       }
     }
 
-    // Fallback to question ID if not found
-    return `Question ${questionId}`;
+    // Fallback to formatted question key if not found in questionnaire definition
+    const formattedQuestionId = (questionId || "")
+      .toString()
+      .replace(/([a-z])([A-Z])/g, "$1 $2")
+      .replace(/[_-]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+
+    return `Question - ${formattedQuestionId || "Details"}`;
   };
 
   // Handle viewing questionnaire responses
   const handleViewQuestionnaire = async (meetingId) => {
     const meeting = meetingData.find((m) => m._id === meetingId);
-    console.log("Selected meeting for questionnaire:", meeting);
-    console.log("Questionnaire responses:", meeting?.questionnaireResponses);
-    console.log(
-      "Type of questionnaire responses:",
-      typeof meeting?.questionnaireResponses
-    );
 
     if (meeting && meeting.questionnaireResponses) {
       setSelectedMeetingQuestionnaire(meeting);
@@ -1000,10 +994,9 @@ const Dashboard = () => {
           }`,
           {
             credentials: "include",
-          }
+          },
         );
         const questionnaireData = await response.json();
-        console.log("Fetched questionnaire data:", questionnaireData);
         setQuestionnaireDataForViewing(questionnaireData);
       } catch (error) {
         console.error("Error fetching questionnaire data:", error);
@@ -1089,7 +1082,6 @@ const Dashboard = () => {
       const formattedDate = formatDateForAPI(date);
 
       // Create meeting data with the correct format for the backend
-      console.log(selectedPsychologist);
       const meetingData = {
         bhAssociateId: selectedPsychologist._id,
         meetingDate: formattedDate,
@@ -1099,13 +1091,11 @@ const Dashboard = () => {
         questionnaireResponses: contactFormData?.questionnaireResponses || {},
       };
 
-      console.log("Creating meeting with data:", meetingData);
-
       // Create the meeting
       const result = await createMeeting(meetingData).unwrap();
 
       toast.success(
-        `Session booked successfully! ${result.remainingCredits} Meeting credits remaining.`
+        `Session booked successfully! ${result.remainingCredits} Meeting credits remaining.`,
       );
 
       // Refetch credits to update the display immediately
@@ -1117,7 +1107,7 @@ const Dashboard = () => {
         psychologistApi.util.invalidateTags([
           { type: "Availability", id: selectedPsychologist._id },
           "Availability",
-        ])
+        ]),
       );
 
       // Reset booking state
@@ -1150,7 +1140,7 @@ const Dashboard = () => {
 
     // Find the plan that matches sessions count and duration
     const selectedPlanData = pricingData.pricing.find(
-      (item) => item.serviceType === buyServiceType
+      (item) => item.serviceType === buyServiceType,
     );
 
     if (!selectedPlanData?.plans) return 0;
@@ -1158,7 +1148,7 @@ const Dashboard = () => {
     const matchingPlan = selectedPlanData.plans.find(
       (plan) =>
         plan.sessions === parseInt(buyCreditsCount) &&
-        plan.duration === parseInt(buyDuration)
+        plan.duration === parseInt(buyDuration),
     );
 
     if (!matchingPlan) return 0;
@@ -1187,7 +1177,7 @@ const Dashboard = () => {
 
     // Find the plan that matches sessions count and duration
     const selectedPlanData = pricingData.pricing.find(
-      (item) => item.serviceType === buyServiceType
+      (item) => item.serviceType === buyServiceType,
     );
 
     if (!selectedPlanData?.plans) return 0;
@@ -1195,7 +1185,7 @@ const Dashboard = () => {
     const matchingPlan = selectedPlanData.plans.find(
       (plan) =>
         plan.sessions === parseInt(buyCreditsCount) &&
-        plan.duration === parseInt(buyDuration)
+        plan.duration === parseInt(buyDuration),
     );
 
     if (!matchingPlan) return 0;
@@ -1211,6 +1201,8 @@ const Dashboard = () => {
     let defaultDuration;
     if (serviceType === "cosmetology") {
       defaultDuration = 30;
+    } else if (serviceType === "homeopathy") {
+      defaultDuration = 50;
     } else {
       defaultDuration = 50;
     }
@@ -1218,6 +1210,8 @@ const Dashboard = () => {
     // Use provided duration if valid for the service type, otherwise use default
     if (duration) {
       if (serviceType === "cosmetology" && duration === 30) {
+        setBuyDuration(duration);
+      } else if (serviceType === "homeopathy" && duration === 50) {
         setBuyDuration(duration);
       } else if (
         serviceType === "mental_health" &&
@@ -1270,7 +1264,7 @@ const Dashboard = () => {
     try {
       // Get the selected plan
       const selectedPlanData = pricingData.pricing.find(
-        (item) => item.serviceType === buyServiceType
+        (item) => item.serviceType === buyServiceType,
       );
 
       if (!selectedPlanData?.plans) {
@@ -1282,7 +1276,7 @@ const Dashboard = () => {
       const matchingPlan = selectedPlanData.plans.find(
         (plan) =>
           plan.sessions === parseInt(buyCreditsCount) &&
-          plan.duration === parseInt(buyDuration)
+          plan.duration === parseInt(buyDuration),
       );
 
       if (!matchingPlan) {
@@ -1298,8 +1292,6 @@ const Dashboard = () => {
         plans: [matchingPlan],
         ...(user?._id && { userId: user._id }),
       }).unwrap();
-
-      console.log("💰 Discount calculated for plan:", result);
 
       // Get the discount for the selected plan
       const planWithDiscount = result.plansWithDiscounts[0];
@@ -1328,7 +1320,7 @@ const Dashboard = () => {
     try {
       // Get the selected plan
       const selectedPlanData = pricingData.pricing.find(
-        (item) => item.serviceType === buyServiceType
+        (item) => item.serviceType === buyServiceType,
       );
 
       if (!selectedPlanData?.plans) {
@@ -1340,7 +1332,7 @@ const Dashboard = () => {
       const matchingPlan = selectedPlanData.plans.find(
         (plan) =>
           plan.sessions === parseInt(buyCreditsCount) &&
-          plan.duration === parseInt(buyDuration)
+          plan.duration === parseInt(buyDuration),
       );
 
       if (!matchingPlan) {
@@ -1397,6 +1389,12 @@ const Dashboard = () => {
   ]);
 
   const handleBuyCreditsContinue = async () => {
+    if (buyServiceType === "homeopathy") {
+      closeBuyCredits();
+      navigate("/homeopathy");
+      return;
+    }
+
     if (!buyServiceType || !buyDuration || !buyCreditsCount) {
       toast.error("Please select all required fields");
       return;
@@ -1424,7 +1422,7 @@ const Dashboard = () => {
         // Step 2: Initialize Cashfree payment using the SDK
         await initializeCashfreePayment(
           result.data.paymentSessionId,
-          result.data.orderId
+          result.data.orderId,
         );
       } else {
         toast.error("Failed to create payment order");
@@ -1458,7 +1456,7 @@ const Dashboard = () => {
 
       console.log(
         "Initializing Cashfree checkout with options:",
-        checkoutOptions
+        checkoutOptions,
       );
 
       // Open Cashfree checkout
@@ -1515,7 +1513,7 @@ const Dashboard = () => {
             "Payment status:",
             paymentStatus,
             "Order status:",
-            orderStatus
+            orderStatus,
           );
           toast.info("Payment is being processed. Please wait...");
 
@@ -1527,7 +1525,7 @@ const Dashboard = () => {
         }
       } else {
         throw new Error(
-          verificationResult.message || "Payment verification failed"
+          verificationResult.message || "Payment verification failed",
         );
       }
     } catch (error) {
@@ -1552,7 +1550,7 @@ const Dashboard = () => {
     setShowContactForm(true);
   };
 
-  // Handle name and email submission
+  // Handle profile completion submission
   const handleNameSubmit = async (e) => {
     e.preventDefault();
     if (!userName.trim()) {
@@ -1571,12 +1569,43 @@ const Dashboard = () => {
       return;
     }
 
+    if (!userEmergencyContact.trim()) {
+      toast.error("Please enter emergency contact number");
+      return;
+    }
+
+    const emergencyPhoneRegex = /^[0-9]{10}$/;
+    if (!emergencyPhoneRegex.test(userEmergencyContact.trim())) {
+      toast.error("Emergency contact number must be 10 digits");
+      return;
+    }
+
+    if (
+      user?.phoneNumber &&
+      userEmergencyContact.trim() === user.phoneNumber.toString().trim()
+    ) {
+      toast.error(
+        "Emergency contact number cannot be same as your mobile number",
+      );
+      return;
+    }
+
+    if (!userEmergencyRelation.trim()) {
+      toast.error("Please enter relation for emergency contact");
+      return;
+    }
+
     try {
       const result = await updateUser({
         name: userName.trim(),
         email:
           userEmail.trim().toUpperCase()[0] +
           userEmail.toLowerCase().trim().slice(1), // Capitalize first letter
+        emergencyContact: {
+          name: userName.trim(),
+          relation: userEmergencyRelation.trim(),
+          phoneNumber: userEmergencyContact.trim(),
+        },
       }).unwrap();
 
       // Update Redux state with the updated user data
@@ -1584,13 +1613,15 @@ const Dashboard = () => {
         userLoggedIn({
           user: result.user,
           isLoading: false,
-        })
+        }),
       );
 
       toast.success("Profile updated successfully!");
       setShowNamePopup(false);
       setUserName("");
       setUserEmail("");
+      setUserEmergencyContact("");
+      setUserEmergencyRelation("");
     } catch (error) {
       console.error("Error updating profile:", error);
       toast.error(error?.data?.message || "Failed to update profile");
@@ -1601,10 +1632,26 @@ const Dashboard = () => {
   const getAvailableCredits = (serviceType, duration) => {
     if (!creditsData?.credits) return 0;
     const credit = creditsData.credits.find(
-      (c) => c.serviceType === serviceType && c.duration === duration
+      (c) => c.serviceType === serviceType && c.duration === duration,
     );
     return credit ? credit.count : 0;
   };
+
+  const displayCredits = (creditsData?.credits || []).filter(
+    (credit) => !(credit.serviceType === "homeopathy" && credit.count <= 0),
+  );
+
+  const totalCredits = displayCredits.reduce(
+    (total, credit) => total + credit.count,
+    0,
+  );
+
+  const [isCreditsExpanded, setIsCreditsExpanded] =
+    useState(!hasUpcomingMeeting);
+
+  useEffect(() => {
+    setIsCreditsExpanded(!hasUpcomingMeeting);
+  }, [hasUpcomingMeeting]);
 
   // Main dashboard render with responsive design and gradient background
   return (
@@ -1674,196 +1721,212 @@ const Dashboard = () => {
         {role === "user" && (
           <div className="mb-8">
             <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+                <div className="flex items-start sm:items-center gap-3 min-w-0">
                   <div className="bg-gradient-to-r from-[#ec5228] to-[#d14a22] p-2 rounded-lg">
                     <CreditCard className="w-5 h-5 text-white" />
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-[#000080]">
-                      Meeting Credits Available
-                    </h3>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-lg font-bold text-[#000080]">
+                        Meeting Credits Available
+                      </h3>
+                      <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-[#fffae3] text-[#ec5228] text-lg font-extrabold shadow-sm ring-1 ring-[#ec5228]/35">
+                        {totalCredits}
+                      </span>
+                    </div>
                     <p className="text-sm text-gray-600">
                       Book sessions with your available credits
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  {creditsData?.credits?.length > 0 && (
-                    <div className="text-right hidden sm:block">
-                      <div className="text-2xl font-bold text-[#000080]">
-                        {creditsData.credits.reduce(
-                          (total, credit) => total + credit.count,
-                          0
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-500">Total Credits</div>
-                    </div>
-                  )}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      setIsCreditsExpanded((isExpanded) => !isExpanded)
+                    }
+                    className="w-full sm:w-auto border-[#000080]/30 text-[#000080] hover:bg-[#000080]/5"
+                  >
+                    {isCreditsExpanded ? "Collapse" : "Expand"}
+                    <ChevronDown
+                      className={`w-4 h-4 ml-2 transition-transform ${
+                        isCreditsExpanded ? "rotate-180" : "rotate-0"
+                      }`}
+                    />
+                  </Button>
                   <Button
                     onClick={() => openBuyCredits()}
-                    className="bg-[#000080] hover:bg-[#0000a0] text-white px-4 py-2 rounded-lg text-sm"
+                    className="w-full sm:w-auto bg-[#000080] hover:bg-[#0000a0] text-white px-4 py-2 rounded-lg text-sm"
                   >
                     Buy Credits
                   </Button>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                {creditsLoading ? (
-                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="animate-pulse">
-                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-xl p-4">
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-9 h-9 bg-gray-200 rounded-lg"></div>
-                            <div className="flex-1">
-                              <div className="h-4 bg-gray-200 rounded w-3/4 mb-1"></div>
-                              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+              <div
+                className={`grid overflow-hidden transition-all duration-300 ease-in-out ${
+                  isCreditsExpanded
+                    ? "grid-rows-[1fr] opacity-100 mt-2"
+                    : "grid-rows-[0fr] opacity-0"
+                }`}
+              >
+                <div className="min-h-0 space-y-4">
+                  {creditsLoading ? (
+                    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="animate-pulse">
+                          <div className="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-xl p-4">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="w-9 h-9 bg-gray-200 rounded-lg"></div>
+                              <div className="flex-1">
+                                <div className="h-4 bg-gray-200 rounded w-3/4 mb-1"></div>
+                                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                              </div>
                             </div>
+                            <div className="h-16 bg-gray-200 rounded-lg mb-3"></div>
+                            <div className="h-8 bg-gray-200 rounded-lg"></div>
                           </div>
-                          <div className="h-16 bg-gray-200 rounded-lg mb-3"></div>
-                          <div className="h-8 bg-gray-200 rounded-lg"></div>
                         </div>
+                      ))}
+                    </div>
+                  ) : creditsError ? (
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+                      <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Lock className="w-6 h-6 text-red-600" />
                       </div>
-                    ))}
-                  </div>
-                ) : creditsError ? (
-                  <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Lock className="w-6 h-6 text-red-600" />
+                      <h4 className="text-red-800 font-semibold mb-2">
+                        Error Loading Credits
+                      </h4>
+                      <p className="text-red-600 text-sm">
+                        {creditsError?.data?.message ||
+                          "Unable to load your credits. Please try again."}
+                      </p>
                     </div>
-                    <h4 className="text-red-800 font-semibold mb-2">
-                      Error Loading Credits
-                    </h4>
-                    <p className="text-red-600 text-sm">
-                      {creditsError?.data?.message ||
-                        "Unable to load your credits. Please try again."}
-                    </p>
-                  </div>
-                ) : creditsData?.credits?.length > 0 ? (
-                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {creditsData.credits.map((credit, idx) => {
-                      const isMentalHealth =
-                        credit.serviceType === "mental_health";
-                      const isCosmetology =
-                        credit.serviceType === "cosmetology";
-                      const ServiceIcon = isMentalHealth
-                        ? Heart
-                        : isCosmetology
-                        ? Sparkles
-                        : Award;
+                  ) : displayCredits.length > 0 ? (
+                    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {displayCredits.map((credit, idx) => {
+                        const isMentalHealth =
+                          credit.serviceType === "mental_health";
+                        const isCosmetology =
+                          credit.serviceType === "cosmetology";
+                        const ServiceIcon = isMentalHealth
+                          ? Heart
+                          : isCosmetology
+                            ? Sparkles
+                            : Award;
 
-                      const cardGradient = isMentalHealth
-                        ? "bg-gradient-to-br from-blue-50 via-blue-25 to-indigo-50 border-blue-200"
-                        : isCosmetology
-                        ? "bg-gradient-to-br from-purple-50 via-purple-25 to-pink-50 border-purple-200"
-                        : "bg-gradient-to-br from-green-50 via-green-25 to-emerald-50 border-green-200";
+                        const cardGradient = isMentalHealth
+                          ? "bg-gradient-to-br from-blue-50 via-blue-25 to-indigo-50 border-blue-200"
+                          : isCosmetology
+                            ? "bg-gradient-to-br from-purple-50 via-purple-25 to-pink-50 border-purple-200"
+                            : "bg-gradient-to-br from-green-50 via-green-25 to-emerald-50 border-green-200";
 
-                      const iconBg = isMentalHealth
-                        ? "bg-gradient-to-r from-blue-500 to-indigo-600"
-                        : isCosmetology
-                        ? "bg-gradient-to-r from-purple-500 to-pink-600"
-                        : "bg-gradient-to-r from-green-500 to-emerald-600";
+                        const iconBg = isMentalHealth
+                          ? "bg-gradient-to-r from-blue-500 to-indigo-600"
+                          : isCosmetology
+                            ? "bg-gradient-to-r from-purple-500 to-pink-600"
+                            : "bg-gradient-to-r from-green-500 to-emerald-600";
 
-                      return (
-                        <div
-                          key={idx}
-                          className={`group w-full bg-white border border-gray-100 rounded-3xl shadow-lg shadow-gray-200/50 overflow-hidden cursor-pointer hover:shadow-2xl hover:shadow-orange-100/50 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] ${cardGradient} border`}
-                          onClick={() =>
-                            credit.count > 0 &&
-                            handleBookSession(
-                              credit.serviceType,
-                              credit.duration
-                            )
-                          }
-                        >
-                          <div className="p-6">
-                            <div className="flex items-center gap-4 mb-4">
-                              <div
-                                className={`p-3 rounded-xl ${iconBg} text-white shadow-lg shadow-orange-200/50 group-hover:shadow-xl group-hover:shadow-orange-300/50 transition-all duration-300`}
-                              >
-                                <ServiceIcon className="w-6 h-6" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-[#000080] text-lg group-hover:text-orange-800 transition-colors duration-300">
-                                  {formatServiceType(credit.serviceType)}
-                                </h4>
-                                <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors duration-300">
-                                  {credit.duration} min session
-                                </p>
-                              </div>
-                            </div>
-                            <div className="mb-6">
-                              <div
-                                className={`rounded-xl p-4 text-center shadow-md ${
-                                  isMentalHealth
-                                    ? "bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200"
-                                    : isCosmetology
-                                    ? "bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200"
-                                    : "bg-gradient-to-br from-green-50 to-green-100 border border-green-200"
-                                }`}
-                              >
-                                <div className="text-3xl font-bold text-[#000080] mb-2 group-hover:scale-110 transition-transform duration-300">
-                                  {credit.count}
-                                </div>
-                                <div className="text-sm text-gray-600 font-medium">
-                                  {credit.count === 1 ? "Credit" : "Credits"}
-                                </div>
-                              </div>
-                            </div>{" "}
-                            {credit.count > 0 ? (
-                              <Button className="w-full py-3 text-sm font-bold text-white bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl hover:from-orange-600 hover:to-orange-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg shadow-orange-500/30 focus:outline-none focus:ring-4 focus:ring-orange-300 flex items-center justify-center gap-2">
-                                <Plus className="w-4 h-4" />
-                                Book Session
-                              </Button>
-                            ) : (
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="w-full py-3 text-sm font-bold text-gray-600 bg-gradient-to-r from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-gray-300/30">
-                                  <Lock className="w-4 h-4" />
-                                  No Credits
-                                </div>
-                                <Button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openBuyCredits(
-                                      credit.serviceType,
-                                      credit.duration
-                                    );
-                                  }}
-                                  className="w-full py-3 text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg shadow-blue-500/30 focus:outline-none focus:ring-4 focus:ring-blue-300 flex items-center justify-center gap-2"
+                        return (
+                          <div
+                            key={idx}
+                            className={`group w-full bg-white border border-gray-100 rounded-3xl shadow-lg shadow-gray-200/50 overflow-hidden cursor-pointer hover:shadow-2xl hover:shadow-orange-100/50 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] ${cardGradient} border`}
+                            onClick={() =>
+                              credit.count > 0 &&
+                              handleBookSession(
+                                credit.serviceType,
+                                credit.duration,
+                              )
+                            }
+                          >
+                            <div className="p-6">
+                              <div className="flex items-center gap-4 mb-4">
+                                <div
+                                  className={`p-3 rounded-xl ${iconBg} text-white shadow-lg shadow-orange-200/50 group-hover:shadow-xl group-hover:shadow-orange-300/50 transition-all duration-300`}
                                 >
-                                  <CreditCard className="w-4 h-4" />
-                                  Buy Credits
-                                </Button>
+                                  <ServiceIcon className="w-6 h-6" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-bold text-[#000080] text-lg group-hover:text-orange-800 transition-colors duration-300">
+                                    {formatServiceType(credit.serviceType)}
+                                  </h4>
+                                  <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors duration-300">
+                                    {credit.duration} min session
+                                  </p>
+                                </div>
                               </div>
-                            )}
+                              <div className="mb-6">
+                                <div
+                                  className={`rounded-xl p-4 text-center shadow-md ${
+                                    isMentalHealth
+                                      ? "bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200"
+                                      : isCosmetology
+                                        ? "bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200"
+                                        : "bg-gradient-to-br from-green-50 to-green-100 border border-green-200"
+                                  }`}
+                                >
+                                  <div className="text-3xl font-bold text-[#000080] mb-2 group-hover:scale-110 transition-transform duration-300">
+                                    {credit.count}
+                                  </div>
+                                  <div className="text-sm text-gray-600 font-medium">
+                                    {credit.count === 1 ? "Credit" : "Credits"}
+                                  </div>
+                                </div>
+                              </div>{" "}
+                              {credit.count > 0 ? (
+                                <Button className="w-full py-3 text-sm font-bold text-white bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl hover:from-orange-600 hover:to-orange-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg shadow-orange-500/30 focus:outline-none focus:ring-4 focus:ring-orange-300 flex items-center justify-center gap-2">
+                                  <Plus className="w-4 h-4" />
+                                  Book Session
+                                </Button>
+                              ) : (
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className="w-full py-3 text-sm font-bold text-gray-600 bg-gradient-to-r from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-gray-300/30">
+                                    <Lock className="w-4 h-4" />
+                                    No Credits
+                                  </div>
+                                  <Button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openBuyCredits(
+                                        credit.serviceType,
+                                        credit.duration,
+                                      );
+                                    }}
+                                    className="w-full py-3 text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg shadow-blue-500/30 focus:outline-none focus:ring-4 focus:ring-blue-300 flex items-center justify-center gap-2"
+                                  >
+                                    <CreditCard className="w-4 h-4" />
+                                    Buy Credits
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="bg-gradient-to-br from-[#fffae3] to-white border-2 border-dashed border-[#ec5228]/30 rounded-xl p-8 text-center">
-                    <div className="w-16 h-16 bg-[#ec5228]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <CreditCard className="w-8 h-8 text-[#ec5228]" />
+                        );
+                      })}
                     </div>
-                    <h4 className="text-[#000080] font-bold text-lg mb-2">
-                      No Credits Available
-                    </h4>
-                    <p className="text-gray-600 mb-6">
-                      You don&apos;t have any credits yet. Purchase credits to
-                      start booking sessions with our specialists.
-                    </p>
-                    <Button
-                      onClick={() => openBuyCredits()}
-                      className="bg-gradient-to-r from-[#ec5228] to-[#d14a22] hover:from-[#d14a22] hover:to-[#b8411f] text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300 hover:scale-105"
-                    >
-                      <TrendingUp className="w-4 h-4 mr-2" />
-                      Purchase Credits
-                    </Button>
-                  </div>
-                )}
+                  ) : (
+                    <div className="bg-gradient-to-br from-[#fffae3] to-white border-2 border-dashed border-[#ec5228]/30 rounded-xl p-8 text-center">
+                      <div className="w-16 h-16 bg-[#ec5228]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <CreditCard className="w-8 h-8 text-[#ec5228]" />
+                      </div>
+                      <h4 className="text-[#000080] font-bold text-lg mb-2">
+                        No Credits Available
+                      </h4>
+                      <p className="text-gray-600 mb-6">
+                        You don&apos;t have any credits yet. Purchase credits to
+                        start booking sessions with our specialists.
+                      </p>
+                      <Button
+                        onClick={() => openBuyCredits()}
+                        className="bg-gradient-to-r from-[#ec5228] to-[#d14a22] hover:from-[#d14a22] hover:to-[#b8411f] text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300 hover:scale-105"
+                      >
+                        <TrendingUp className="w-4 h-4 mr-2" />
+                        Purchase Credits
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -1955,17 +2018,26 @@ const Dashboard = () => {
                 </div>
 
                 <div className="flex flex-col sm:flex-row lg:flex-col gap-3 w-full lg:w-auto">
-                  {canJoinMeeting(
-                    nextMeeting.meetingDate,
-                    nextMeeting.meetingTime,
-                    nextMeeting.duration
-                  ) ? (
+                  {isHomeopathyMeeting(nextMeeting) ? (
+                    <div className="bg-white/10 text-white font-medium px-6 py-3 rounded-xl border border-white/20 text-sm flex items-center justify-center gap-2">
+                      <Phone className="w-4 h-4" />
+                      {role === "user"
+                        ? "We will contact you on WhatsApp at the scheduled time"
+                        : isDoctor
+                          ? "Contact your client on WhatsApp at the scheduled time"
+                          : "Contact this client on WhatsApp at the scheduled time"}
+                    </div>
+                  ) : canJoinMeeting(
+                      nextMeeting.meetingDate,
+                      nextMeeting.meetingTime,
+                      nextMeeting.duration,
+                    ) ? (
                     <Button
                       className="bg-[#ec5228] hover:bg-[#d14a22] text-white font-semibold px-6 py-3 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2 hover:scale-105"
                       onClick={() =>
                         handleJoinMeeting(
                           nextMeeting._id,
-                          nextMeeting.meetingLink
+                          nextMeeting.meetingLink,
                         )
                       }
                     >
@@ -2144,10 +2216,16 @@ const Dashboard = () => {
                                 "Not assigned"}
                             </td>
                             <td className="py-4 px-4 text-sm text-gray-600">
-                              {formatIndianTime(meeting.userJoinedAt)}
+                              {isHomeopathyMeeting(meeting) &&
+                              !meeting.userJoinedAt
+                                ? "N/A"
+                                : formatIndianTime(meeting.userJoinedAt)}
                             </td>
                             <td className="py-4 px-4 text-sm text-gray-600">
-                              {formatIndianTime(meeting.docJoinedAt)}
+                              {isHomeopathyMeeting(meeting) &&
+                              !meeting.docJoinedAt
+                                ? "N/A"
+                                : formatIndianTime(meeting.docJoinedAt)}
                             </td>
                           </>
                         ) : (
@@ -2174,17 +2252,26 @@ const Dashboard = () => {
                           </td>
                         )}
                         <td className="py-4 px-4">
-                          {canJoinMeeting(
-                            meeting.meetingDate,
-                            meeting.meetingTime,
-                            meeting.duration
-                          ) ? (
+                          {isHomeopathyMeeting(meeting) ? (
+                            <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-2 rounded-lg text-xs font-medium border border-blue-100">
+                              <Phone className="w-4 h-4" />
+                              {role === "user"
+                                ? `We will WhatsApp you at ${meeting.meetingTime}`
+                                : isDoctor
+                                  ? `Contact your client on WhatsApp at ${meeting.meetingTime}`
+                                  : `Contact this client on WhatsApp at ${meeting.meetingTime}`}
+                            </div>
+                          ) : canJoinMeeting(
+                              meeting.meetingDate,
+                              meeting.meetingTime,
+                              meeting.duration,
+                            ) ? (
                             <Button
                               className="bg-[#ec5228] hover:bg-[#d14a22] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 hover:scale-105"
                               onClick={() =>
                                 handleJoinMeeting(
                                   meeting._id,
-                                  meeting.meetingLink
+                                  meeting.meetingLink,
                                 )
                               }
                             >
@@ -2289,7 +2376,7 @@ const Dashboard = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Service
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     onClick={() => setBuyServiceType("mental_health")}
                     className={`px-4 py-2 rounded-lg border text-sm ${
@@ -2310,267 +2397,295 @@ const Dashboard = () => {
                   >
                     Cosmetology
                   </button>
+                  <button
+                    onClick={() => setBuyServiceType("homeopathy")}
+                    className={`px-4 py-2 rounded-lg border text-sm ${
+                      buyServiceType === "homeopathy"
+                        ? "bg-green-50 border-green-300 text-[#000080]"
+                        : "bg-white border-gray-200 text-gray-700"
+                    }`}
+                  >
+                    Homeopathy
+                  </button>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Duration
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {buyServiceType === "cosmetology" ? (
-                    <button
-                      onClick={() => setBuyDuration(30)}
-                      className={`px-4 py-2 rounded-lg border text-sm ${
-                        buyDuration === 30
-                          ? "bg-[#fffae3] border-[#ec5228] text-[#000080]"
-                          : "bg-white border-gray-200 text-gray-700"
-                      }`}
-                    >
-                      30 min
-                    </button>
-                  ) : (
-                    <>
+              {buyServiceType === "homeopathy" && (
+                <div className="bg-[#fffae3] border border-[#ec5228]/30 rounded-lg p-4 text-sm text-[#000080]">
+                  Homeopathy bookings are handled on the dedicated Homeopathy
+                  page. Click Continue to proceed.
+                </div>
+              )}
+
+              {buyServiceType !== "homeopathy" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Duration
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {buyServiceType === "cosmetology" ? (
                       <button
-                        onClick={() => setBuyDuration(50)}
+                        onClick={() => setBuyDuration(30)}
                         className={`px-4 py-2 rounded-lg border text-sm ${
-                          buyDuration === 50
+                          buyDuration === 30
                             ? "bg-[#fffae3] border-[#ec5228] text-[#000080]"
                             : "bg-white border-gray-200 text-gray-700"
                         }`}
                       >
-                        50 min
+                        30 min
                       </button>
-                      <button
-                        onClick={() => setBuyDuration(80)}
-                        className={`px-4 py-2 rounded-lg border text-sm ${
-                          buyDuration === 80
-                            ? "bg-[#fffae3] border-[#ec5228] text-[#000080]"
-                            : "bg-white border-gray-200 text-gray-700"
-                        }`}
-                      >
-                        80 min
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Credits to Purchase
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    onClick={() => {
-                      setBuyCreditsCount(1);
-                      setIsCustomCredits(false);
-                    }}
-                    className={`px-4 py-2 rounded-lg border text-sm ${
-                      !isCustomCredits && buyCreditsCount === 1
-                        ? "bg-green-50 border-green-300 text-[#000080]"
-                        : "bg-white border-gray-200 text-gray-700"
-                    }`}
-                  >
-                    1 Credit
-                  </button>
-                  <button
-                    onClick={() => {
-                      setBuyCreditsCount(3);
-                      setIsCustomCredits(false);
-                    }}
-                    className={`px-4 py-2 rounded-lg border text-sm ${
-                      !isCustomCredits && buyCreditsCount === 3
-                        ? "bg-green-50 border-green-300 text-[#000080]"
-                        : "bg-white border-gray-200 text-gray-700"
-                    }`}
-                  >
-                    3 Credits
-                  </button>
-                  <button
-                    onClick={() => {
-                      setBuyCreditsCount(5);
-                      setIsCustomCredits(false);
-                    }}
-                    className={`px-4 py-2 rounded-lg border text-sm ${
-                      !isCustomCredits && buyCreditsCount === 5
-                        ? "bg-green-50 border-green-300 text-[#000080]"
-                        : "bg-white border-gray-200 text-gray-700"
-                    }`}
-                  >
-                    5 Credits
-                  </button>
-                </div>
-              </div>
-
-              {/* Promo Code */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  <Tag className="w-4 h-4 inline mr-1" />
-                  Promo Code (Optional)
-                  {promoCodeApplied && (
-                    <span className="ml-2 text-green-600 text-xs">
-                      ✓ Applied
-                    </span>
-                  )}
-                </label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      value={promoCode}
-                      onChange={(e) => {
-                        setPromoCode(e.target.value.toUpperCase());
-                        // Reset applied status when user modifies the code
-                        if (promoCodeApplied) {
-                          setPromoCodeApplied(false);
-                          setPromoCodeData(null);
-                        }
-                      }}
-                      placeholder="Enter promo code"
-                      className={`w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-[#ec5228] outline-none uppercase ${
-                        promoCodeApplied
-                          ? "border-green-300 bg-green-50"
-                          : promoCode.trim()
-                          ? "border-blue-300 bg-blue-50"
-                          : "border-gray-300"
-                      }`}
-                    />
-                    {promoCode.trim() && (
-                      <button
-                        onClick={() => {
-                          setPromoCode("");
-                          setPromoCodeApplied(false);
-                          setPromoCodeData(null);
-                        }}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        title="Clear promo code"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                  <Button
-                    onClick={handleValidatePromoCode}
-                    disabled={
-                      !promoCode.trim() || promoCodeApplied || promoCodeLoading
-                    }
-                    className={`px-4 py-2 whitespace-nowrap ${
-                      promoCodeApplied
-                        ? "bg-green-600 hover:bg-green-700 text-white"
-                        : "bg-[#000080] hover:bg-[#000080]/90 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                    }`}
-                  >
-                    {promoCodeLoading
-                      ? "Validating..."
-                      : promoCodeApplied
-                      ? "Applied ✓"
-                      : "Apply"}
-                  </Button>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Enter a valid promo code and click Apply to get discounts on
-                  your purchase
-                </p>
-              </div>
-
-              {/* Price Display */}
-              {buyServiceType && buyDuration && buyCreditsCount > 0 && (
-                <div className="bg-gray-50 rounded-lg p-4 border">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="text-right text-xs text-gray-500">
-                        <p>
-                          {isPricingLoading
-                            ? "Loading pricing..."
-                            : `${buyCreditsCount} ${
-                                buyCreditsCount === 1 ? "credit" : "credits"
-                              } × ${buyDuration} min`}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Show original price if promo code is applied and discount > 0 */}
-                    {promoCodeApplied && promoCodeData && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-500">Original Price:</span>
-                        <span
-                          className={`${
-                            promoCodeData.discountAmount > 0
-                              ? "line-through"
-                              : ""
-                          } text-gray-500`}
-                        >
-                          ₹{calculateOriginalPrice().toLocaleString()}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Show discount if promo code is applied */}
-                    {promoCodeApplied && promoCodeData && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span
-                          className={
-                            promoCodeData.discountAmount > 0
-                              ? "text-green-600"
-                              : "text-red-600"
-                          }
-                        >
-                          {promoCodeData.discountAmount > 0
-                            ? `Discount (${promoCodeData.code}):`
-                            : `Discount (${promoCodeData.code}):`}
-                        </span>
-                        <span
-                          className={
-                            promoCodeData.discountAmount > 0
-                              ? "text-green-600"
-                              : "text-red-600"
-                          }
-                        >
-                          {promoCodeData.discountAmount > 0
-                            ? `-₹${promoCodeData.discountAmount.toLocaleString()}`
-                            : `Not applicable on this pricing`}
-                        </span>
-                      </div>
-                    )}
-
-                    <hr className="my-2" />
-
-                    {/* Final Price */}
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-gray-600">Total Price</p>
-                        <p
-                          className={`text-lg font-bold ${
-                            promoCodeApplied &&
-                            promoCodeData?.discountAmount > 0
-                              ? "text-green-600"
-                              : "text-[#000080]"
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => setBuyDuration(50)}
+                          className={`px-4 py-2 rounded-lg border text-sm ${
+                            buyDuration === 50
+                              ? "bg-[#fffae3] border-[#ec5228] text-[#000080]"
+                              : "bg-white border-gray-200 text-gray-700"
                           }`}
                         >
-                          {isPricingLoading ? (
-                            <span className="text-gray-400">Loading...</span>
-                          ) : calculateTotalPrice() > 0 ? (
-                            `₹${calculateTotalPrice().toLocaleString()}`
-                          ) : (
-                            <span className="text-gray-400">
-                              Price not available
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                      {promoCodeApplied &&
-                        promoCodeData?.discountAmount > 0 && (
-                          <div className="text-right">
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              Promo Applied
-                            </span>
-                          </div>
-                        )}
-                    </div>
+                          50 min
+                        </button>
+                        <button
+                          onClick={() => setBuyDuration(80)}
+                          className={`px-4 py-2 rounded-lg border text-sm ${
+                            buyDuration === 80
+                              ? "bg-[#fffae3] border-[#ec5228] text-[#000080]"
+                              : "bg-white border-gray-200 text-gray-700"
+                          }`}
+                        >
+                          80 min
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
+
+              {buyServiceType !== "homeopathy" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Credits to Purchase
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      onClick={() => {
+                        setBuyCreditsCount(1);
+                        setIsCustomCredits(false);
+                      }}
+                      className={`px-4 py-2 rounded-lg border text-sm ${
+                        !isCustomCredits && buyCreditsCount === 1
+                          ? "bg-green-50 border-green-300 text-[#000080]"
+                          : "bg-white border-gray-200 text-gray-700"
+                      }`}
+                    >
+                      1 Credit
+                    </button>
+                    <button
+                      onClick={() => {
+                        setBuyCreditsCount(3);
+                        setIsCustomCredits(false);
+                      }}
+                      className={`px-4 py-2 rounded-lg border text-sm ${
+                        !isCustomCredits && buyCreditsCount === 3
+                          ? "bg-green-50 border-green-300 text-[#000080]"
+                          : "bg-white border-gray-200 text-gray-700"
+                      }`}
+                    >
+                      3 Credits
+                    </button>
+                    <button
+                      onClick={() => {
+                        setBuyCreditsCount(5);
+                        setIsCustomCredits(false);
+                      }}
+                      className={`px-4 py-2 rounded-lg border text-sm ${
+                        !isCustomCredits && buyCreditsCount === 5
+                          ? "bg-green-50 border-green-300 text-[#000080]"
+                          : "bg-white border-gray-200 text-gray-700"
+                      }`}
+                    >
+                      5 Credits
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Promo Code */}
+              {buyServiceType !== "homeopathy" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <Tag className="w-4 h-4 inline mr-1" />
+                    Promo Code (Optional)
+                    {promoCodeApplied && (
+                      <span className="ml-2 text-green-600 text-xs">
+                        ✓ Applied
+                      </span>
+                    )}
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={promoCode}
+                        onChange={(e) => {
+                          setPromoCode(e.target.value.toUpperCase());
+                          // Reset applied status when user modifies the code
+                          if (promoCodeApplied) {
+                            setPromoCodeApplied(false);
+                            setPromoCodeData(null);
+                          }
+                        }}
+                        placeholder="Enter promo code"
+                        className={`w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-[#ec5228] outline-none uppercase ${
+                          promoCodeApplied
+                            ? "border-green-300 bg-green-50"
+                            : promoCode.trim()
+                              ? "border-blue-300 bg-blue-50"
+                              : "border-gray-300"
+                        }`}
+                      />
+                      {promoCode.trim() && (
+                        <button
+                          onClick={() => {
+                            setPromoCode("");
+                            setPromoCodeApplied(false);
+                            setPromoCodeData(null);
+                          }}
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          title="Clear promo code"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                    <Button
+                      onClick={handleValidatePromoCode}
+                      disabled={
+                        !promoCode.trim() ||
+                        promoCodeApplied ||
+                        promoCodeLoading
+                      }
+                      className={`px-4 py-2 whitespace-nowrap ${
+                        promoCodeApplied
+                          ? "bg-green-600 hover:bg-green-700 text-white"
+                          : "bg-[#000080] hover:bg-[#000080]/90 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      }`}
+                    >
+                      {promoCodeLoading
+                        ? "Validating..."
+                        : promoCodeApplied
+                          ? "Applied ✓"
+                          : "Apply"}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter a valid promo code and click Apply to get discounts on
+                    your purchase
+                  </p>
+                </div>
+              )}
+
+              {/* Price Display */}
+              {buyServiceType !== "homeopathy" &&
+                buyServiceType &&
+                buyDuration &&
+                buyCreditsCount > 0 && (
+                  <div className="bg-gray-50 rounded-lg p-4 border">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="text-right text-xs text-gray-500">
+                          <p>
+                            {isPricingLoading
+                              ? "Loading pricing..."
+                              : `${buyCreditsCount} ${
+                                  buyCreditsCount === 1 ? "credit" : "credits"
+                                } × ${buyDuration} min`}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Show original price if promo code is applied and discount > 0 */}
+                      {promoCodeApplied && promoCodeData && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-500">Original Price:</span>
+                          <span
+                            className={`${
+                              promoCodeData.discountAmount > 0
+                                ? "line-through"
+                                : ""
+                            } text-gray-500`}
+                          >
+                            ₹{calculateOriginalPrice().toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Show discount if promo code is applied */}
+                      {promoCodeApplied && promoCodeData && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span
+                            className={
+                              promoCodeData.discountAmount > 0
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }
+                          >
+                            {promoCodeData.discountAmount > 0
+                              ? `Discount (${promoCodeData.code}):`
+                              : `Discount (${promoCodeData.code}):`}
+                          </span>
+                          <span
+                            className={
+                              promoCodeData.discountAmount > 0
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }
+                          >
+                            {promoCodeData.discountAmount > 0
+                              ? `-₹${promoCodeData.discountAmount.toLocaleString()}`
+                              : `Not applicable on this pricing`}
+                          </span>
+                        </div>
+                      )}
+
+                      <hr className="my-2" />
+
+                      {/* Final Price */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-600">Total Price</p>
+                          <p
+                            className={`text-lg font-bold ${
+                              promoCodeApplied &&
+                              promoCodeData?.discountAmount > 0
+                                ? "text-green-600"
+                                : "text-[#000080]"
+                            }`}
+                          >
+                            {isPricingLoading ? (
+                              <span className="text-gray-400">Loading...</span>
+                            ) : calculateTotalPrice() > 0 ? (
+                              `₹${calculateTotalPrice().toLocaleString()}`
+                            ) : (
+                              <span className="text-gray-400">
+                                Price not available
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        {promoCodeApplied &&
+                          promoCodeData?.discountAmount > 0 && (
+                            <div className="text-right">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Promo Applied
+                              </span>
+                            </div>
+                          )}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
               <div className="flex items-center justify-end gap-3 pt-2">
                 <Button
@@ -2584,15 +2699,20 @@ const Dashboard = () => {
                   onClick={handleBuyCreditsContinue}
                   disabled={
                     purchaseLoading ||
-                    !buyServiceType ||
-                    !buyDuration ||
-                    !buyCreditsCount ||
-                    ![1, 3, 5].includes(buyCreditsCount) ||
-                    isPricingLoading
+                    (buyServiceType !== "homeopathy" &&
+                      (!buyServiceType ||
+                        !buyDuration ||
+                        !buyCreditsCount ||
+                        ![1, 3, 5].includes(buyCreditsCount) ||
+                        isPricingLoading))
                   }
                   className="bg-[#ec5228] hover:bg-[#d14a22] text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {purchaseLoading ? "Processing..." : "Continue"}
+                  {purchaseLoading
+                    ? "Processing..."
+                    : buyServiceType === "homeopathy"
+                      ? "Go to Homeopathy"
+                      : "Continue"}
                 </Button>
               </div>
             </div>
@@ -2722,8 +2842,8 @@ const Dashboard = () => {
                   Complete Your Profile
                 </h3>
                 <p className="text-gray-600 text-sm">
-                  Please enter your name and email to personalize your
-                  experience
+                  Please enter your name, email, emergency contact and relation
+                  to personalize your experience
                 </p>
               </div>
 
@@ -2760,6 +2880,47 @@ const Dashboard = () => {
                     value={userEmail}
                     onChange={(e) => setUserEmail(e.target.value)}
                     placeholder="Enter your email address"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ec5228] focus:border-[#ec5228] outline-none transition-all duration-200"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="userEmergencyContact"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Emergency Contact Number *
+                  </label>
+                  <input
+                    type="tel"
+                    id="userEmergencyContact"
+                    value={userEmergencyContact}
+                    onChange={(e) =>
+                      setUserEmergencyContact(
+                        e.target.value.replace(/\D/g, "").slice(0, 10),
+                      )
+                    }
+                    placeholder="Enter 10-digit emergency number"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ec5228] focus:border-[#ec5228] outline-none transition-all duration-200"
+                    maxLength="10"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="userEmergencyRelation"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Relation *
+                  </label>
+                  <input
+                    type="text"
+                    id="userEmergencyRelation"
+                    value={userEmergencyRelation}
+                    onChange={(e) => setUserEmergencyRelation(e.target.value)}
+                    placeholder="e.g., Father, Mother, Spouse"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ec5228] focus:border-[#ec5228] outline-none transition-all duration-200"
                     required
                   />
@@ -2860,26 +3021,129 @@ const Dashboard = () => {
               {(() => {
                 const responses =
                   selectedMeetingQuestionnaire.questionnaireResponses;
-                console.log("Rendering questionnaire responses:", responses);
+                const isHomeopathyQuestionnaire =
+                  selectedMeetingQuestionnaire.serviceType === "homeopathy";
+                const canViewClientMobile =
+                  (isDoctor || isAdmin) && isHomeopathyQuestionnaire;
+
+                const rawAddress =
+                  selectedMeetingQuestionnaire?.address ||
+                  responses?.address ||
+                  responses?.personalDetails?.address ||
+                  null;
+
+                const normalizedAddress =
+                  rawAddress && typeof rawAddress === "object"
+                    ? {
+                        fullName: String(rawAddress.fullName || "").trim(),
+                        mobileNumber: String(
+                          rawAddress.mobileNumber || "",
+                        ).trim(),
+                        flatHouseBuilding: String(
+                          rawAddress.flatHouseBuilding || "",
+                        ).trim(),
+                        areaStreetSectorVillage: String(
+                          rawAddress.areaStreetSectorVillage || "",
+                        ).trim(),
+                        landmark: String(rawAddress.landmark || "").trim(),
+                        city: String(rawAddress.city || "").trim(),
+                        state: String(rawAddress.state || "").trim(),
+                        pincode: String(rawAddress.pincode || "").trim(),
+                      }
+                    : null;
+
+                const hasAddressToShow = Boolean(
+                  canViewClientMobile &&
+                  normalizedAddress &&
+                  (normalizedAddress.fullName ||
+                    normalizedAddress.mobileNumber ||
+                    normalizedAddress.flatHouseBuilding ||
+                    normalizedAddress.areaStreetSectorVillage ||
+                    normalizedAddress.landmark ||
+                    normalizedAddress.city ||
+                    normalizedAddress.state ||
+                    normalizedAddress.pincode),
+                );
+
+                const detailedAddressFields = hasAddressToShow
+                  ? [
+                      {
+                        label: "Full Name",
+                        value: normalizedAddress.fullName,
+                      },
+                      {
+                        label: "Mobile Number",
+                        value: normalizedAddress.mobileNumber,
+                      },
+                      {
+                        label: "Flat / House / Building",
+                        value: normalizedAddress.flatHouseBuilding,
+                      },
+                      {
+                        label: "Area / Street / Sector / Village",
+                        value: normalizedAddress.areaStreetSectorVillage,
+                      },
+                      {
+                        label: "Landmark",
+                        value: normalizedAddress.landmark,
+                      },
+                      {
+                        label: "City",
+                        value: normalizedAddress.city,
+                      },
+                      {
+                        label: "State",
+                        value: normalizedAddress.state,
+                      },
+                      {
+                        label: "Pincode",
+                        value: normalizedAddress.pincode,
+                      },
+                    ]
+                  : [];
+
+                const clientMobileNumber =
+                  selectedMeetingQuestionnaire?.userId?.phoneNumber ||
+                  responses?.personalDetails?.whatsapp ||
+                  responses?.personalDetails?.phoneNumber ||
+                  responses?.whatsapp ||
+                  responses?.phoneNumber ||
+                  null;
 
                 // Handle both Map and Object structures, excluding personalDetails
                 let responseEntries = [];
                 if (responses) {
                   if (responses instanceof Map) {
                     responseEntries = Array.from(responses.entries()).filter(
-                      ([key]) => key !== "personalDetails"
+                      ([key]) => key !== "personalDetails" && key !== "address",
                     );
                   } else if (typeof responses === "object") {
                     responseEntries = Object.entries(responses).filter(
-                      ([key]) => key !== "personalDetails"
+                      ([key]) => key !== "personalDetails" && key !== "address",
                     );
                   }
                 }
 
-                console.log("Filtered response entries:", responseEntries);
+                const hasQuestionnaireAnswers = responseEntries.length > 0;
+                const hasMobileToShow =
+                  canViewClientMobile && Boolean(clientMobileNumber);
+                const hasAnythingToShow =
+                  hasQuestionnaireAnswers ||
+                  hasMobileToShow ||
+                  hasAddressToShow;
 
-                return responseEntries.length > 0 ? (
+                return hasAnythingToShow ? (
                   <div className="space-y-4">
+                    {canViewClientMobile && clientMobileNumber && (
+                      <div className="bg-[#fffae3] p-4 rounded-lg border border-[#ec5228]/20">
+                        <div className="text-sm font-medium text-[#000080] mb-2">
+                          Client Mobile Number
+                        </div>
+                        <div className="text-gray-700 pl-2 border-l-3 border-[#ec5228]">
+                          {clientMobileNumber}
+                        </div>
+                      </div>
+                    )}
                     {responseEntries.map(([questionId, answer], index) => {
                       // Skip if answer is an object (like personalDetails)
                       if (typeof answer === "object" && answer !== null) {
@@ -2889,7 +3153,7 @@ const Dashboard = () => {
                       const questionText = getQuestionText(
                         questionId,
                         selectedMeetingQuestionnaire.serviceType,
-                        questionnaireDataForViewing
+                        questionnaireDataForViewing,
                       );
 
                       return (
@@ -2908,6 +3172,64 @@ const Dashboard = () => {
                         </div>
                       );
                     })}
+
+                    {hasAddressToShow && (
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="text-sm font-medium text-[#000080] mb-3">
+                          Client&apos;s Address
+                        </div>
+
+                        <div className="bg-white rounded-lg border border-gray-100 p-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-sm font-semibold text-[#000080]">
+                              {normalizedAddress.fullName}
+                            </p>
+                          </div>
+                          <p className="text-sm text-gray-600 leading-snug">
+                            {normalizedAddress.flatHouseBuilding}
+                            {normalizedAddress.flatHouseBuilding ? ", " : ""}
+                            {normalizedAddress.areaStreetSectorVillage}
+                            {normalizedAddress.landmark
+                              ? `, near ${normalizedAddress.landmark}`
+                              : ""}
+                            {normalizedAddress.city
+                              ? `, ${normalizedAddress.city}`
+                              : ""}
+                            {normalizedAddress.state
+                              ? `, ${normalizedAddress.state}`
+                              : ""}
+                            {normalizedAddress.pincode
+                              ? ` - ${normalizedAddress.pincode}`
+                              : ""}
+                          </p>
+                          <p className="text-sm text-gray-500 mt-1">
+                            Contact no: {normalizedAddress.mobileNumber}
+                          </p>
+                        </div>
+
+                        <details className="mt-3 group">
+                          <summary className="cursor-pointer text-xs font-medium text-[#000080] list-none flex items-center justify-between">
+                            <span>View full address details</span>
+                            <ChevronDown className="w-4 h-4 transition-transform duration-200 group-open:rotate-180" />
+                          </summary>
+                          <div className="mt-3 bg-white rounded-lg border border-gray-100 divide-y divide-gray-100">
+                            {detailedAddressFields.map((item) => (
+                              <div
+                                key={item.label}
+                                className="flex items-start justify-between gap-3 px-3 py-2"
+                              >
+                                <p className="text-xs font-medium text-gray-500">
+                                  {item.label}
+                                </p>
+                                <p className="text-sm text-gray-700 text-right">
+                                  {item.value || "—"}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8">

@@ -70,8 +70,39 @@ function addMinutesToTime(timeString, minutesToAdd) {
 
 const jitsiMeetGenerator = (clientName, bhAssocName) => {
   return `https://meet.jit.si/${bhAssocName}_AND_${clientName}_BH_Mid_${Math.floor(
-    Math.random() * 100000
+    Math.random() * 100000,
   )}`;
+};
+
+const pickMeetingAddress = (address = {}) => {
+  if (!address || typeof address !== "object") return null;
+
+  const snapshot = {
+    country: (address.country || "India").toString().trim() || "India",
+    fullName: (address.fullName || "").toString().trim(),
+    mobileNumber: (address.mobileNumber || "").toString().trim(),
+    pincode: (address.pincode || "").toString().trim(),
+    flatHouseBuilding: (address.flatHouseBuilding || "").toString().trim(),
+    areaStreetSectorVillage: (address.areaStreetSectorVillage || "")
+      .toString()
+      .trim(),
+    landmark: (address.landmark || "").toString().trim(),
+    city: (address.city || "").toString().trim(),
+    state: (address.state || "").toString().trim(),
+  };
+
+  if (
+    !snapshot.fullName ||
+    !snapshot.mobileNumber ||
+    !snapshot.pincode ||
+    !snapshot.flatHouseBuilding ||
+    !snapshot.city ||
+    !snapshot.state
+  ) {
+    return null;
+  }
+
+  return snapshot;
 };
 
 const createMeeting = async (
@@ -82,9 +113,28 @@ const createMeeting = async (
   duration,
   clientName = null,
   serviceType,
-  questionnaireResponses = {}
+  questionnaireResponses = {},
 ) => {
   try {
+    const normalizedQuestionnaireResponses = {
+      ...(questionnaireResponses || {}),
+    };
+
+    const meetingAddress = pickMeetingAddress(
+      normalizedQuestionnaireResponses?.address ||
+        normalizedQuestionnaireResponses?.personalDetails?.address ||
+        null,
+    );
+
+    if (serviceType === "homeopathy" && meetingAddress) {
+      normalizedQuestionnaireResponses.address = meetingAddress;
+
+      normalizedQuestionnaireResponses.personalDetails = {
+        ...(normalizedQuestionnaireResponses.personalDetails || {}),
+        address: meetingAddress,
+      };
+    }
+
     const user = await User.findById(userId);
     console.log("User found:", user);
     if (!user) {
@@ -135,18 +185,18 @@ const createMeeting = async (
 
     if (!dateAvailability) {
       throw new Error(
-        `No availability found for associate on ${appointmentDate.toDateString()}`
+        `No availability found for associate on ${appointmentDate.toDateString()}`,
       );
     }
 
     // Find the specific time slot
     const timeSlot = dateAvailability.slots.find(
-      (slot) => slot.time === meetingTime && slot.isAvailable && !slot.isBooked
+      (slot) => slot.time === meetingTime && slot.isAvailable && !slot.isBooked,
     );
 
     if (!timeSlot) {
       throw new Error(
-        `Time slot ${meetingTime} is not available or already booked on ${appointmentDate.toDateString()}`
+        `Time slot ${meetingTime} is not available or already booked on ${appointmentDate.toDateString()}`,
       );
     }
 
@@ -156,8 +206,8 @@ const createMeeting = async (
       if (!timeSlot.possibleDurations.includes(requestedDuration)) {
         throw new Error(
           `Duration ${duration} minutes is not allowed for this time slot. Available durations: ${timeSlot.possibleDurations.join(
-            ", "
-          )}`
+            ", ",
+          )}`,
         );
       }
     }
@@ -165,17 +215,20 @@ const createMeeting = async (
     // Double-check the slot is still available (race condition protection)
     if (!timeSlot.isAvailable || timeSlot.isBooked) {
       throw new Error(
-        `Time slot ${meetingTime} was just booked by someone else. Please select another time.`
+        `Time slot ${meetingTime} was just booked by someone else. Please select another time.`,
       );
     }
 
     // Create the meeting only if slot is available
-    const meetingLink = jitsiMeetGenerator(
-      user.name.split(" ")[0],
-      bhAssociate.userId.name.toLowerCase().includes("dr.")
-        ? bhAssociate.userId.name.split(" ")[1]
-        : bhAssociate.userId.name.split(" ")[0]
-    );
+    const meetingLink =
+      serviceType === "homeopathy"
+        ? null
+        : jitsiMeetGenerator(
+            user.name.split(" ")[0],
+            bhAssociate.userId.name.toLowerCase().includes("dr.")
+              ? bhAssociate.userId.name.split(" ")[1]
+              : bhAssociate.userId.name.split(" ")[0],
+          );
 
     const meeting = await Meeting.create({
       userId,
@@ -186,10 +239,11 @@ const createMeeting = async (
       meetingTime,
       duration,
       meetingLink,
-      formLink: "https://forms.gle/xyz",
+      formLink: serviceType === "homeopathy" ? null : "https://forms.gle/xyz",
       serviceType,
+      address: meetingAddress,
       questionnaireResponses: new Map(
-        Object.entries(questionnaireResponses || {})
+        Object.entries(normalizedQuestionnaireResponses),
       ),
     });
 
@@ -216,7 +270,7 @@ const createMeeting = async (
         only50PossibleSlots.push(subtractMinutesFromTime(meetingTime, 60));
       }
     }
-    if (serviceType === "cosmetology") {
+    if (serviceType === "cosmetology" || serviceType === "homeopathy") {
       slotsToBlock.push(subtractMinutesFromTime(meetingTime, 30));
       slotsToBlock.push(addMinutesToTime(meetingTime, 30));
     }
@@ -246,14 +300,14 @@ const createMeeting = async (
       try {
         await associateToUpdate.save();
         console.log(
-          `Successfully updated availability slot for associate ${bhAssociateId} on ${appointmentDate.toDateString()} at ${meetingTime}`
+          `Successfully updated availability slot for associate ${bhAssociateId} on ${appointmentDate.toDateString()} at ${meetingTime}`,
         );
         break; // Success, exit retry loop
       } catch (saveError) {
         retries--;
         if (saveError.name === "VersionError" && retries > 0) {
           console.log(
-            `Version conflict detected, retrying... (${retries} attempts remaining)`
+            `Version conflict detected, retrying... (${retries} attempts remaining)`,
           );
           // Refetch the document to get the latest version
           const refreshedAssociate = await BHAssociate.findOne({
@@ -272,7 +326,7 @@ const createMeeting = async (
             if (refreshedDateAvailability) {
               // Re-apply all the slot updates to the refreshed document
               const refreshedTimeSlot = refreshedDateAvailability.slots.find(
-                (slot) => slot.time === meetingTime
+                (slot) => slot.time === meetingTime,
               );
 
               if (
@@ -289,7 +343,7 @@ const createMeeting = async (
                 // Re-apply blocking logic
                 for (const timeString of slotsToBlock) {
                   const slot = refreshedDateAvailability.slots.find(
-                    (s) => s.time === timeString
+                    (s) => s.time === timeString,
                   );
                   if (slot && slot.isAvailable && !slot.isBooked) {
                     slot.isAvailable = false;
@@ -300,7 +354,7 @@ const createMeeting = async (
                 // Re-apply possibleDurations changes
                 for (const timeString of only50PossibleSlots) {
                   const slot = refreshedDateAvailability.slots.find(
-                    (s) => s.time === timeString
+                    (s) => s.time === timeString,
                   );
                   if (slot && slot.isAvailable && !slot.isBooked) {
                     slot.possibleDurations = [50];
@@ -326,7 +380,7 @@ const createMeeting = async (
     // Provide more specific error messages for common issues
     if (error.name === "VersionError") {
       throw new Error(
-        "The availability schedule was just updated by someone else. Please try again."
+        "The availability schedule was just updated by someone else. Please try again.",
       );
     } else if (
       error.message.includes("not available") ||
@@ -366,7 +420,8 @@ const cancelMeeting = async (meetingId) => {
         // Find the specific time slot with this meetingId
         const timeSlot = dateAvailability.slots.find(
           (slot) =>
-            slot.meetingId && slot.meetingId.toString() === meetingId.toString()
+            slot.meetingId &&
+            slot.meetingId.toString() === meetingId.toString(),
         );
 
         if (timeSlot) {
@@ -377,7 +432,7 @@ const cancelMeeting = async (meetingId) => {
 
           await associate.save();
           console.log(
-            `Successfully freed up availability slot for meeting ${meetingId}`
+            `Successfully freed up availability slot for meeting ${meetingId}`,
           );
         }
       }
@@ -404,7 +459,7 @@ export const getMeetings = async (req, res) => {
     const user = await User.findById(userId);
     console.log(
       "User found:",
-      user ? `${user.name} (${user.role})` : "Not found"
+      user ? `${user.name} (${user.role})` : "Not found",
     );
 
     if (!user) {
@@ -446,7 +501,7 @@ export const getMeetings = async (req, res) => {
         bhAssocName: m.bhAssocName,
         date: m.meetingDate,
         time: m.meetingTime,
-      }))
+      })),
     );
 
     res.status(200).json({
@@ -622,7 +677,7 @@ export const createMeetingFromCredits = async (req, res) => {
     // Check if user has sufficient credits
     const userCredits = user.credits.find(
       (credit) =>
-        credit.serviceType === serviceType && credit.duration === duration
+        credit.serviceType === serviceType && credit.duration === duration,
     );
 
     if (!userCredits || userCredits.count <= 0) {
@@ -641,7 +696,7 @@ export const createMeetingFromCredits = async (req, res) => {
       duration,
       user.name,
       serviceType,
-      questionnaireResponses || {}
+      questionnaireResponses || {},
     );
 
     // Deduct credit from user
@@ -658,10 +713,10 @@ export const createMeetingFromCredits = async (req, res) => {
         },\n\nYour session with ${
           meeting.bhAssocName
         } has been scheduled on ${formatDateWithComma(
-          meetingDate
+          meetingDate,
         )} at ${convertTo12Hour(
-          meetingTime
-        )}.\n\nWe look forward to supporting you in your journey with BetterHealth.\n\nBest regards,\nTeam BetterHealth 🧡`
+          meetingTime,
+        )}.\n\nWe look forward to supporting you in your journey with BetterHealth.\n\nBest regards,\nTeam BetterHealth 🧡`,
       );
 
       // Send notification to psychologist/BH Associate
@@ -672,16 +727,16 @@ export const createMeetingFromCredits = async (req, res) => {
         },\n\nYou have been assigned a new session:\n\n📅 Session Details:\n• Client: ${
           user.name
         }\n• Scheduled Date: ${formatDateWithComma(
-          meetingDate
+          meetingDate,
         )}\n• Scheduled Time: ${convertTo12Hour(
-          meetingTime
-        )}\n• Duration: ${duration} minutes\n\nBe prepared, and make sure you join the session on time.\n\nBest regards,\nTeam BetterHealth 🧡`
+          meetingTime,
+        )}\n• Duration: ${duration} minutes\n\nBe prepared, and make sure you join the session on time.\n\nBest regards,\nTeam BetterHealth 🧡`,
       );
       console.log(`✅ Psychologist notification sent to ${bhAssociate.name}`);
 
       // Send admin notifications
       const adminPhoneNumbers = await User.find({ role: "admin" }).select(
-        "name phoneNumber"
+        "name phoneNumber",
       );
 
       for (const admin of adminPhoneNumbers) {
@@ -694,10 +749,10 @@ export const createMeetingFromCredits = async (req, res) => {
           }\n• BH Associate: ${
             meeting.bhAssocName
           }\n• Scheduled Date: ${formatDateWithComma(
-            meetingDate
+            meetingDate,
           )}\n• Scheduled Time: ${convertTo12Hour(
-            meetingTime
-          )}\n• Duration: ${duration} minutes\n• Service: ${serviceType}\n\nBest regards,\nBetterHealth Automated System 🧡`
+            meetingTime,
+          )}\n• Duration: ${duration} minutes\n• Service: ${serviceType}\n\nBest regards,\nBetterHealth Automated System 🧡`,
         );
         console.log(`✅ Admin notification sent to ${admin.name}`);
       }
@@ -731,7 +786,7 @@ const getNextHalfHourSlotMeetings = async () => {
     let nextHours = minutes < 30 ? hours : (hours + 1) % 24;
 
     const nextSlotTime = `${String(nextHours).padStart(2, "0")}:${String(
-      nextMinutes
+      nextMinutes,
     ).padStart(2, "0")}`;
 
     console.log(`Current IST time: ${currentTime}, Next slot: ${nextSlotTime}`);
@@ -739,12 +794,12 @@ const getNextHalfHourSlotMeetings = async () => {
     const startOfDayIST = moment.tz(
       `${currentDate} 00:00:00`,
       "YYYY-MM-DD HH:mm:ss",
-      "Asia/Kolkata"
+      "Asia/Kolkata",
     );
     const endOfDayIST = moment.tz(
       `${currentDate} 23:59:59`,
       "YYYY-MM-DD HH:mm:ss",
-      "Asia/Kolkata"
+      "Asia/Kolkata",
     );
 
     // Convert to UTC for database query (MongoDB stores dates in UTC)
@@ -752,7 +807,7 @@ const getNextHalfHourSlotMeetings = async () => {
     const endOfDayUTC = endOfDayIST.utc().toDate();
 
     console.log(
-      `Querying meetings from ${startOfDayUTC.toISOString()} to ${endOfDayUTC.toISOString()} (IST: ${currentDate})`
+      `Querying meetings from ${startOfDayUTC.toISOString()} to ${endOfDayUTC.toISOString()} (IST: ${currentDate})`,
     );
 
     // Query meetings for today with the next slot time
@@ -768,13 +823,13 @@ const getNextHalfHourSlotMeetings = async () => {
       .sort({ meetingDate: 1 });
 
     console.log(
-      `📊 Found ${meetings.length} meetings for next slot (${nextSlotTime}) in IST`
+      `📊 Found ${meetings.length} meetings for next slot (${nextSlotTime}) in IST`,
     );
     console.log(
-      `🔍 Query details: IST Date: ${currentDate}, Time: ${currentTime}, Next Slot: ${nextSlotTime}`
+      `🔍 Query details: IST Date: ${currentDate}, Time: ${currentTime}, Next Slot: ${nextSlotTime}`,
     );
     console.log(
-      `🔍 UTC Range: ${startOfDayUTC.toISOString()} to ${endOfDayUTC.toISOString()}`
+      `🔍 UTC Range: ${startOfDayUTC.toISOString()} to ${endOfDayUTC.toISOString()}`,
     );
 
     if (meetings.length > 0) {
@@ -788,7 +843,7 @@ const getNextHalfHourSlotMeetings = async () => {
             meeting.bhAssocName
           } | Date: ${meetingDateIST} | Time: ${
             meeting.meetingTime
-          } IST | Duration: ${meeting.duration}min`
+          } IST | Duration: ${meeting.duration}min`,
         );
       });
     }

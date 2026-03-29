@@ -4,7 +4,7 @@ const questionnaireSchema = new mongoose.Schema(
   {
     serviceType: {
       type: String,
-      enum: ["mental_health", "cosmetology"],
+      enum: ["mental_health", "cosmetology", "homeopathy"],
       required: true,
     },
     questions: [
@@ -49,7 +49,7 @@ const questionnaireSchema = new mongoose.Schema(
       default: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Index for efficient queries

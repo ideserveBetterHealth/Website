@@ -6,7 +6,7 @@ const USER_API = `${import.meta.env.VITE_BACKEND_URL}/api/v1/user/`;
 
 export const authApi = createApi({
   reducerPath: "authApi",
-  tagTypes: ["logout"],
+  tagTypes: ["logout", "addresses"],
   baseQuery: fetchBaseQuery({
     baseUrl: USER_API,
     credentials: "include",
@@ -94,6 +94,43 @@ export const authApi = createApi({
       }),
       invalidatesTags: ["logout"],
     }),
+    getAddresses: builder.query({
+      query: () => ({
+        url: "addresses",
+        method: "GET",
+      }),
+      providesTags: ["addresses"],
+    }),
+    addAddress: builder.mutation({
+      query: (addressData) => ({
+        url: "addresses",
+        method: "POST",
+        body: addressData,
+      }),
+      invalidatesTags: ["addresses", "logout"],
+    }),
+    updateAddress: builder.mutation({
+      query: ({ addressId, ...addressData }) => ({
+        url: `addresses/${addressId}`,
+        method: "PUT",
+        body: addressData,
+      }),
+      invalidatesTags: ["addresses", "logout"],
+    }),
+    deleteAddress: builder.mutation({
+      query: (addressId) => ({
+        url: `addresses/${addressId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["addresses", "logout"],
+    }),
+    setDefaultAddress: builder.mutation({
+      query: (addressId) => ({
+        url: `addresses/${addressId}/default`,
+        method: "PATCH",
+      }),
+      invalidatesTags: ["addresses", "logout"],
+    }),
   }),
 });
 
@@ -104,4 +141,9 @@ export const {
   useLoadUserQuery,
   useUpdateUserMutation,
   useLogoutUserMutation,
+  useGetAddressesQuery,
+  useAddAddressMutation,
+  useUpdateAddressMutation,
+  useDeleteAddressMutation,
+  useSetDefaultAddressMutation,
 } = authApi;

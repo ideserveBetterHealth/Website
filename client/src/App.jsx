@@ -18,6 +18,7 @@ import Home from "./pages/Home";
 import MentalHealth from "./pages/services/MentalHealth";
 import FinancialAid from "./pages/FinancialAid";
 import Cosmetology from "./pages/services/Cosmetology";
+import Homeopathy from "./pages/services/Homeopathy";
 import AboutUs from "./pages/AboutUs";
 import Services from "./pages/services/Services";
 import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
@@ -59,6 +60,10 @@ function App() {
         {
           path: "/cosmetology",
           element: <Cosmetology />,
+        },
+        {
+          path: "/homeopathy",
+          element: <Homeopathy />,
         },
         {
           path: "/about-us",

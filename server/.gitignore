@@ -27,6 +27,6 @@ dist-ssr
 .vite
 
 Thumbs.db
-
+session.json
 
 build

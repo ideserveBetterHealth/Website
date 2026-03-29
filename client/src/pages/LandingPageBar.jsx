@@ -311,10 +311,10 @@ export function LandingPageFooter() {
               </li>
               <li className="mb-2 md:mb-3">
                 <Link
-                  to="/cosmetology"
+                  to="/homeopathy"
                   className="text-[#000080] no-underline transition-colors duration-200 text-sm hover:text-[#ec5228]"
                 >
-                  Cosmetology Consultation
+                  Homeopathy Consultation
                 </Link>
               </li>
               <li className="mb-2 md:mb-3">
@@ -392,16 +392,16 @@ export function LandingPageFooter() {
             <div className="flex flex-col gap-0.5 md:gap-1">
               <div className="m-0">
                 <a
-                  href="tel:+919799161609"
+                  href="tel:+918302198769"
                   className="text-[#000080] no-underline text-sm flex items-center justify-center md:justify-start gap-[0.4rem] py-1 transition-colors duration-200 hover:text-[#ec5228]"
                 >
                   <span className="text-sm text-[#000080]">📞</span>
-                  <span>+91 9799161609</span>
+                  <span>+91 83021 98769</span>
                 </a>
               </div>
               <div className="m-0">
                 <a
-                  href="https://wa.me/919981652533"
+                  href="https://wa.me/918302198769"
                   className="text-[#000080] no-underline text-sm flex items-center justify-center md:justify-start gap-[0.4rem] py-1 transition-colors duration-200 hover:text-[#ec5228]"
                   target="_blank"
                   rel="noopener noreferrer"

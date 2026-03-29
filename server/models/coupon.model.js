@@ -13,7 +13,7 @@ const couponSchema = new mongoose.Schema(
       {
         serviceType: {
           type: String,
-          enum: ["mental_health", "cosmetology"],
+          enum: ["mental_health", "cosmetology", "homeopathy"],
           required: true,
         },
         // General discount for this service (fallback if no plan-specific discount)
@@ -91,7 +91,7 @@ const couponSchema = new mongoose.Schema(
       required: false,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Index for efficient queries

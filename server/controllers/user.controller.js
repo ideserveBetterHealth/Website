@@ -25,6 +25,51 @@ const getISTTimestamp = () => {
   return `${day}-${month}-${year}   ${hours}:${minutes}`;
 };
 
+const normalizeIndianMobile = (value = "") => {
+  let digits = value.toString().replace(/\D/g, "");
+
+  if (digits.length > 10 && digits.startsWith("0")) {
+    digits = digits.replace(/^0+/, "");
+  }
+
+  if (digits.length > 10) {
+    digits = digits.slice(-10);
+  }
+
+  return digits;
+};
+
+const sanitizeAddressPayload = (payload = {}) => ({
+  country: (payload.country || "India").toString().trim() || "India",
+  fullName: (payload.fullName || "").toString().trim(),
+  mobileNumber: normalizeIndianMobile(payload.mobileNumber || ""),
+  pincode: (payload.pincode || "").toString().replace(/\D/g, "").slice(0, 6),
+  flatHouseBuilding: (payload.flatHouseBuilding || "").toString().trim(),
+  areaStreetSectorVillage: (payload.areaStreetSectorVillage || "")
+    .toString()
+    .trim(),
+  landmark: (payload.landmark || "").toString().trim(),
+  city: (payload.city || "").toString().trim(),
+  state: (payload.state || "").toString().trim(),
+  isDefault: Boolean(payload.isDefault),
+});
+
+const validateAddressPayload = (address) => {
+  if (!address.fullName) return "Full name is required.";
+  if (!/^[0-9]{10}$/.test(address.mobileNumber)) {
+    return "Please enter a valid 10-digit mobile number.";
+  }
+  if (!/^[0-9]{6}$/.test(address.pincode)) {
+    return "Please enter a valid 6-digit PIN code.";
+  }
+  if (!address.flatHouseBuilding) {
+    return "Flat, House no., Building, Company, Apartment is required.";
+  }
+  if (!address.city) return "Town/City is required.";
+  if (!address.state) return "State is required.";
+  return null;
+};
+
 export const sendOTP = async (req, res) => {
   try {
     const { phoneNumber, phonePrefix = "+91" } = req.body;
@@ -71,7 +116,7 @@ export const sendOTP = async (req, res) => {
     // Send OTP via SMS
     const smsResult = await sendMessageViaWhatsApp(
       phonePrefix + phoneNumber,
-      `🔐 *${otp} is your BetterHealth OTP*\n\n⚠ This code is valid for 10 minutes, If you did not request this, please ignore this message.\n\nThank you for choosing *BetterHealth* 🧡`
+      `🔐 *${otp} is your BetterHealth OTP*\n\n⚠ This code is valid for 10 minutes, If you did not request this, please ignore this message.\n\nThank you for choosing *BetterHealth* 🧡`,
     );
 
     if (!smsResult) {
@@ -225,6 +270,20 @@ export const completeProfile = async (req, res) => {
 
     // Handle emergency contact
     if (emergencyContact && emergencyContact.name) {
+      const emergencyPhone =
+        emergencyContact?.phoneNumber?.toString().trim() || "";
+
+      if (
+        emergencyPhone &&
+        user?.phoneNumber?.toString().trim() === emergencyPhone
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Emergency contact number cannot be same as your mobile number",
+        });
+      }
+
       updateData["aboutUser.emergencyContact"] = emergencyContact;
     }
 
@@ -273,7 +332,7 @@ export const completeProfile = async (req, res) => {
         // Update existing profile
         await BHAssociate.findByIdAndUpdate(
           existingAssociate._id,
-          bhAssociateData
+          bhAssociateData,
         );
       }
     }
@@ -346,14 +405,237 @@ export const getUserProfile = async (req, res) => {
   }
 };
 
+export const getUserAddresses = async (req, res) => {
+  try {
+    const user = await User.findById(req.id).select("addresses");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      addresses: user.addresses || [],
+    });
+  } catch (error) {
+    console.log("Error in getUserAddresses:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch addresses.",
+    });
+  }
+};
+
+export const addUserAddress = async (req, res) => {
+  try {
+    const user = await User.findById(req.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    const address = sanitizeAddressPayload(req.body);
+    const validationMessage = validateAddressPayload(address);
+
+    if (validationMessage) {
+      return res.status(400).json({
+        success: false,
+        message: validationMessage,
+      });
+    }
+
+    const hasAnyAddress =
+      Array.isArray(user.addresses) && user.addresses.length > 0;
+    const shouldBeDefault = !hasAnyAddress || address.isDefault;
+
+    if (shouldBeDefault && hasAnyAddress) {
+      user.addresses.forEach((item) => {
+        item.isDefault = false;
+      });
+    }
+
+    user.addresses.push({
+      ...address,
+      isDefault: shouldBeDefault,
+    });
+
+    await user.save();
+
+    return res.status(201).json({
+      success: true,
+      message: "Address added successfully.",
+      addresses: user.addresses,
+    });
+  } catch (error) {
+    console.log("Error in addUserAddress:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to add address.",
+    });
+  }
+};
+
+export const updateUserAddress = async (req, res) => {
+  try {
+    const { addressId } = req.params;
+    const user = await User.findById(req.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    const targetAddress = user.addresses.id(addressId);
+    if (!targetAddress) {
+      return res.status(404).json({
+        success: false,
+        message: "Address not found.",
+      });
+    }
+
+    const address = sanitizeAddressPayload(req.body);
+    const validationMessage = validateAddressPayload(address);
+
+    if (validationMessage) {
+      return res.status(400).json({
+        success: false,
+        message: validationMessage,
+      });
+    }
+
+    const shouldBeDefault = address.isDefault;
+    if (shouldBeDefault) {
+      user.addresses.forEach((item) => {
+        item.isDefault = false;
+      });
+    }
+
+    targetAddress.country = address.country;
+    targetAddress.fullName = address.fullName;
+    targetAddress.mobileNumber = address.mobileNumber;
+    targetAddress.pincode = address.pincode;
+    targetAddress.flatHouseBuilding = address.flatHouseBuilding;
+    targetAddress.areaStreetSectorVillage = address.areaStreetSectorVillage;
+    targetAddress.landmark = address.landmark;
+    targetAddress.city = address.city;
+    targetAddress.state = address.state;
+    targetAddress.isDefault = shouldBeDefault ? true : targetAddress.isDefault;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Address updated successfully.",
+      addresses: user.addresses,
+    });
+  } catch (error) {
+    console.log("Error in updateUserAddress:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update address.",
+    });
+  }
+};
+
+export const deleteUserAddress = async (req, res) => {
+  try {
+    const { addressId } = req.params;
+    const user = await User.findById(req.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    const targetAddress = user.addresses.id(addressId);
+    if (!targetAddress) {
+      return res.status(404).json({
+        success: false,
+        message: "Address not found.",
+      });
+    }
+
+    const wasDefault = targetAddress.isDefault;
+    targetAddress.deleteOne();
+
+    if (wasDefault && user.addresses.length > 0) {
+      user.addresses[0].isDefault = true;
+    }
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Address removed successfully.",
+      addresses: user.addresses,
+    });
+  } catch (error) {
+    console.log("Error in deleteUserAddress:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete address.",
+    });
+  }
+};
+
+export const setDefaultUserAddress = async (req, res) => {
+  try {
+    const { addressId } = req.params;
+    const user = await User.findById(req.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    const targetAddress = user.addresses.id(addressId);
+    if (!targetAddress) {
+      return res.status(404).json({
+        success: false,
+        message: "Address not found.",
+      });
+    }
+
+    user.addresses.forEach((item) => {
+      item.isDefault = String(item._id) === String(addressId);
+    });
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Default address updated successfully.",
+      addresses: user.addresses,
+    });
+  } catch (error) {
+    console.log("Error in setDefaultUserAddress:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to set default address.",
+    });
+  }
+};
+
 export const updateProfile = async (req, res) => {
   let photoUrl;
 
   try {
     const userId = req.id;
-    const { name, email } = req.body;
+    const { name, email, emergencyContact } = req.body;
     const profilePhoto = req.file;
-    if (!name && !profilePhoto && !email) {
+    if (!name && !profilePhoto && !email && !emergencyContact) {
       res.status(500).json({ success: false, message: "Invalid credentials" });
       return;
     }
@@ -390,6 +672,52 @@ export const updateProfile = async (req, res) => {
       });
     }
 
+    let parsedEmergencyContact = null;
+    if (emergencyContact) {
+      parsedEmergencyContact =
+        typeof emergencyContact === "string"
+          ? JSON.parse(emergencyContact)
+          : emergencyContact;
+
+      const emergencyPhone =
+        parsedEmergencyContact?.phoneNumber?.toString().trim() || "";
+      const emergencyRelation =
+        parsedEmergencyContact?.relation?.toString().trim() || "";
+      const emergencyName =
+        parsedEmergencyContact?.name?.toString().trim() ||
+        name?.toString().trim() ||
+        user?.name ||
+        "";
+
+      if (!emergencyPhone || !/^[0-9]{10}$/.test(emergencyPhone)) {
+        return res.status(400).json({
+          success: false,
+          message: "Emergency contact number must be exactly 10 digits",
+        });
+      }
+
+      if (!emergencyRelation) {
+        return res.status(400).json({
+          success: false,
+          message: "Emergency contact relation is required",
+        });
+      }
+
+      if (user?.phoneNumber?.toString().trim() === emergencyPhone) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Emergency contact number cannot be same as your mobile number",
+        });
+      }
+
+      parsedEmergencyContact = {
+        name: emergencyName,
+        relation: emergencyRelation,
+        phoneNumber: emergencyPhone,
+      };
+    }
+
     //extract public id of the old image from the cloudinary if exist
 
     if (user.photoUrl) {
@@ -403,22 +731,15 @@ export const updateProfile = async (req, res) => {
       const cloudResponse = await uploadMedia(profilePhoto.path);
       photoUrl = cloudResponse.secure_url;
     }
-    const updatedData =
-      profilePhoto && name && email
-        ? { name, email, photoUrl }
-        : profilePhoto && name && !email
-        ? { name, photoUrl }
-        : profilePhoto && !name && email
-        ? { email, photoUrl }
-        : profilePhoto && !name && !email
-        ? { photoUrl }
-        : !profilePhoto && name && email
-        ? { name, email }
-        : !profilePhoto && name && !email
-        ? { name }
-        : !profilePhoto && !name && email
-        ? { email }
-        : {};
+
+    const updatedData = {};
+    if (name) updatedData.name = name;
+    if (email) updatedData.email = email;
+    if (profilePhoto) updatedData.photoUrl = photoUrl;
+    if (parsedEmergencyContact) {
+      updatedData["aboutUser.emergencyContact"] = parsedEmergencyContact;
+    }
+
     const updateUser = await User.findByIdAndUpdate(userId, updatedData, {
       new: true,
     }).select("-otp -otpExpiry");
@@ -483,7 +804,7 @@ export const getAllUsers = async (req, res) => {
     // Get all users with specific fields
     const users = await User.find({})
       .select(
-        "name email phoneNumber role type isVerified isActive createdAt updatedAt lastActiveAt credits"
+        "name email phoneNumber role type isVerified isActive createdAt updatedAt lastActiveAt credits",
       )
       .lean();
 

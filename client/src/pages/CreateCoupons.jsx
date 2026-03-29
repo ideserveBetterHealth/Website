@@ -1,7 +1,10 @@
 import { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const CreateCoupon = () => {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     code: "",
     serviceDiscounts: [
@@ -16,6 +19,15 @@ const CreateCoupon = () => {
       },
       {
         serviceType: "cosmetology",
+        enabled: false,
+        discount: "",
+        discountType: "percentage",
+        maxDiscountAmount: "",
+        minOrderAmount: "",
+        planDiscounts: [],
+      },
+      {
+        serviceType: "homeopathy",
         enabled: false,
         discount: "",
         discountType: "percentage",
@@ -53,7 +65,7 @@ const CreateCoupon = () => {
 
     // Check if at least one service is enabled
     const enabledServices = formData.serviceDiscounts.filter(
-      (sd) => sd.enabled
+      (sd) => sd.enabled,
     );
     if (enabledServices.length === 0) {
       newErrors.services = "At least one service must be selected";
@@ -244,40 +256,8 @@ const CreateCoupon = () => {
       const response = await axios.post(`${API_BASE}/`, payload);
 
       if (response.data.success) {
-        setMessage("Coupon created successfully!");
-        setMessageType("success");
-
-        // Reset form
-        setFormData({
-          code: "",
-          serviceDiscounts: [
-            {
-              serviceType: "mental_health",
-              enabled: false,
-              discount: "",
-              discountType: "percentage",
-              maxDiscountAmount: "",
-              minOrderAmount: "",
-              planDiscounts: [],
-            },
-            {
-              serviceType: "cosmetology",
-              enabled: false,
-              discount: "",
-              discountType: "percentage",
-              maxDiscountAmount: "",
-              minOrderAmount: "",
-              planDiscounts: [],
-            },
-          ],
-          maxUses: "",
-          validFrom: "",
-          validTill: "",
-          isActive: true,
-          isNewUserOnly: false,
-          description: "",
-        });
-        setErrors({});
+        navigate("/admin/all-coupons");
+        return;
       }
     } catch (error) {
       console.error("Error creating coupon:", error);
@@ -317,6 +297,15 @@ const CreateCoupon = () => {
           minOrderAmount: "",
           planDiscounts: [],
         },
+        {
+          serviceType: "homeopathy",
+          enabled: false,
+          discount: "",
+          discountType: "percentage",
+          maxDiscountAmount: "",
+          minOrderAmount: "",
+          planDiscounts: [],
+        },
       ],
       maxUses: "",
       validFrom: "",
@@ -330,9 +319,16 @@ const CreateCoupon = () => {
   };
 
   const getServiceName = (serviceType) => {
-    return serviceType === "mental_health"
-      ? "Mental Health Counselling"
-      : "Cosmetology Consultation";
+    switch (serviceType) {
+      case "mental_health":
+        return "Mental Health Counselling";
+      case "cosmetology":
+        return "Cosmetology Consultation";
+      case "homeopathy":
+        return "Homeopathy Consultation";
+      default:
+        return serviceType;
+    }
   };
 
   // Helper function to get current date-time in local format
@@ -394,15 +390,15 @@ const CreateCoupon = () => {
   };
 
   return (
-    <div className="min-h-screen  bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-[#fffae3] py-8 px-4">
       <div className="max-w-4xl mx-auto mt-24">
         {/* Header */}
         <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            <h1 className="text-3xl font-bold text-[#000080] mb-2">
               Create New Coupon
             </h1>
-            <div className="w-20 h-1 bg-blue-500 mx-auto rounded mb-4"></div>
+            <div className="w-20 h-1 bg-[#ec5228] mx-auto rounded mb-4"></div>
             <p className="text-gray-600">
               Add a new promotional coupon for services
             </p>
@@ -413,7 +409,7 @@ const CreateCoupon = () => {
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Basic Information */}
             <div className="border-b border-gray-200 pb-8">
-              <h2 className="text-xl font-semibold text-gray-800 mb-6">
+              <h2 className="text-xl font-semibold text-[#000080] mb-6">
                 Basic Information
               </h2>
 
@@ -477,7 +473,7 @@ const CreateCoupon = () => {
 
             {/* Service-Specific Discounts */}
             <div className="border-b border-gray-200 pb-8">
-              <h2 className="text-xl font-semibold text-gray-800 mb-2">
+              <h2 className="text-xl font-semibold text-[#000080] mb-2">
                 Service-Specific Discounts *
               </h2>
               <p className="text-gray-600 mb-6">
@@ -494,7 +490,7 @@ const CreateCoupon = () => {
                     key={serviceDiscount.serviceType}
                     className={`border-2 rounded-xl p-6 transition-all ${
                       serviceDiscount.enabled
-                        ? "border-blue-400 bg-blue-50"
+                        ? "border-[#ec5228]/60 bg-[#fffae3]"
                         : "border-gray-200 bg-gray-50"
                     }`}
                   >
@@ -512,7 +508,7 @@ const CreateCoupon = () => {
                         </span>
                       </label>
                       {serviceDiscount.enabled && (
-                        <span className="px-3 py-1 text-xs font-medium bg-blue-600 text-white rounded-full">
+                        <span className="px-3 py-1 text-xs font-medium bg-[#ec5228] text-white rounded-full">
                           Active
                         </span>
                       )}
@@ -534,7 +530,7 @@ const CreateCoupon = () => {
                                 handleServiceInputChange(
                                   index,
                                   "discount",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               placeholder="e.g., 20"
@@ -563,7 +559,7 @@ const CreateCoupon = () => {
                                 handleServiceInputChange(
                                   index,
                                   "discountType",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
@@ -585,7 +581,7 @@ const CreateCoupon = () => {
                                 handleServiceInputChange(
                                   index,
                                   "minOrderAmount",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               placeholder="0"
@@ -616,7 +612,7 @@ const CreateCoupon = () => {
                                   handleServiceInputChange(
                                     index,
                                     "maxDiscountAmount",
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 placeholder="No limit"
@@ -718,7 +714,7 @@ const CreateCoupon = () => {
                                         onClick={() =>
                                           handleRemovePlanDiscount(
                                             index,
-                                            planIndex
+                                            planIndex,
                                           )
                                         }
                                         className="text-red-600 hover:text-red-800 text-sm font-medium"
@@ -741,7 +737,7 @@ const CreateCoupon = () => {
                                               index,
                                               planIndex,
                                               "sessions",
-                                              e.target.value
+                                              e.target.value,
                                             )
                                           }
                                           placeholder="e.g., 1"
@@ -763,7 +759,7 @@ const CreateCoupon = () => {
                                               index,
                                               planIndex,
                                               "duration",
-                                              e.target.value
+                                              e.target.value,
                                             )
                                           }
                                           placeholder="e.g., 30"
@@ -785,7 +781,7 @@ const CreateCoupon = () => {
                                               index,
                                               planIndex,
                                               "discount",
-                                              e.target.value
+                                              e.target.value,
                                             )
                                           }
                                           placeholder="e.g., 25"
@@ -806,7 +802,7 @@ const CreateCoupon = () => {
                                               index,
                                               planIndex,
                                               "discountType",
-                                              e.target.value
+                                              e.target.value,
                                             )
                                           }
                                           className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -833,7 +829,7 @@ const CreateCoupon = () => {
                                                 index,
                                                 planIndex,
                                                 "maxDiscountAmount",
-                                                e.target.value
+                                                e.target.value,
                                               )
                                             }
                                             placeholder="Optional"
@@ -865,7 +861,7 @@ const CreateCoupon = () => {
                                       </p>
                                     </div>
                                   </div>
-                                )
+                                ),
                               )}
                             </div>
                           )}
@@ -886,12 +882,12 @@ const CreateCoupon = () => {
 
             {/* Validity Period */}
             <div className="border-b border-gray-200 pb-8">
-              <h2 className="text-xl font-semibold text-gray-800 mb-6">
+              <h2 className="text-xl font-semibold text-[#000080] mb-6">
                 Validity Period
               </h2>
 
               {/* Quick Date Selection */}
-              <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="mb-6 p-4 bg-[#fffae3] rounded-lg border border-[#ec5228]/30">
                 <label className="block text-sm font-semibold text-gray-700 mb-3">
                   Quick Date Selection
                 </label>
@@ -899,47 +895,47 @@ const CreateCoupon = () => {
                   <button
                     type="button"
                     onClick={() => setQuickDate("today")}
-                    className="px-4 py-2 bg-white border-2 border-blue-300 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-100 transition-colors"
+                    className="px-4 py-2 bg-white border-2 border-[#ec5228]/40 text-[#ec5228] text-sm font-medium rounded-lg hover:bg-[#fff3ee] transition-colors"
                   >
                     Today
                   </button>
                   <button
                     type="button"
                     onClick={() => setQuickDate("week")}
-                    className="px-4 py-2 bg-white border-2 border-blue-300 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-100 transition-colors"
+                    className="px-4 py-2 bg-white border-2 border-[#ec5228]/40 text-[#ec5228] text-sm font-medium rounded-lg hover:bg-[#fff3ee] transition-colors"
                   >
                     1 Week
                   </button>
                   <button
                     type="button"
                     onClick={() => setQuickDate("month")}
-                    className="px-4 py-2 bg-white border-2 border-blue-300 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-100 transition-colors"
+                    className="px-4 py-2 bg-white border-2 border-[#ec5228]/40 text-[#ec5228] text-sm font-medium rounded-lg hover:bg-[#fff3ee] transition-colors"
                   >
                     1 Month
                   </button>
                   <button
                     type="button"
                     onClick={() => setQuickDate("3months")}
-                    className="px-4 py-2 bg-white border-2 border-blue-300 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-100 transition-colors"
+                    className="px-4 py-2 bg-white border-2 border-[#ec5228]/40 text-[#ec5228] text-sm font-medium rounded-lg hover:bg-[#fff3ee] transition-colors"
                   >
                     3 Months
                   </button>
                   <button
                     type="button"
                     onClick={() => setQuickDate("6months")}
-                    className="px-4 py-2 bg-white border-2 border-blue-300 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-100 transition-colors"
+                    className="px-4 py-2 bg-white border-2 border-[#ec5228]/40 text-[#ec5228] text-sm font-medium rounded-lg hover:bg-[#fff3ee] transition-colors"
                   >
                     6 Months
                   </button>
                   <button
                     type="button"
                     onClick={() => setQuickDate("year")}
-                    className="px-4 py-2 bg-white border-2 border-blue-300 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-100 transition-colors"
+                    className="px-4 py-2 bg-white border-2 border-[#ec5228]/40 text-[#ec5228] text-sm font-medium rounded-lg hover:bg-[#fff3ee] transition-colors"
                   >
                     1 Year
                   </button>
                 </div>
-                <p className="text-xs text-blue-600 mt-2">
+                <p className="text-xs text-[#ec5228] mt-2">
                   Click a button to quickly set the validity period from now
                 </p>
               </div>
@@ -959,7 +955,6 @@ const CreateCoupon = () => {
                     name="validFrom"
                     value={formData.validFrom}
                     onChange={handleInputChange}
-                    min={getCurrentDateTime()}
                     className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
                       errors.validFrom
                         ? "border-red-300 focus:border-red-500"
@@ -1011,7 +1006,7 @@ const CreateCoupon = () => {
 
             {/* Description and Status */}
             <div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-6">
+              <h2 className="text-xl font-semibold text-[#000080] mb-6">
                 Additional Details
               </h2>
 
@@ -1121,7 +1116,7 @@ const CreateCoupon = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 py-4 bg-blue-600 text-white font-bold text-lg rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors transform hover:scale-105 active:scale-95"
+                className="flex-1 py-4 bg-[#ec5228] text-white font-bold text-lg rounded-lg hover:bg-[#d8481f] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? (
                   <div className="flex items-center justify-center">
@@ -1156,7 +1151,7 @@ const CreateCoupon = () => {
                 type="button"
                 onClick={clearForm}
                 disabled={loading}
-                className="flex-1 py-4 bg-gray-500 text-white font-bold text-lg rounded-lg hover:bg-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 py-4 bg-[#000080] text-white font-bold text-lg rounded-lg hover:bg-[#000066] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
                 Clear Form
               </button>
@@ -1165,18 +1160,18 @@ const CreateCoupon = () => {
         </div>
 
         {/* Info Section */}
-        <div className="bg-blue-50 rounded-xl p-6 mt-8 border border-blue-200">
-          <h3 className="text-lg font-semibold text-blue-800 mb-3">
+        <div className="bg-white rounded-xl p-6 mt-8 border border-[#ec5228]/30">
+          <h3 className="text-lg font-semibold text-[#000080] mb-3">
             📝 Advanced Coupon System Guidelines
           </h3>
-          <ul className="text-blue-700 space-y-2 text-sm">
+          <ul className="text-gray-700 space-y-2 text-sm">
             <li>
               • <strong>Service-Specific Discounts:</strong> Set different
               discount rates for each service with the same coupon code
             </li>
             <li>
               • <strong>Example:</strong> &quot;SAVE20&quot; can give 20% off
-              for mental health and 15% off for cosmetology
+              for mental health, cosmetology, and homeopathy
             </li>
             <li>
               • <strong>Plan-Specific Overrides:</strong> Configure different

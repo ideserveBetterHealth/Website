@@ -1,5 +1,56 @@
 import mongoose from "mongoose";
 
+const meetingAddressSchema = new mongoose.Schema(
+  {
+    country: {
+      type: String,
+      default: "India",
+      trim: true,
+    },
+    fullName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    mobileNumber: {
+      type: String,
+      required: true,
+      match: [/^[0-9]{10}$/, "Please enter a valid 10-digit mobile number"],
+    },
+    pincode: {
+      type: String,
+      required: true,
+      match: [/^[0-9]{6}$/, "Please enter a valid 6-digit PIN code"],
+    },
+    flatHouseBuilding: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    areaStreetSectorVillage: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    landmark: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    city: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    state: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+  },
+  { _id: false },
+);
+
 const meetingSchema = new mongoose.Schema(
   {
     userId: {
@@ -36,11 +87,13 @@ const meetingSchema = new mongoose.Schema(
     },
     meetingLink: {
       type: String,
-      required: true,
+      required: false,
+      default: null,
     },
     formLink: {
       type: String,
-      required: true,
+      required: false,
+      default: null,
     },
     userJoinedAt: {
       type: String,
@@ -54,8 +107,12 @@ const meetingSchema = new mongoose.Schema(
     },
     serviceType: {
       type: String,
-      enum: ["mental_health", "cosmetology"],
+      enum: ["mental_health", "cosmetology", "homeopathy"],
       required: true,
+    },
+    address: {
+      type: meetingAddressSchema,
+      default: null,
     },
     questionnaireResponses: {
       type: Map,
@@ -63,7 +120,7 @@ const meetingSchema = new mongoose.Schema(
       default: new Map(),
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const Meeting = mongoose.model("Meeting", meetingSchema);

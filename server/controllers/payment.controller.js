@@ -34,7 +34,7 @@ const cashfree = new Cashfree(
     ? CFEnvironment.PRODUCTION
     : CFEnvironment.SANDBOX,
   CASHFREE_APP_ID,
-  CASHFREE_SECRET_KEY
+  CASHFREE_SECRET_KEY,
 );
 
 /**
@@ -47,7 +47,7 @@ const processSuccessfulPayment = async (payment) => {
     if (payment.appliedCoupon && payment.appliedCoupon.code) {
       await Coupon.findOneAndUpdate(
         { code: payment.appliedCoupon.code },
-        { $inc: { usedCount: 1 } }
+        { $inc: { usedCount: 1 } },
       );
     }
 
@@ -55,6 +55,8 @@ const processSuccessfulPayment = async (payment) => {
     const user = await User.findById(payment.userId);
     const associate = await User.findById(payment.associateId);
     if (user) {
+      const shouldTrackCredits = payment.serviceType !== "homeopathy";
+
       let creditsToAdd;
 
       // Determine credits to add based on payment type
@@ -64,34 +66,32 @@ const processSuccessfulPayment = async (payment) => {
         creditsToAdd = payment.sessionCount;
       }
 
-      const existingCredit = user.credits.find(
-        (c) =>
-          c.duration === payment.duration &&
-          c.serviceType === payment.serviceType
-      );
+      if (shouldTrackCredits) {
+        const existingCredit = user.credits.find(
+          (c) =>
+            c.duration === payment.duration &&
+            c.serviceType === payment.serviceType,
+        );
 
-      if (existingCredit) {
-        if (payment.isCreditsOnly || payment.sessionType === "credits") {
-          // For credits-only purchase, add full amount
-          existingCredit.count += creditsToAdd;
-        } else {
-          // For booking payment, add credits minus 1 (for current session)
-          existingCredit.count += creditsToAdd - 1;
+        const creditDelta =
+          payment.isCreditsOnly || payment.sessionType === "credits"
+            ? creditsToAdd
+            : creditsToAdd - 1;
+
+        if (existingCredit) {
+          existingCredit.count += creditDelta;
+        } else if (creditDelta > 0) {
+          user.credits.push({
+            serviceType: payment.serviceType,
+            duration: payment.duration,
+            count: creditDelta,
+          });
         }
-      } else {
-        user.credits.push({
-          serviceType: payment.serviceType,
-          duration: payment.duration,
-          count:
-            payment.isCreditsOnly || payment.sessionType === "credits"
-              ? creditsToAdd
-              : creditsToAdd - 1,
-        });
       }
       await user.save();
     }
     console.log(
-      `Successfully processed payment logic for order ${payment.orderId}`
+      `Successfully processed payment logic for order ${payment.orderId}`,
     );
 
     // Create meeting after successful payment (only for booking payments, not credits-only)
@@ -105,7 +105,7 @@ const processSuccessfulPayment = async (payment) => {
           payment.duration,
           payment.clientName,
           payment.serviceType,
-          payment.questionnaireResponses || {}
+          payment.questionnaireResponses || {},
         );
 
         // Update payment record with meetingId
@@ -113,7 +113,7 @@ const processSuccessfulPayment = async (payment) => {
         await payment.save();
 
         console.log(
-          `Meeting scheduled for order ${payment.orderId} with meetingId: ${meeting._id}`
+          `Meeting scheduled for order ${payment.orderId} with meetingId: ${meeting._id}`,
         );
 
         // Send confirmation to user
@@ -124,10 +124,10 @@ const processSuccessfulPayment = async (payment) => {
           },\n\nYour session with ${
             meeting.bhAssocName
           } has been scheduled on ${formatDateWithComma(
-            payment.appointmentDate
+            payment.appointmentDate,
           )} at ${convertTo12Hour(
-            payment.appointmentTime
-          )}.\n\nWe look forward to supporting you in your journey with BetterHealth.\n\nBest regards,\nTeam BetterHealth 🧡`
+            payment.appointmentTime,
+          )}.\n\nWe look forward to supporting you in your journey with BetterHealth.\n\nBest regards,\nTeam BetterHealth 🧡`,
         );
 
         // Send notification to psychologist/BH Associate
@@ -138,18 +138,18 @@ const processSuccessfulPayment = async (payment) => {
           },\n\nYou have been assigned a new session:\n\n📅 Session Details:\n• Client: ${
             user.name || payment.clientName || "Buddy"
           }\n• Scheduled Date: ${formatDateWithComma(
-            payment.appointmentDate
+            payment.appointmentDate,
           )}\n• Scheduled Time: ${convertTo12Hour(
-            payment.appointmentTime
+            payment.appointmentTime,
           )}\n• Duration: ${
             payment.duration
-          } minutes\n\nBe prepared, and make sure you join the session on time.\n\nBest regards,\nTeam BetterHealth 🧡`
+          } minutes\n\nBe prepared, and make sure you join the session on time.\n\nBest regards,\nTeam BetterHealth 🧡`,
         );
         console.log(`✅ Psychologist notification sent to ${associate.name}`);
 
         // Send admin notifications
         const adminPhoneNumbers = await User.find({ role: "admin" }).select(
-          "name phoneNumber"
+          "name phoneNumber",
         );
 
         for (const admin of adminPhoneNumbers) {
@@ -162,19 +162,19 @@ const processSuccessfulPayment = async (payment) => {
             }\n• BH Associate: ${
               meeting.bhAssocName
             }\n• Scheduled Date: ${formatDateWithComma(
-              payment.appointmentDate
+              payment.appointmentDate,
             )}\n• Scheduled Time: ${convertTo12Hour(
-              payment.appointmentTime
+              payment.appointmentTime,
             )}\n• Duration: ${payment.duration} minutes\n• Service: ${
               payment.serviceType
-            }\n\nBest regards,\nBetterHealth Automated System 🧡`
+            }\n\nBest regards,\nBetterHealth Automated System 🧡`,
           );
           console.log(`✅ Admin notification sent to ${admin.name}`);
         }
       } catch (meetingError) {
         console.error(
           `Error creating meeting for order ${payment.orderId}:`,
-          meetingError
+          meetingError,
         );
         // Note: We don't throw here to avoid failing the payment processing
       }
@@ -182,7 +182,7 @@ const processSuccessfulPayment = async (payment) => {
   } catch (error) {
     console.error(
       `Error processing successful payment for order ${payment.orderId}:`,
-      error
+      error,
     );
   }
 };
@@ -232,7 +232,7 @@ export const createOrder = async (req, res) => {
     const selectedPlan = pricing.plans.find(
       (plan) =>
         plan.sessions === parseInt(sessions) &&
-        plan.duration === parseInt(duration)
+        plan.duration === parseInt(duration),
     );
 
     if (!selectedPlan) {
@@ -268,7 +268,7 @@ export const createOrder = async (req, res) => {
 
       // Find service-specific discount configuration
       const serviceDiscount = coupon.serviceDiscounts?.find(
-        (sd) => sd.serviceType === serviceType
+        (sd) => sd.serviceType === serviceType,
       );
 
       if (!serviceDiscount) {
@@ -296,9 +296,8 @@ export const createOrder = async (req, res) => {
       }
 
       // Check minimum order amount - if not met, proceed without discount
-      if (finalAmount < serviceDiscount.minOrderAmount) {
-        // Reset to original amount without discount
-        finalAmount = selectedPlan.sellingPrice;
+      if (selectedPlan.sellingPrice < serviceDiscount.minOrderAmount) {
+        // Skip discount application, keep original selling price
         appliedCoupon = null;
       } else {
         // Apply discount with plan-specific support
@@ -315,11 +314,11 @@ export const createOrder = async (req, res) => {
           console.log("selectedPlan", selectedPlan);
           console.log(
             "serviceDiscount.planDiscounts",
-            serviceDiscount.planDiscounts
+            serviceDiscount.planDiscounts,
           );
           console.log(
             "serviceDiscount.planDiscounts.length",
-            serviceDiscount.planDiscounts.length
+            serviceDiscount.planDiscounts.length,
           );
           const planDiscount = serviceDiscount.planDiscounts.find((pd) => {
             // Match by sessions count and optionally by duration
@@ -400,7 +399,7 @@ export const createOrder = async (req, res) => {
           notify_url: `${process.env.SERVER_URL}/api/v1/payments/webhook`,
         },
         order_expiry_time: new Date(
-          Date.now() + 24 * 60 * 60 * 1000
+          Date.now() + 24 * 60 * 60 * 1000,
         ).toISOString(),
         order_note: `Better Health - ${serviceType} ${selectedPlan.name}`,
       };
@@ -559,7 +558,7 @@ export const handleWebhook = async (req, res) => {
     // Process only if the payment is still pending to prevent duplicate processing
     if (payment.status === "pending") {
       console.log(
-        `Webhook updating payment ${order_id} from status: ${payment.status} to: ${order_status}`
+        `Webhook updating payment ${order_id} from status: ${payment.status} to: ${order_status}`,
       );
 
       switch (order_status) {
@@ -585,7 +584,7 @@ export const handleWebhook = async (req, res) => {
       await payment.save();
     } else {
       console.log(
-        `Webhook: Payment ${order_id} already processed. Current status: ${payment.status}. Ignoring webhook.`
+        `Webhook: Payment ${order_id} already processed. Current status: ${payment.status}. Ignoring webhook.`,
       );
     }
 
@@ -651,7 +650,7 @@ export const createCreditsOrder = async (req, res) => {
     const selectedPlan = pricing.plans.find(
       (plan) =>
         plan.sessions === parseInt(creditsCount) &&
-        plan.duration === parseInt(duration)
+        plan.duration === parseInt(duration),
     );
 
     if (!selectedPlan) {
@@ -685,7 +684,7 @@ export const createCreditsOrder = async (req, res) => {
 
       // Find service-specific discount configuration
       const serviceDiscount = coupon.serviceDiscounts?.find(
-        (sd) => sd.serviceType === serviceType
+        (sd) => sd.serviceType === serviceType,
       );
 
       if (!serviceDiscount) {
@@ -713,9 +712,8 @@ export const createCreditsOrder = async (req, res) => {
       }
 
       // Check minimum order amount - if not met, proceed without discount
-      if (finalAmount < serviceDiscount.minOrderAmount) {
-        // Reset to original amount without discount
-        finalAmount = selectedPlan.sellingPrice;
+      if (selectedPlan.sellingPrice < serviceDiscount.minOrderAmount) {
+        // Skip discount application, keep original selling price
         appliedCoupon = null;
       } else {
         // Apply discount with plan-specific support
@@ -732,11 +730,11 @@ export const createCreditsOrder = async (req, res) => {
           console.log("selectedPlan", selectedPlan);
           console.log(
             "serviceDiscount.planDiscounts",
-            serviceDiscount.planDiscounts
+            serviceDiscount.planDiscounts,
           );
           console.log(
             "serviceDiscount.planDiscounts.length",
-            serviceDiscount.planDiscounts.length
+            serviceDiscount.planDiscounts.length,
           );
           const planDiscount = serviceDiscount.planDiscounts.find((pd) => {
             // Match by sessions count and optionally by duration
@@ -811,7 +809,7 @@ export const createCreditsOrder = async (req, res) => {
           notify_url: `${process.env.SERVER_URL}/api/v1/payments/webhook`,
         },
         order_expiry_time: new Date(
-          Date.now() + 24 * 60 * 60 * 1000
+          Date.now() + 24 * 60 * 60 * 1000,
         ).toISOString(),
         order_note: `Better Health - ${creditsCount} Credits for ${serviceType}`,
       };

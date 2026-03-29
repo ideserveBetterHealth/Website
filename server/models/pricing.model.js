@@ -4,7 +4,7 @@ const PricingSchema = new mongoose.Schema(
   {
     serviceType: {
       type: String,
-      enum: ["mental_health", "cosmetology"],
+      enum: ["mental_health", "cosmetology", "homeopathy"],
       required: true,
       unique: true,
     },
@@ -33,7 +33,7 @@ const PricingSchema = new mongoose.Schema(
       },
     ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Index for efficient queries

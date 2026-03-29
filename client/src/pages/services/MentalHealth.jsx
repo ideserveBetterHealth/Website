@@ -107,7 +107,7 @@ const PricingSection = ({
         if (item.plans && item.serviceType === "mental_health") {
           // Filter plans by selected duration
           const filteredPlans = item.plans.filter(
-            (plan) => plan.duration === parseInt(duration)
+            (plan) => plan.duration === parseInt(duration),
           );
           plans.push(...filteredPlans);
         }
@@ -179,7 +179,7 @@ const PricingSection = ({
         setAppliedCoupon(null);
         setPlansWithDiscounts([]);
         setCouponError(
-          err?.data?.message || "Coupon invalid for current plans"
+          err?.data?.message || "Coupon invalid for current plans",
         );
         toast.error(err?.data?.message || "Coupon invalid for current plans");
       }
@@ -359,8 +359,8 @@ const PricingSection = ({
                       ₹
                       {Math.max(
                         ...(appliedCoupon.plansWithDiscounts?.map(
-                          (p) => p.discountAmount
-                        ) || [0])
+                          (p) => p.discountAmount,
+                        ) || [0]),
                       ).toLocaleString("en-IN")}
                     </span>
                   </p>
@@ -489,7 +489,7 @@ const PricingSection = ({
           const plansWithDiscounts = PLANS.map((plan, index) => {
             const planDiscount = appliedCoupon?.plansWithDiscounts?.find(
               (p) =>
-                p.sessions === plan.sessions && p.duration === plan.duration
+                p.sessions === plan.sessions && p.duration === plan.duration,
             );
 
             let discountPercentage = 0;
@@ -499,11 +499,11 @@ const PricingSection = ({
               planDiscount.discountAmount > 0
             ) {
               discountPercentage = Math.round(
-                ((plan.mrp - planDiscount.finalPrice) / plan.mrp) * 100
+                ((plan.mrp - planDiscount.finalPrice) / plan.mrp) * 100,
               );
             } else if (plan.mrp !== plan.sellingPrice) {
               discountPercentage = Math.round(
-                ((plan.mrp - plan.sellingPrice) / plan.mrp) * 100
+                ((plan.mrp - plan.sellingPrice) / plan.mrp) * 100,
               );
             }
 
@@ -518,7 +518,7 @@ const PricingSection = ({
                 ? currentIndex
                 : bestIndex;
             },
-            0
+            0,
           );
 
           return plansWithDiscounts.map(
@@ -526,7 +526,7 @@ const PricingSection = ({
               // Find discount for this specific plan
               const planDiscount = appliedCoupon?.plansWithDiscounts?.find(
                 (p) =>
-                  p.sessions === plan.sessions && p.duration === plan.duration
+                  p.sessions === plan.sessions && p.duration === plan.duration,
               );
 
               return (
@@ -577,7 +577,7 @@ const PricingSection = ({
                             {Math.round(
                               ((plan.mrp - planDiscount.finalPrice) /
                                 plan.mrp) *
-                                100
+                                100,
                             )}
                             % off)
                           </span>
@@ -599,7 +599,7 @@ const PricingSection = ({
                           <span className="text-sm font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
                             💸 You save ₹{plan.mrp - plan.sellingPrice}(
                             {Math.round(
-                              ((plan.mrp - plan.sellingPrice) / plan.mrp) * 100
+                              ((plan.mrp - plan.sellingPrice) / plan.mrp) * 100,
                             )}
                             % off)
                           </span>
@@ -663,7 +663,7 @@ const PricingSection = ({
                   </div>
                 </div>
               );
-            }
+            },
           );
         })()}
       </div>
@@ -737,7 +737,7 @@ const ContactForm = ({
         if (item.plans && item.serviceType === "mental_health") {
           // Filter plans by selected duration
           const filteredPlans = item.plans.filter(
-            (plan) => plan.duration === parseInt(duration)
+            (plan) => plan.duration === parseInt(duration),
           );
           plans.push(...filteredPlans);
         }
@@ -799,7 +799,7 @@ const ContactForm = ({
         // Skip validation if pricing data is not available
         if (currentAmount === null) {
           console.warn(
-            "⚠️ Skipping coupon re-validation - pricing data not available"
+            "⚠️ Skipping coupon re-validation - pricing data not available",
           );
           return;
         }
@@ -814,17 +814,17 @@ const ContactForm = ({
           .then(() => {
             console.log(
               "✅ Coupon re-validation passed for logged-in user with amount:",
-              currentAmount
+              currentAmount,
             );
           })
           .catch((error) => {
             console.log(
               "❌ Coupon re-validation failed for logged-in user:",
-              error
+              error,
             );
             setAppliedCoupon(null);
             toast.error(
-              "The coupon you applied was only for new users and has been removed"
+              "The coupon you applied was only for new users and has been removed",
             );
           });
       }
@@ -843,7 +843,7 @@ const ContactForm = ({
     // Prevent changing WhatsApp number if it's already verified from user account
     if (name === "whatsapp" && isVerified && userData?.user?.phoneNumber) {
       toast.info(
-        "Phone number is verified from your account and cannot be changed"
+        "Phone number is verified from your account and cannot be changed",
       );
       return;
     }
@@ -904,14 +904,14 @@ const ContactForm = ({
           // Skip validation if pricing data is not available
           if (currentAmount === null) {
             console.warn(
-              "⚠️ Skipping coupon re-validation after OTP - pricing data not available"
+              "⚠️ Skipping coupon re-validation after OTP - pricing data not available",
             );
             return;
           }
 
           console.log(
             "🔍 Re-validating coupon after OTP verification with amount:",
-            currentAmount
+            currentAmount,
           );
           await validateCoupon({
             code: appliedCoupon.code,
@@ -924,7 +924,7 @@ const ContactForm = ({
           console.log("❌ Coupon re-validation failed:", error);
           setAppliedCoupon(null);
           toast.error(
-            "The coupon you applied was only for new users and has been removed"
+            "The coupon you applied was only for new users and has been removed",
           );
         }
       }
@@ -951,7 +951,7 @@ const ContactForm = ({
       const requiredQuestions =
         questionnaireData.questionnaire.questions.filter((q) => q.required);
       const requiredAnswered = requiredQuestions.every(
-        (q) => questionnaireResponses[q.id]
+        (q) => questionnaireResponses[q.id],
       );
       return basicFieldsValid && requiredAnswered;
     }
@@ -966,7 +966,7 @@ const ContactForm = ({
       JSON.stringify({
         ...formData,
         questionnaireResponses,
-      })
+      }),
     );
     onContinue();
   };
@@ -1194,10 +1194,10 @@ const ContactForm = ({
                         {otpLoading
                           ? "Sending..."
                           : resendCountdown > 0
-                          ? `Resend in ${resendCountdown}s`
-                          : otpSent
-                          ? "Resend OTP"
-                          : "Send OTP"}
+                            ? `Resend in ${resendCountdown}s`
+                            : otpSent
+                              ? "Resend OTP"
+                              : "Send OTP"}
                       </button>
                     )}
                   </div>
@@ -1284,7 +1284,7 @@ const ContactForm = ({
                           onChange={(e) =>
                             handleQuestionnaireChange(
                               question.id,
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:ring-4 focus:ring-[#ec5228]/10 focus:border-[#ec5228] transition-all outline-none text-gray-800 placeholder-gray-400"
@@ -1298,7 +1298,7 @@ const ContactForm = ({
                           onChange={(e) =>
                             handleQuestionnaireChange(
                               question.id,
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           rows={4}
@@ -1324,7 +1324,7 @@ const ContactForm = ({
                                 onChange={(e) =>
                                   handleQuestionnaireChange(
                                     question.id,
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 className="h-4 w-4 text-[#ec5228] border-gray-300 focus:ring-[#ec5228]"
@@ -1356,12 +1356,12 @@ const ContactForm = ({
                                     newValues = [...currentValues, option];
                                   } else {
                                     newValues = currentValues.filter(
-                                      (v) => v !== option
+                                      (v) => v !== option,
                                     );
                                   }
                                   handleQuestionnaireChange(
                                     question.id,
-                                    newValues
+                                    newValues,
                                   );
                                 }}
                                 className="h-4 w-4 text-[#ec5228] border-gray-300 rounded focus:ring-[#ec5228]"
@@ -1393,12 +1393,12 @@ const ContactForm = ({
                                     newValues = [...currentValues, option];
                                   } else {
                                     newValues = currentValues.filter(
-                                      (v) => v !== option
+                                      (v) => v !== option,
                                     );
                                   }
                                   handleQuestionnaireChange(
                                     question.id,
-                                    newValues
+                                    newValues,
                                   );
                                 }}
                                 className="h-4 w-4 text-[#ec5228] border-gray-300 rounded focus:ring-[#ec5228]"
@@ -1427,7 +1427,7 @@ const ContactForm = ({
                             onChange={(e) =>
                               handleQuestionnaireChange(
                                 question.id,
-                                parseInt(e.target.value)
+                                parseInt(e.target.value),
                               )
                             }
                             className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
@@ -1569,7 +1569,7 @@ const StepCards = ({ onContinue, duration, selectedPlan, PLANS }) => {
     };
     localStorage.setItem(
       "appointmentDetails",
-      JSON.stringify(appointmentDetails)
+      JSON.stringify(appointmentDetails),
     );
     // Move to the next step
     onContinue();
@@ -2002,10 +2002,10 @@ export default function MentalHealth() {
               onPaymentSuccess={(paymentResult) => {
                 // Store booking details for confirmation screen
                 const appointmentDetails = JSON.parse(
-                  localStorage.getItem("appointmentDetails") || "{}"
+                  localStorage.getItem("appointmentDetails") || "{}",
                 );
                 const formData = JSON.parse(
-                  localStorage.getItem("mentalHealthFormData") || "{}"
+                  localStorage.getItem("mentalHealthFormData") || "{}",
                 );
 
                 setBookingDetails({
@@ -2136,7 +2136,7 @@ export default function MentalHealth() {
                         </h3>
                         <p className="text-lg font-semibold text-orange-900">
                           {new Date(
-                            bookingDetails.appointment.date
+                            bookingDetails.appointment.date,
                           ).toLocaleDateString("en-US", {
                             weekday: "long",
                             year: "numeric",
@@ -2296,10 +2296,10 @@ export default function MentalHealth() {
                     📧 hello@ideservebetterhealth.in
                   </a>
                   <a
-                    href="tel:+919799161609"
+                    href="tel:+918302198769"
                     className="text-[#000080] hover:text-[#000080]/80 font-semibold"
                   >
-                    📞 +91 97991 61609
+                    📞 +91 83021 98769
                   </a>
                 </div>
               </div>

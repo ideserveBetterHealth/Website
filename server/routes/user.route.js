@@ -9,6 +9,11 @@ import {
   getUserCredits,
   getAllUsers,
   adminCreateUser,
+  getUserAddresses,
+  addUserAddress,
+  updateUserAddress,
+  deleteUserAddress,
+  setDefaultUserAddress,
 } from "../controllers/user.controller.js";
 import { isAuthenticated } from "../middlewares/isAuthenticated.js";
 import upload from "../utils/multer.js";
@@ -26,6 +31,19 @@ router
   .route("/profile/update")
   .put(isAuthenticated, upload.single("profilePhoto"), updateProfile);
 router.route("/logout").post(logout);
+
+// Address management routes
+router
+  .route("/addresses")
+  .get(isAuthenticated, getUserAddresses)
+  .post(isAuthenticated, addUserAddress);
+router
+  .route("/addresses/:addressId")
+  .put(isAuthenticated, updateUserAddress)
+  .delete(isAuthenticated, deleteUserAddress);
+router
+  .route("/addresses/:addressId/default")
+  .patch(isAuthenticated, setDefaultUserAddress);
 
 // User credits route
 router.route("/credits").get(isAuthenticated, getUserCredits);

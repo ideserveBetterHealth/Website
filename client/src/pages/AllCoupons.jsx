@@ -91,9 +91,10 @@ const EditCouponModal = ({ coupon, onClose, onUpdate }) => {
     const allServices = [
       { type: "mental_health", name: "Mental Health" },
       { type: "cosmetology", name: "Cosmetology" },
+      { type: "homeopathy", name: "Homeopathy" },
     ];
     return allServices.filter(
-      (service) => !existingTypes.includes(service.type)
+      (service) => !existingTypes.includes(service.type),
     );
   };
 
@@ -103,7 +104,16 @@ const EditCouponModal = ({ coupon, onClose, onUpdate }) => {
   };
 
   const getServiceName = (serviceType) => {
-    return serviceType === "mental_health" ? "Mental Health" : "Cosmetology";
+    switch (serviceType) {
+      case "mental_health":
+        return "Mental Health";
+      case "cosmetology":
+        return "Cosmetology";
+      case "homeopathy":
+        return "Homeopathy";
+      default:
+        return serviceType;
+    }
   };
 
   return (
@@ -248,7 +258,7 @@ const EditCouponModal = ({ coupon, onClose, onUpdate }) => {
                         handleServiceChange(
                           serviceIndex,
                           "discount",
-                          e.target.value
+                          e.target.value,
                         )
                       }
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -267,7 +277,7 @@ const EditCouponModal = ({ coupon, onClose, onUpdate }) => {
                         handleServiceChange(
                           serviceIndex,
                           "discountType",
-                          e.target.value
+                          e.target.value,
                         )
                       }
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -289,7 +299,7 @@ const EditCouponModal = ({ coupon, onClose, onUpdate }) => {
                         handleServiceChange(
                           serviceIndex,
                           "minOrderAmount",
-                          e.target.value
+                          e.target.value,
                         )
                       }
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -309,7 +319,7 @@ const EditCouponModal = ({ coupon, onClose, onUpdate }) => {
                           handleServiceChange(
                             serviceIndex,
                             "maxDiscountAmount",
-                            e.target.value
+                            e.target.value,
                           )
                         }
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -364,7 +374,7 @@ const EditCouponModal = ({ coupon, onClose, onUpdate }) => {
                                   onClick={() =>
                                     handleRemovePlanDiscount(
                                       serviceIndex,
-                                      planIndex
+                                      planIndex,
                                     )
                                   }
                                   className="text-red-600 hover:text-red-800"
@@ -398,7 +408,7 @@ const EditCouponModal = ({ coupon, onClose, onUpdate }) => {
                                         serviceIndex,
                                         planIndex,
                                         "sessions",
-                                        e.target.value
+                                        e.target.value,
                                       )
                                     }
                                     className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
@@ -417,7 +427,7 @@ const EditCouponModal = ({ coupon, onClose, onUpdate }) => {
                                         serviceIndex,
                                         planIndex,
                                         "duration",
-                                        e.target.value
+                                        e.target.value,
                                       )
                                     }
                                     className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
@@ -435,7 +445,7 @@ const EditCouponModal = ({ coupon, onClose, onUpdate }) => {
                                         serviceIndex,
                                         planIndex,
                                         "discountType",
-                                        e.target.value
+                                        e.target.value,
                                       )
                                     }
                                     className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
@@ -459,7 +469,7 @@ const EditCouponModal = ({ coupon, onClose, onUpdate }) => {
                                         serviceIndex,
                                         planIndex,
                                         "discount",
-                                        e.target.value
+                                        e.target.value,
                                       )
                                     }
                                     className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
@@ -479,7 +489,7 @@ const EditCouponModal = ({ coupon, onClose, onUpdate }) => {
                                           serviceIndex,
                                           planIndex,
                                           "maxDiscountAmount",
-                                          e.target.value
+                                          e.target.value,
                                         )
                                       }
                                       className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
@@ -488,7 +498,7 @@ const EditCouponModal = ({ coupon, onClose, onUpdate }) => {
                                 )}
                               </div>
                             </div>
-                          )
+                          ),
                         )}
                       </div>
                     )}
@@ -642,7 +652,7 @@ const AllCoupons = () => {
 
       if (response.data.success) {
         setMessage(
-          `Coupon ${!currentStatus ? "activated" : "deactivated"} successfully`
+          `Coupon ${!currentStatus ? "activated" : "deactivated"} successfully`,
         );
         setMessageType("success");
         fetchAllCoupons(); // Refresh the list
@@ -699,7 +709,7 @@ const AllCoupons = () => {
       const response = await axios.put(
         `${API_BASE}/${editModal.coupon._id}`,
         updatedData,
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       if (response.data.success) {
@@ -742,6 +752,19 @@ const AllCoupons = () => {
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  const getServiceName = (serviceType) => {
+    switch (serviceType) {
+      case "mental_health":
+        return "Mental Health";
+      case "cosmetology":
+        return "Cosmetology";
+      case "homeopathy":
+        return "Homeopathy";
+      default:
+        return serviceType;
+    }
   };
 
   if (loading) {
@@ -934,10 +957,9 @@ const AllCoupons = () => {
                                   <div className="flex items-center">
                                     <span className="inline-block w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
                                     <span className="font-semibold text-gray-800">
-                                      {serviceDiscount.serviceType ===
-                                      "mental_health"
-                                        ? "Mental Health"
-                                        : "Cosmetology"}
+                                      {getServiceName(
+                                        serviceDiscount.serviceType,
+                                      )}
                                     </span>
                                   </div>
                                   <span
@@ -1018,13 +1040,13 @@ const AllCoupons = () => {
                                                 </span>
                                               </div>
                                             </div>
-                                          )
+                                          ),
                                         )}
                                       </div>
                                     </div>
                                   )}
                               </div>
-                            )
+                            ),
                           )}
                         </div>
                       )}

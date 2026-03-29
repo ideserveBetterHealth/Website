@@ -733,7 +733,7 @@ const PrivacyPolicy = () => {
                             admin@ideservebetterhealth.in
                           </p>
                           <p>
-                            <strong>Phone:</strong> +91 9799161609
+                            <strong>Phone:</strong> +91 83021 98769
                           </p>
                           <p>
                             <strong>Address:</strong> Jaipur, Rajasthan, India

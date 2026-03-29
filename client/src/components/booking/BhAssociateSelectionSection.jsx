@@ -262,7 +262,7 @@ const BhAssociateSelectionSection = ({
 
                   {/* WhatsApp Button */}
                   <a
-                    href="https://api.whatsapp.com/send/?phone=919981652533&text&type=phone_number&app_absent=0"
+                    href="https://api.whatsapp.com/send/?phone=918302198769&text&type=phone_number&app_absent=0"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="group/btn w-full py-3.5 text-sm font-bold text-white bg-gradient-to-r from-green-500 to-green-600 rounded-2xl hover:from-green-600 hover:to-green-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg shadow-green-500/30 focus:outline-none focus:ring-4 focus:ring-green-300 flex items-center justify-center space-x-2"
@@ -274,12 +274,12 @@ const BhAssociateSelectionSection = ({
 
                   {/* Phone Button */}
                   <a
-                    href="tel:9799161609"
+                    href="tel:+918302198769"
                     className="group/btn w-full py-3.5 text-sm font-bold text-white bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl hover:from-orange-600 hover:to-orange-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg shadow-orange-500/30 focus:outline-none focus:ring-4 focus:ring-orange-300 flex items-center justify-center space-x-2"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <Phone className="w-5 h-5" />
-                    <span>Call: 9799161609</span>
+                    <span>Call: +91 83021 98769</span>
                   </a>
                 </div>
               </div>

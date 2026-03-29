@@ -63,6 +63,7 @@ const Home = () => {
                 Register for Counselling
               </button>
             </div>
+            {/*
             <div className="bg-white rounded-2xl shadow-lg p-6 lg:p-8 flex-1 max-w-lg min-w-80 flex flex-col items-center transition-all duration-300 gap-4 lg:gap-6 hover:-translate-y-2 hover:shadow-2xl">
               <img
                 src="/cosmetologist-consultancy.png"
@@ -79,6 +80,28 @@ const Home = () => {
               <button
                 className="bg-[#ec5228] text-white border-none rounded-lg px-6 py-3 text-lg font-semibold cursor-pointer transition-all duration-300 shadow-lg hover:bg-[#d14a22] hover:-translate-y-1 hover:scale-105 hover:shadow-xl"
                 onClick={() => navigate("/cosmetology")}
+              >
+                Book Consultation
+              </button>
+            </div>
+            */}
+
+            <div className="bg-white rounded-2xl shadow-lg p-6 lg:p-8 flex-1 max-w-lg min-w-80 flex flex-col items-center transition-all duration-300 gap-4 lg:gap-6 hover:-translate-y-2 hover:shadow-2xl">
+              <img
+                src="/Homeopathy.png"
+                alt="Homeopathy Consultation"
+                className="w-full h-48 lg:h-64 object-cover rounded-xl shadow-md"
+              />
+              <h3 className="text-[#000080] text-xl font-bold mb-2 lg:mb-4 tracking-tight">
+                Homeopathy Consultation
+              </h3>
+              <p className="text-gray-600 mb-4 lg:mb-8 text-center leading-relaxed">
+                Expert solution on natural healing and holistic wellness from
+                professional homeopath with medicine.
+              </p>
+              <button
+                className="bg-[#ec5228] text-white border-none rounded-lg px-6 py-3 text-lg font-semibold cursor-pointer transition-all duration-300 shadow-lg hover:bg-[#d14a22] hover:-translate-y-1 hover:scale-105 hover:shadow-xl"
+                onClick={() => navigate("/homeopathy")}
               >
                 Book Consultation
               </button>

@@ -22,7 +22,7 @@ const paymentSchema = new mongoose.Schema(
     },
     serviceType: {
       type: String,
-      enum: ["mental_health", "cosmetology", "other"],
+      enum: ["mental_health", "cosmetology", "homeopathy", "other"],
       required: true,
     },
     sessions: {
@@ -110,7 +110,7 @@ const paymentSchema = new mongoose.Schema(
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Update the updatedAt field before saving

@@ -31,7 +31,7 @@ SitemapSection.propTypes = {
       title: PropTypes.string.isRequired,
       path: PropTypes.string.isRequired,
       description: PropTypes.string.isRequired,
-    })
+    }),
   ).isRequired,
 };
 
@@ -58,9 +58,9 @@ const Sitemap = () => {
         description: "Professional mental health support",
       },
       {
-        title: "Cosmetology Services",
-        path: "/cosmetology",
-        description: "Expert cosmetology treatments",
+        title: "Homeopathy Consultation",
+        path: "/homeopathy",
+        description: "Personalized homeopathy consultation",
       },
     ],
     support: [
@@ -148,14 +148,10 @@ const Sitemap = () => {
         <div className="mt-12 text-center bg-white p-6 rounded-xl shadow-sm">
           <p className="text-gray-600">
             Can&apos;t find what you&apos;re looking for?{" "}
-            <Link
-              to="/about-us"
-              className="font-semibold hover:underline"
-              style={{ color: "#ec5228" }}
-            >
+            <span className="font-semibold" style={{ color: "#ec5228" }}>
               Contact us
-            </Link>{" "}
-            for assistance.
+            </span>{" "}
+            for assistance. <span aria-hidden="true">↓</span>
           </p>
         </div>
       </div>

@@ -1,5 +1,60 @@
 import mongoose from "mongoose";
 
+const addressSchema = new mongoose.Schema(
+  {
+    country: {
+      type: String,
+      default: "India",
+      trim: true,
+    },
+    fullName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    mobileNumber: {
+      type: String,
+      required: true,
+      match: [/^[0-9]{10}$/, "Please enter a valid 10-digit mobile number"],
+    },
+    pincode: {
+      type: String,
+      required: true,
+      match: [/^[0-9]{6}$/, "Please enter a valid 6-digit PIN code"],
+    },
+    flatHouseBuilding: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    areaStreetSectorVillage: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    landmark: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    city: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    state: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    isDefault: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  { _id: true },
+);
+
 const userSchema = new mongoose.Schema(
   {
     phoneNumber: {
@@ -60,7 +115,7 @@ const userSchema = new mongoose.Schema(
       {
         serviceType: {
           type: String,
-          enum: ["mental_health", "cosmetology"],
+          enum: ["mental_health", "cosmetology", "homeopathy"],
           required: true,
         },
         duration: { type: Number, enum: [30, 50, 80], required: true }, // 30, 50 or 80 minutes
@@ -124,6 +179,7 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    addresses: [addressSchema],
     privacyAcceptedAt: {
       type: Date,
       default: null,
@@ -137,7 +193,7 @@ const userSchema = new mongoose.Schema(
     meetings: [{ type: mongoose.Schema.Types.ObjectId, ref: "Meeting" }],
     lastActiveAt: { type: String },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Indexes for better performance

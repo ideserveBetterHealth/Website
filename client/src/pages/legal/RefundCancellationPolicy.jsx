@@ -292,7 +292,7 @@ const RefundCancellationPolicy = () => {
                       <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400 mt-4">
                         <p className="text-blue-800">
                           <strong>Emergency Contact:</strong> For urgent
-                          cancellations, call +91 9799161609 or email
+                          cancellations, call +91 83021 98769 or email
                           admin@ideservebetterhealth.in with "EMERGENCY" in the
                           subject line.
                         </p>
@@ -346,7 +346,7 @@ const RefundCancellationPolicy = () => {
                         <li>
                           <strong>Submit a Request:</strong> Contact our
                           customer service team via email at
-                          admin@ideservebetterhealth.in or call +91 9799161609
+                          admin@ideservebetterhealth.in or call +91 83021 98769
                         </li>
                         <li>
                           <strong>Provide Information:</strong> Include your
@@ -423,7 +423,7 @@ const RefundCancellationPolicy = () => {
                             admin@ideservebetterhealth.in
                           </p>
                           <p>
-                            <strong>Phone:</strong> +91 9799161609
+                            <strong>Phone:</strong> +91 83021 98769
                           </p>
                           <p>
                             <strong>Address:</strong> Jaipur, Rajasthan, India

@@ -919,12 +919,12 @@ export const adminCreateUser = async (req, res) => {
 
     if (
       role === "doctor" &&
-      !["psychologist", "cosmetologist"].includes(type)
+      !["psychologist", "cosmetologist", "homeopath"].includes(type)
     ) {
       return res.status(400).json({
         success: false,
         message:
-          "Invalid type for doctor. Must be psychologist or cosmetologist.",
+          "Invalid type for doctor. Must be psychologist, cosmetologist, or homeopath.",
       });
     }
 

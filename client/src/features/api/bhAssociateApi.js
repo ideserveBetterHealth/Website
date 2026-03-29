@@ -33,6 +33,13 @@ export const bhAssociateApi = createApi({
       }),
       providesTags: ["BHAssociate"],
     }),
+    getHomeopaths: builder.query({
+      query: () => ({
+        url: "homeopaths",
+        method: "GET",
+      }),
+      providesTags: ["BHAssociate"],
+    }),
     getAvailability: builder.query({
       query: ({ startDate, endDate } = {}) => ({
         url: "availability",
@@ -111,6 +118,7 @@ export const {
   useGetBHAssociateProfileQuery,
   useGetAllBHAssociatesQuery,
   useGetCosmetologistsQuery,
+  useGetHomeopathsQuery,
   useGetAvailabilityQuery,
   useGetAssociateAvailabilityQuery,
   useUpdateAvailabilityMutation,

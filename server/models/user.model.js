@@ -88,7 +88,7 @@ const userSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["psychologist", "cosmetologist"],
+      enum: ["psychologist", "cosmetologist", "homeopath"],
     },
     otpVerified: {
       type: Boolean,

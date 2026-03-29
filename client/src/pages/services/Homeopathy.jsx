@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 import BookingSection from "@/components/booking/BookingSection";
 import PaymentGateway from "@/components/booking/PaymentGateway";
-import { useGetPsychologistsQuery } from "@/features/api/psychologistApi";
-import { useGetCosmetologistsQuery } from "@/features/api/bhAssociateApi";
+import { useGetHomeopathsQuery } from "@/features/api/bhAssociateApi";
 import { useLazyGetPricingQuery } from "@/features/api/pricingApi";
 import { useCalculateAllPlansDiscountsMutation } from "@/features/api/couponApi";
 import { useGetMeetingsQuery } from "@/features/api/meetingsApi";
@@ -183,8 +182,7 @@ export default function Homeopathy() {
   const [addressForm, setAddressForm] = useState(initialAddressForm);
   const [addressErrors, setAddressErrors] = useState({});
 
-  const { data: psychologistsData } = useGetPsychologistsQuery();
-  const { data: cosmetologistsData } = useGetCosmetologistsQuery();
+  const { data: homeopathsData } = useGetHomeopathsQuery();
   const { data: userData } = useLoadUserQuery();
   const { data: addressesData } = useGetAddressesQuery();
   const { data: meetingsData } = useGetMeetingsQuery();
@@ -297,22 +295,25 @@ export default function Homeopathy() {
   }, [resendCountdown]);
 
   const doctorFromApi = useMemo(() => {
-    const psychologists = psychologistsData?.psychologists || [];
-    const cosmetologists = cosmetologistsData?.cosmetologists || [];
-    const allDoctors = [...psychologists, ...cosmetologists];
+    const homeopaths = homeopathsData?.homeopaths || [];
 
-    return allDoctors.find((doctor) => isDrAgrimaYadav(doctor.name));
-  }, [psychologistsData, cosmetologistsData]);
+    return (
+      homeopaths.find((doctor) => isDrAgrimaYadav(doctor.name)) ||
+      homeopaths[0] ||
+      null
+    );
+  }, [homeopathsData]);
 
   const doctor = useMemo(() => {
     return (
       doctorFromApi || {
         _id: "",
         name: "Dr. Agrima Yadav",
-        designation: "Homeopathy Consultant",
-        photoUrl: "",
+        designation: "BHMS - Homeopathy Specialist",
+        photoUrl:
+          "https://res.cloudinary.com/dv0slncwp/image/upload/v1774785264/pqufdt276gnnm12vyhpa.jpg",
         bio: "Holistic care focused on long-term wellness and root-cause treatment.",
-        experience: "5+ years",
+        experience: "5",
       }
     );
   }, [doctorFromApi]);
@@ -1330,7 +1331,17 @@ export default function Homeopathy() {
                         published yet.
                       </p>
                       <p className="text-gray-600 mt-2">
-                        Once schedule is added in admin panel, booking will be
+                        Once doctor will add their schedule, booking will be
+                        enabled automatically.
+                      </p>
+                    </div>
+                  ) : !doctor.nextAvailableSlot ? (
+                    <div className="bg-white rounded-2xl shadow-lg p-8 text-center border border-amber-200">
+                      <p className="text-amber-700 font-medium">
+                        Dr. Agrima hasn&apos;t set their schedule yet.
+                      </p>
+                      <p className="text-gray-600 mt-2">
+                        Once doctor will add their schedule, booking will be
                         enabled automatically.
                       </p>
                     </div>

@@ -39,7 +39,7 @@ function updateLastScheduleUpdates(bhAssociate) {
   if (bhAssociate.lastScheduleUpdates.length > 5) {
     bhAssociate.lastScheduleUpdates = bhAssociate.lastScheduleUpdates.slice(
       0,
-      5
+      5,
     );
   }
 }
@@ -47,7 +47,7 @@ function updateLastScheduleUpdates(bhAssociate) {
 // Helper function to update slot restrictions based on existing 80-minute bookings
 const updateSlotRestrictionsFor80MinBookings = async (
   bhAssociate,
-  targetDate
+  targetDate,
 ) => {
   try {
     // Find the availability for the specific date
@@ -62,7 +62,7 @@ const updateSlotRestrictionsFor80MinBookings = async (
 
     // Find all 80-minute bookings for this date
     const eightyMinuteBookings = dateAvailability.slots.filter(
-      (slot) => slot.isBooked && parseInt(slot.duration) === 80
+      (slot) => slot.isBooked && parseInt(slot.duration) === 80,
     );
 
     // For each 80-minute booking, check if there's a slot 60 minutes before it
@@ -75,21 +75,21 @@ const updateSlotRestrictionsFor80MinBookings = async (
         (slot) =>
           slot.time === slot60MinutesBefore &&
           slot.isAvailable &&
-          !slot.isBooked
+          !slot.isBooked,
       );
 
       if (targetSlot) {
         // Restrict this slot to 50 minutes only
         targetSlot.possibleDurations = [50];
         console.log(
-          `Slot ${slot60MinutesBefore} restricted to 50min only due to 80min booking at ${booking.time}`
+          `Slot ${slot60MinutesBefore} restricted to 50min only due to 80min booking at ${booking.time}`,
         );
       }
     }
   } catch (error) {
     console.error(
       "Error updating slot restrictions for 80-min bookings:",
-      error
+      error,
     );
   }
 };
@@ -109,7 +109,7 @@ export const getBHAssociateProfile = async (req, res) => {
 
     const bhAssociate = await BHAssociate.findOne({ userId }).populate(
       "userId",
-      "name email phoneNumber"
+      "name email phoneNumber",
     );
 
     if (!bhAssociate) {
@@ -191,7 +191,7 @@ export const updateAvailability = async (req, res) => {
     console.log("User ID:", userId);
     console.log(
       "Availability Data:",
-      JSON.stringify(availabilityData, null, 2)
+      JSON.stringify(availabilityData, null, 2),
     );
 
     const user = await User.findById(userId);
@@ -509,13 +509,13 @@ export const getAllBHAssociates = async (req, res) => {
         success: false,
         message: "Access denied. Admin privileges required.",
       });
-    } 
+    }
 
     // Get all BH Associates with their user data
     const bhAssociates = await BHAssociate.find({})
       .populate(
         "userId",
-        "name email phoneNumber role type isVerified isActive createdAt updatedAt lastActiveAt"
+        "name email phoneNumber role type isVerified isActive createdAt updatedAt lastActiveAt",
       )
       .lean();
 
@@ -574,28 +574,28 @@ export const getCosmetologists = async (req, res) => {
           const istTime = new Date();
           console.log(
             "Current IST Time:",
-            istTime.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+            istTime.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
           );
           const today = new Date(
             istTime.getFullYear(),
             istTime.getMonth(),
-            istTime.getDate()
+            istTime.getDate(),
           );
 
           // Find the earliest available slot from today onwards
           for (const day of associate.availability.sort(
-            (a, b) => new Date(a.date) - new Date(b.date)
+            (a, b) => new Date(a.date) - new Date(b.date),
           )) {
             const slotDate = new Date(day.date);
             slotDate.setHours(0, 0, 0, 0);
             if (slotDate >= today) {
               const availableSlots = day.slots.filter(
-                (slot) => slot.isAvailable && !slot.isBooked
+                (slot) => slot.isAvailable && !slot.isBooked,
               );
               if (availableSlots.length > 0) {
                 // Sort slots by time
                 const sortedSlots = availableSlots.sort((a, b) =>
-                  a.time.localeCompare(b.time)
+                  a.time.localeCompare(b.time),
                 );
 
                 // Find the earliest slot that is not in the past for today
@@ -658,7 +658,7 @@ export const getCosmetologists = async (req, res) => {
 
         console.log(
           `Next available slot for ${cosmetologist.name}:`,
-          nextAvailableSlot
+          nextAvailableSlot,
         );
 
         return {
@@ -680,12 +680,12 @@ export const getCosmetologists = async (req, res) => {
           languages: cosmetologist.aboutUser?.languages || ["Hindi", "English"],
           nextAvailableSlot: nextAvailableSlot,
         };
-      })
+      }),
     );
 
     // Filter out cosmetologists who don't have any available slots
     const cosmetologistsWithAvailableSlots = cosmetologistsWithDetails.filter(
-      (cosmetologist) => cosmetologist.nextAvailableSlot !== null
+      (cosmetologist) => cosmetologist.nextAvailableSlot !== null,
     );
 
     // Sort cosmetologists by nearest available slot
@@ -720,6 +720,151 @@ export const getCosmetologists = async (req, res) => {
   }
 };
 
+// Get all homeopaths with availability filtering (Public endpoint)
+export const getHomeopaths = async (req, res) => {
+  try {
+    const homeopaths = await User.find({
+      role: "doctor",
+      type: "homeopath",
+      isActive: true,
+      isVerified: "verified",
+    }).select("name photoUrl aboutUser.languages");
+
+    const homeopathsWithDetails = await Promise.all(
+      homeopaths.map(async (homeopath) => {
+        const associate = await BHAssociate.findOne({
+          userId: homeopath._id,
+        });
+
+        let nextAvailableSlot = null;
+        if (associate?.availability) {
+          const istTime = new Date();
+          const today = new Date(
+            istTime.getFullYear(),
+            istTime.getMonth(),
+            istTime.getDate(),
+          );
+
+          for (const day of associate.availability.sort(
+            (a, b) => new Date(a.date) - new Date(b.date),
+          )) {
+            const slotDate = new Date(day.date);
+            slotDate.setHours(0, 0, 0, 0);
+            if (slotDate >= today) {
+              const availableSlots = day.slots.filter(
+                (slot) => slot.isAvailable && !slot.isBooked,
+              );
+              if (availableSlots.length > 0) {
+                const sortedSlots = availableSlots.sort((a, b) =>
+                  a.time.localeCompare(b.time),
+                );
+
+                let earliestSlot = null;
+                const isToday = slotDate.getTime() === today.getTime();
+                if (isToday) {
+                  const currentHour = istTime.getHours();
+                  const currentMinute = istTime.getMinutes();
+                  const currentTimeInMinutes =
+                    currentHour * 60 + currentMinute + 30;
+                  for (const slot of sortedSlots) {
+                    const [slotHour, slotMinute] = slot.time
+                      .split(":")
+                      .map(Number);
+                    const slotTimeInMinutes = slotHour * 60 + slotMinute;
+                    if (slotTimeInMinutes > currentTimeInMinutes) {
+                      earliestSlot = slot;
+                      break;
+                    }
+                  }
+                } else {
+                  earliestSlot = sortedSlots[0];
+                }
+
+                if (!earliestSlot) {
+                  continue;
+                }
+
+                const convertTo12Hour = (time24) => {
+                  const [hours, minutes] = time24.split(":");
+                  const hour = parseInt(hours);
+                  const ampm = hour >= 12 ? "PM" : "AM";
+                  const hour12 = hour % 12 || 12;
+                  return `${hour12}:${minutes} ${ampm}`;
+                };
+
+                nextAvailableSlot = {
+                  date:
+                    slotDate.getFullYear() +
+                    "-" +
+                    String(slotDate.getMonth() + 1).padStart(2, "0") +
+                    "-" +
+                    String(slotDate.getDate()).padStart(2, "0"),
+                  time: convertTo12Hour(earliestSlot.time),
+                  day: slotDate.toLocaleDateString("en-US", {
+                    weekday: "short",
+                  }),
+                  fullDate: slotDate.toLocaleDateString("en-US", {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                  }),
+                };
+                break;
+              }
+            }
+          }
+        }
+
+        return {
+          _id: homeopath._id,
+          name: homeopath.name,
+          photoUrl: homeopath.photoUrl,
+          designation: associate?.designation || "Homeopathy Consultant",
+          bio: associate?.bio || "Experienced homeopathy professional",
+          experience: associate?.experience || "1+ years",
+          expertise: associate?.expertise || [
+            "Classical Homeopathy",
+            "Holistic Treatment",
+            "Root-Cause Healing",
+          ],
+          qualifications: associate?.qualifications || [
+            "BHMS",
+            "Homeopathy Specialist",
+          ],
+          languages: homeopath.aboutUser?.languages || ["Hindi", "English"],
+          nextAvailableSlot,
+        };
+      }),
+    );
+
+    homeopathsWithDetails.sort((a, b) => {
+      if (!a.nextAvailableSlot && !b.nextAvailableSlot) return 0;
+      if (!a.nextAvailableSlot) return 1;
+      if (!b.nextAvailableSlot) return -1;
+
+      const dateA = new Date(a.nextAvailableSlot.date);
+      const dateB = new Date(b.nextAvailableSlot.date);
+
+      if (dateA.getTime() !== dateB.getTime()) {
+        return dateA.getTime() - dateB.getTime();
+      }
+
+      return a.nextAvailableSlot.time.localeCompare(b.nextAvailableSlot.time);
+    });
+
+    res.status(200).json({
+      success: true,
+      homeopaths: homeopathsWithDetails,
+    });
+  } catch (error) {
+    console.error("Error fetching homeopaths:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 // Get Associate Availability by ID (Admin only)
 export const getAssociateAvailability = async (req, res) => {
   try {
@@ -738,7 +883,7 @@ export const getAssociateAvailability = async (req, res) => {
 
     const bhAssociate = await BHAssociate.findById(associateId).populate(
       "userId",
-      "name email"
+      "name email",
     );
 
     if (!bhAssociate) {
@@ -826,14 +971,14 @@ export const updateAssociateAvailability = async (req, res) => {
 
       // Clear existing available slots (keep booked ones)
       dateAvailability.slots = dateAvailability.slots.filter(
-        (slot) => slot.isBooked
+        (slot) => slot.isBooked,
       );
 
       // Add new available slots
       for (const timeSlot of dayData.slots) {
         // Check if this time slot already exists as booked
         const existingSlot = dateAvailability.slots.find(
-          (slot) => slot.time === timeSlot
+          (slot) => slot.time === timeSlot,
         );
 
         if (!existingSlot) {
@@ -908,7 +1053,7 @@ export const clearAssociateAvailability = async (req, res) => {
       if (dateAvailability) {
         // Remove only available slots, keep booked ones
         dateAvailability.slots = dateAvailability.slots.filter(
-          (slot) => slot.isBooked
+          (slot) => slot.isBooked,
         );
 
         // If no slots left, remove the entire date entry
@@ -917,7 +1062,7 @@ export const clearAssociateAvailability = async (req, res) => {
             (avail) => {
               const availDate = new Date(avail.date);
               return availDate.toDateString() !== targetDate.toDateString();
-            }
+            },
           );
         }
       }
@@ -1006,14 +1151,14 @@ export const bulkUpdateAssociateAvailability = async (req, res) => {
 
       // Clear existing available slots (keep booked ones)
       dateAvailability.slots = dateAvailability.slots.filter(
-        (slot) => slot.isBooked
+        (slot) => slot.isBooked,
       );
 
       // Add new available slots
       for (const timeSlot of slots) {
         // Check if this time slot already exists as booked
         const existingSlot = dateAvailability.slots.find(
-          (slot) => slot.time === timeSlot
+          (slot) => slot.time === timeSlot,
         );
 
         if (!existingSlot) {

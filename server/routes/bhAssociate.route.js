@@ -7,6 +7,7 @@ import {
   bulkUpdateAvailability,
   getAllBHAssociates,
   getCosmetologists,
+  getHomeopaths,
   getAssociateAvailability,
   updateAssociateAvailability,
   clearAssociateAvailability,
@@ -24,6 +25,9 @@ router.route("/all").get(isAuthenticated, getAllBHAssociates);
 
 // Public route to get all cosmetologists
 router.route("/cosmetologists").get(getCosmetologists);
+
+// Public route to get all homeopaths
+router.route("/homeopaths").get(getHomeopaths);
 
 // Availability management routes
 router.route("/availability").get(isAuthenticated, getAvailability);

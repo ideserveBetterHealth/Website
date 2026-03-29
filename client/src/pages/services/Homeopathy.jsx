@@ -820,6 +820,28 @@ export default function Homeopathy() {
     });
   };
 
+  const formatDisplayTime = (timeValue) => {
+    if (!timeValue || typeof timeValue !== "string") return "-";
+
+    const normalized = timeValue.trim();
+
+    if (/^\d{1,2}:\d{2}\s?(am|pm)$/i.test(normalized)) {
+      return normalized
+        .replace(/\s+/g, " ")
+        .replace(/(am|pm)$/i, (meridiem) => meridiem.toLowerCase());
+    }
+
+    if (!/^\d{1,2}:\d{2}$/.test(normalized)) return normalized;
+
+    const [hoursRaw, minutesRaw] = normalized.split(":").map(Number);
+    if (Number.isNaN(hoursRaw) || Number.isNaN(minutesRaw)) return normalized;
+
+    const meridiem = hoursRaw >= 12 ? "pm" : "am";
+    const twelveHour = hoursRaw % 12 || 12;
+
+    return `${twelveHour}:${String(minutesRaw).padStart(2, "0")} ${meridiem}`;
+  };
+
   return (
     <div className={`bg-white ${showBookingFlow ? "" : "min-h-screen"}`}>
       {!showBookingFlow && (
@@ -1970,8 +1992,8 @@ export default function Homeopathy() {
                       with Dr. Agrima Yadav is booked.
                     </p>
                     <p className="text-[#000080] bg-[#fffae3] border border-[#ec5228]/20 rounded-xl px-4 py-3 inline-block mb-4">
-                      We will contact you on your selected time via WhatsApp to
-                      begin your session smoothly.
+                      We will contact you on your selected time via WhatsApp
+                      call to begin your session smoothly.
                     </p>
                     {paymentDetails?.orderId && (
                       <div className="bg-green-50 border border-green-200 rounded-lg p-4 inline-block">
@@ -2024,7 +2046,7 @@ export default function Homeopathy() {
                       </p>
                       <p>
                         <span className="font-semibold">Time:</span>{" "}
-                        {bookingDetails?.time || "-"}
+                        {formatDisplayTime(bookingDetails?.time)}
                       </p>
                       <p>
                         <span className="font-semibold">WhatsApp:</span>{" "}

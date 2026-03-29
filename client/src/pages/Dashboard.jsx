@@ -782,7 +782,46 @@ const Dashboard = () => {
 
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString();
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
+  const formatDisplayTime = (timeValue) => {
+    const rawTime = (timeValue || "").toString().trim();
+    if (!rawTime) return "-";
+
+    const twelveHourMatch = rawTime.match(/^(\d{1,2}):(\d{2})\s*([AaPp][Mm])$/);
+    if (twelveHourMatch) {
+      const hour = Number(twelveHourMatch[1]);
+      const minute = twelveHourMatch[2];
+      const meridiem = twelveHourMatch[3].toLowerCase();
+      const normalizedHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+      return `${normalizedHour}:${minute} ${meridiem}`;
+    }
+
+    const twentyFourHourMatch = rawTime.match(/^(\d{1,2}):(\d{2})$/);
+    if (twentyFourHourMatch) {
+      const hours = Number(twentyFourHourMatch[1]);
+      const minutes = Number(twentyFourHourMatch[2]);
+
+      if (
+        !Number.isNaN(hours) &&
+        !Number.isNaN(minutes) &&
+        hours >= 0 &&
+        hours <= 23 &&
+        minutes >= 0 &&
+        minutes <= 59
+      ) {
+        const suffix = hours >= 12 ? "pm" : "am";
+        const normalizedHour = hours % 12 || 12;
+        return `${normalizedHour}:${String(minutes).padStart(2, "0")} ${suffix}`;
+      }
+    }
+
+    return rawTime;
   };
 
   // Real-time countdown calculation for next meeting
@@ -1025,7 +1064,7 @@ const Dashboard = () => {
     if (isMeetingInProgress(meeting)) {
       return <span className="text-emerald-600 font-semibold">Join now!</span>;
     }
-    return meeting.meetingTime;
+    return formatDisplayTime(meeting.meetingTime);
   };
 
   // Convert UTC timestamps to Indian Standard Time for display
@@ -1953,7 +1992,7 @@ const Dashboard = () => {
 
                 <div className="flex items-center gap-3 text-lg font-semibold">
                   <Clock className="w-5 h-5 text-white/80" />
-                  <span>{nextMeeting.meetingTime}</span>
+                  <span>{formatDisplayTime(nextMeeting.meetingTime)}</span>
                 </div>
 
                 <div className="flex items-center gap-3 text-sm font-medium text-white/90">
@@ -2198,7 +2237,7 @@ const Dashboard = () => {
                             </span>
                           ) : (
                             <span className="text-gray-700">
-                              {meeting.meetingTime}
+                              {formatDisplayTime(meeting.meetingTime)}
                             </span>
                           )}
                         </td>
@@ -2256,10 +2295,10 @@ const Dashboard = () => {
                             <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-2 rounded-lg text-xs font-medium border border-blue-100">
                               <Phone className="w-4 h-4" />
                               {role === "user"
-                                ? `We will WhatsApp you at ${meeting.meetingTime}`
+                                ? `We will WhatsApp you at ${formatDisplayTime(meeting.meetingTime)}`
                                 : isDoctor
-                                  ? `Contact your client on WhatsApp at ${meeting.meetingTime}`
-                                  : `Contact this client on WhatsApp at ${meeting.meetingTime}`}
+                                  ? `Contact your client on WhatsApp at ${formatDisplayTime(meeting.meetingTime)}`
+                                  : `Contact this client on WhatsApp at ${formatDisplayTime(meeting.meetingTime)}`}
                             </div>
                           ) : canJoinMeeting(
                               meeting.meetingDate,
@@ -3000,7 +3039,9 @@ const Dashboard = () => {
                   <p className="text-gray-600 text-sm mt-1">
                     Session on{" "}
                     {formatDate(selectedMeetingQuestionnaire.meetingDate)} at{" "}
-                    {selectedMeetingQuestionnaire.meetingTime}
+                    {formatDisplayTime(
+                      selectedMeetingQuestionnaire.meetingTime,
+                    )}
                   </p>
                 </div>
                 <Button

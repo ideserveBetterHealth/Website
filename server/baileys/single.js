@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { initAuthCreds, BufferJSON, proto } from "@whiskeysockets/baileys";
 
-const KEY_MAP = {
+const LEGACY_KEY_MAP = {
   "pre-key": "preKeys",
   session: "sessions",
   "sender-key": "senderKeys",
@@ -9,6 +9,48 @@ const KEY_MAP = {
   "app-state-sync-version": "appStateVersions",
   "sender-key-memory": "senderKeyMemory",
 };
+
+const KEY_TYPES = [
+  "pre-key",
+  "session",
+  "sender-key",
+  "app-state-sync-key",
+  "app-state-sync-version",
+  "sender-key-memory",
+  "lid-mapping",
+  "device-list",
+  "tctoken",
+];
+
+function normalizeDeviceList(value) {
+  if (!value) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item));
+  }
+
+  if (typeof value === "string") {
+    return [value];
+  }
+
+  if (typeof value === "object") {
+    return Object.values(value).map((item) => String(item));
+  }
+
+  return value;
+}
+
+function buildKeysStore(rawKeys = {}) {
+  const keys = {};
+
+  for (const type of KEY_TYPES) {
+    keys[type] = rawKeys[type] || rawKeys[LEGACY_KEY_MAP[type]] || {};
+  }
+
+  return keys;
+}
 
 function useSingleFileAuthState(filename) {
   let creds,
@@ -20,7 +62,7 @@ function useSingleFileAuthState(filename) {
     if (forceSave || saveCount > 5) {
       writeFileSync(
         filename,
-        JSON.stringify({ creds, keys }, BufferJSON.replacer, 2)
+        JSON.stringify({ creds, keys }, BufferJSON.replacer, 2),
       );
       saveCount = 0;
     }
@@ -29,18 +71,13 @@ function useSingleFileAuthState(filename) {
   if (existsSync(filename)) {
     const result = JSON.parse(
       readFileSync(filename, { encoding: "utf-8" }),
-      BufferJSON.reviver
+      BufferJSON.reviver,
     );
     creds = result.creds;
-    keys = result.keys || {};
-    for (const key of Object.values(KEY_MAP)) {
-      keys[key] = keys[key] || {};
-    }
+    keys = buildKeysStore(result.keys || {});
   } else {
     creds = initAuthCreds();
-    for (const key of Object.values(KEY_MAP)) {
-      keys[key] = {};
-    }
+    keys = buildKeysStore({});
   }
 
   return {
@@ -48,13 +85,19 @@ function useSingleFileAuthState(filename) {
       creds,
       keys: {
         get: (type, ids) => {
-          const key = KEY_MAP[type];
           return ids.reduce((dict, id) => {
-            let value = keys[key]?.[id];
+            const bucket = keys[type] || keys[LEGACY_KEY_MAP[type]] || {};
+            let value = bucket[id];
+
             if (value) {
               if (type === "app-state-sync-key") {
-                value = proto.AppStateSyncKeyData.fromObject(value);
+                value = proto.Message.AppStateSyncKeyData.fromObject(value);
               }
+
+              if (type === "device-list") {
+                value = normalizeDeviceList(value);
+              }
+
               dict[id] = value;
             }
             return dict;
@@ -62,9 +105,17 @@ function useSingleFileAuthState(filename) {
         },
         set: (data) => {
           for (const _key in data) {
-            const key = KEY_MAP[_key];
-            keys[key] = keys[key] || {};
-            Object.assign(keys[key], data[_key]);
+            keys[_key] = keys[_key] || {};
+
+            const nextValues = data[_key] || {};
+            if (_key === "device-list") {
+              for (const id in nextValues) {
+                const value = nextValues[id];
+                nextValues[id] = value ? normalizeDeviceList(value) : value;
+              }
+            }
+
+            Object.assign(keys[_key], nextValues);
           }
           saveState();
         },
